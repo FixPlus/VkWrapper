@@ -2,11 +2,19 @@
 #define VKRENDERER_FENCE_HPP
 
 #include "Common.hpp"
+#include <concepts>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
 
 class Device;
+
+class Fence;
+
+template <typename T>
+concept FenceIterator = std::forward_iterator<T> && requires(T a) {
+  { *a } -> std::same_as<Fence &>;
+};
 
 class Fence {
 public:
@@ -28,21 +36,21 @@ public:
 
   bool signaled() const;
 
-  template <typename Iter>
+  template <FenceIterator Iter>
   static bool wait_any(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
     std::vector<VkFence> fences{};
     for (auto it = begin; it != end; ++it) {
-      fences.push_back(*it.m_fence);
+      fences.push_back((*it).m_fence);
     }
     return wait_impl(begin->m_device, fences.data(), fences.size(), false,
                      timeout);
   }
 
-  template <typename Iter>
+  template <FenceIterator Iter>
   static bool wait_all(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
     std::vector<VkFence> fences{};
     for (auto it = begin; it != end; ++it) {
-      fences.push_back(*it.m_fence);
+      fences.push_back((*it).m_fence);
     }
     return wait_impl(begin->m_device, fences.data(), fences.size(), true,
                      timeout);
@@ -59,5 +67,5 @@ private:
 };
 
 VKR_DECLARE_ARRAY_TYPES(Fence)
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_FENCE_HPP
