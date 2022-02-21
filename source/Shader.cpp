@@ -5,7 +5,7 @@
 namespace vkw {
 
 ShaderBase::ShaderBase(Device &device, size_t codeSize, uint32_t *pCode,
-                       VkShaderStageFlags stage,
+                       VkShaderStageFlagBits stage,
                        VkShaderModuleCreateFlags flags)
     : m_device(device), m_stage(stage) {
   VkShaderModuleCreateInfo createInfo{};
@@ -23,4 +23,4 @@ ShaderBase::~ShaderBase() {
     return;
   vkDestroyShaderModule(m_device, m_shader, nullptr);
 }
-} // namespace vkr
+} // namespace vkw

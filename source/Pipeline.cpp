@@ -1,5 +1,7 @@
 #include "Pipeline.hpp"
 #include "Device.hpp"
+#include "RenderPass.hpp"
+#include "Shader.hpp"
 #include "Utils.hpp"
 
 namespace vkw {
@@ -94,4 +96,107 @@ RasterizationStateCreateInfo::RasterizationStateCreateInfo(
   m_createInfo.depthBiasSlopeFactor = depthBiasSlopeFactor;
   m_createInfo.lineWidth = lineWidth;
 }
-} // namespace vkr
+GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
+    RenderPassCRef renderPass, uint32_t subpass, PipelineLayoutCRef layout,
+    const ShaderBaseConstRefArray &shaderStages,
+    VertexInputStateCreateInfoBaseRef vertexInputState,
+    InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo,
+    RasterizationStateCreateInfo rasterizationStateCreateInfo)
+    : m_layout(layout), m_inputAssemblyStateCreateInfo{std::move(
+                            inputAssemblyStateCreateInfo)},
+      m_renderPass(renderPass),
+      m_rasterizationStateCreateInfo(rasterizationStateCreateInfo),
+      m_vertexShader(m_find_vertex_shader(shaderStages)),
+      m_vertexInputStateCreateInfo(std::move(vertexInputState)) {
+
+  // TODO: this should wrapped around somewhere else and be configurable
+
+  // MultisampleStateCreateInfo
+  m_multisampleState.sampleShadingEnable = VK_FALSE;
+  m_multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+  m_multisampleState.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+  m_multisampleState.pNext = nullptr;
+  m_multisampleState.flags = 0;
+
+  // Depth/stencil state create info
+  m_depthStencilState.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+  m_depthStencilState.pNext = nullptr;
+  m_depthStencilState.depthTestEnable = VK_FALSE;
+  m_depthStencilState.depthWriteEnable = VK_FALSE;
+  m_depthStencilState.stencilTestEnable = VK_FALSE;
+  m_depthStencilState.depthBoundsTestEnable = VK_FALSE;
+
+  // Color blending state create info
+  m_colorBlendState.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+  m_colorBlendState.pNext = nullptr;
+  m_colorBlendState.flags = 0;
+  m_colorBlendState.attachmentCount = 0;
+  m_colorBlendState.logicOpEnable = VK_FALSE;
+
+  // for now will assume viewport state to be dynamic
+  VkDynamicState dynamicState = VK_DYNAMIC_STATE_VIEWPORT;
+  m_dynamicState.pNext = nullptr;
+  m_dynamicState.dynamicStateCount = 1;
+  m_dynamicState.pDynamicStates = &dynamicState;
+  m_dynamicState.flags = 0;
+
+  m_createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.flags = 0;
+  m_createInfo.renderPass = m_renderPass.get();
+  m_createInfo.layout = m_layout.get();
+  m_createInfo.subpass = subpass;
+  m_createInfo.pColorBlendState = &m_colorBlendState;
+  m_createInfo.pDepthStencilState = &m_depthStencilState;
+  m_createInfo.pDynamicState = &m_dynamicState;
+  m_createInfo.pInputAssemblyState =
+      &(m_inputAssemblyStateCreateInfo.
+        operator const VkPipelineInputAssemblyStateCreateInfo &());
+  m_createInfo.pMultisampleState = &m_multisampleState;
+  m_createInfo.pRasterizationState =
+      &(m_rasterizationStateCreateInfo.
+        operator const VkPipelineRasterizationStateCreateInfo &());
+  m_createInfo.pTessellationState =
+      nullptr; // TODO: implement tesselation shader support
+  m_createInfo.pVertexInputState =
+      &(m_vertexInputStateCreateInfo->
+        operator const VkPipelineVertexInputStateCreateInfo &());
+  m_createInfo.pViewportState = nullptr;
+
+  std::vector<VkPipelineShaderStageCreateInfo> m_stages;
+  m_stages.reserve(shaderStages.size());
+  for (auto const &shader : shaderStages) {
+    VkPipelineShaderStageCreateInfo ci{};
+    ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    ci.flags = 0;
+    ci.pNext = nullptr;
+    ci.module = shader.get();
+    ci.pName = "main"; // TODO: allow configure shader/kernel entry point name
+    ci.stage = shader.get().stage();
+    ci.pSpecializationInfo = nullptr; // TODO: implement spec constant support
+    m_stages.push_back(ci);
+  }
+
+  m_createInfo.stageCount = m_stages.size();
+  m_createInfo.pStages = m_stages.data();
+}
+
+VertexShaderCRef GraphicsPipelineCreateInfo::m_find_vertex_shader(
+    ShaderBaseConstRefArray const &shaderStages) {
+  auto found =
+      std::find_if(shaderStages.begin(), shaderStages.end(),
+                   [](ShaderBaseConstRefArray::TRef const &shader) {
+                     return shader.get().stage() == VK_SHADER_STAGE_VERTEX_BIT;
+                   });
+
+  if (found == shaderStages.end())
+    throw Error("GraphicsPipelineCreateInfo construction failed: no vertex "
+                "shader passed");
+
+  return {(dynamic_cast<VertexShader const &>(found->get()))};
+}
+
+} // namespace vkw

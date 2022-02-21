@@ -10,14 +10,14 @@ class Device;
 class ShaderBase {
 public:
   ShaderBase(Device &device, size_t codeSize, uint32_t *pCode,
-             VkShaderStageFlags stage, VkShaderModuleCreateFlags flags = 0);
+             VkShaderStageFlagBits stage, VkShaderModuleCreateFlags flags = 0);
   ShaderBase(ShaderBase &&another)
       : m_device(another.m_device), m_shader(another.m_shader),
         m_stage(another.m_stage) {
     another.m_shader = VK_NULL_HANDLE;
   }
 
-  VkShaderStageFlags stage() const { return m_stage; }
+  VkShaderStageFlagBits stage() const { return m_stage; }
 
   virtual ~ShaderBase();
 
@@ -25,7 +25,7 @@ public:
 
 private:
   Device &m_device;
-  VkShaderStageFlags m_stage;
+  VkShaderStageFlagBits m_stage;
   VkShaderModule m_shader = VK_NULL_HANDLE;
 };
 
@@ -45,5 +45,5 @@ public:
   }
 };
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_SHADER_HPP

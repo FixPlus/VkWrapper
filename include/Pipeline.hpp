@@ -47,7 +47,9 @@ public:
       VkVertexInputBindingDescription const *pBindingDesc,
       VkPipelineVertexInputStateCreateFlags flags = 0);
 
-  operator VkPipelineVertexInputStateCreateInfo() const { return m_createInfo; }
+  operator VkPipelineVertexInputStateCreateInfo const &() const {
+    return m_createInfo;
+  }
 
   uint32_t totalAttributes() const {
     return m_createInfo.vertexAttributeDescriptionCount;
@@ -189,8 +191,9 @@ typename VertexInputStateCreateInfo<Bindings...>::M_AttributeDescHolder const
 
 class InputAssemblyStateCreateInfo {
 public:
-  InputAssemblyStateCreateInfo(VkPrimitiveTopology topology,
-                               VkBool32 restartEnable = false);
+  InputAssemblyStateCreateInfo(
+      VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+      VkBool32 restartEnable = false);
 
   operator VkPipelineInputAssemblyStateCreateInfo const &() const {
     return m_createInfo;
@@ -235,8 +238,7 @@ public:
       ShaderBaseConstRefArray const &shaderStages,
       VertexInputStateCreateInfoBaseRef vertexInputState =
           NullVertexInputState(),
-      InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo =
-          {VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST},
+      InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {},
       RasterizationStateCreateInfo rasterizationStateCreateInfo = {});
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
@@ -266,6 +268,9 @@ public:
   }
 
 private:
+  static VertexShaderCRef
+  m_find_vertex_shader(ShaderBaseConstRefArray const &shaderStages);
+
   RenderPassCRef m_renderPass;
 
   // Shader Stages
@@ -273,6 +278,7 @@ private:
   VertexShaderCRef m_vertexShader; // Vertex Shader stage is obligatory
                                    // according to Vulkan Spec
   std::optional<FragmentShaderCRef> m_fragmentShader;
+  // TODO: support other shader stages
 
   // Fixed pipeline stages
 
@@ -281,6 +287,7 @@ private:
   RasterizationStateCreateInfo m_rasterizationStateCreateInfo;
 
   // TODO: support configure for these stages
+  VkPipelineViewportStateCreateInfo m_viewportState{};
   VkPipelineMultisampleStateCreateInfo m_multisampleState{};
   VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
   VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
@@ -346,5 +353,5 @@ public:
 private:
   ComputePipelineCreateInfo m_createInfo;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_PIPELINE_HPP
