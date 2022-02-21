@@ -1,6 +1,6 @@
 # VkWrapper
 ## About
-Lightweight C++ wrapper over Vulkan library
+Lightweight C++ wrapper over Vulkan library. This is WIP.
 ## Prerequisites
 * Compiler: gcc 10.0+ / clang 10.0+ / any other compiler supporting core c++20 features
 * CMake: 3.10+
