@@ -30,12 +30,18 @@ public:
 
   bool isInExecutableState() const { return m_executable; }
 
+  /** Transfer */
+
   void copyBufferToBuffer(BufferBase const &src, BufferBase const &dst,
                           std::vector<VkBufferCopy> const &regions);
   void copyBufferToImage(BufferBase const &src, ImageBase const &dst,
                          VkImageLayout layout,
                          std::vector<VkBufferImageCopy> const &regions);
+  void copyImageToBuffer(ImageBase const &src, VkImageLayout layout,
+                         BufferBase const &dst,
+                         std::vector<VkBufferImageCopy> const &regions);
 
+  /** Synchronization */
   void
   pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
                   std::vector<VkMemoryBarrier> const &memBarriers,
@@ -62,6 +68,8 @@ public:
     pipelineBarrier(srcStage, dstStage, memBarriers, {}, {}, flags);
   }
 
+  /** Binding operations */
+
   template <typename T>
   void bindVertexBuffer(VertexBuffer<T> const &vbuf, uint32_t binding,
                         VkDeviceSize offset) {
@@ -76,11 +84,22 @@ public:
   void bindGraphicsPipeline(GraphicsPipeline const &pipeline);
   void bindComputePipeline(ComputePipeline const &pipeline);
 
+  /** Draw commands */
+
   void draw(uint32_t vertexCount, uint32_t instanceCount = 0,
             uint32_t firstVertex = 0, uint32_t firstInstance = 0);
   void drawIndexed(uint32_t indexCount, uint32_t instanceCount = 0,
                    uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                    uint32_t firstInstance = 0);
+
+  /** Pipeline dynamic state sets */
+
+  void setScissors(std::vector<VkRect2D> const &scissors,
+                   uint32_t firstScissor = 0);
+  void setViewports(std::vector<VkViewport> const &viewports,
+                    uint32_t firstViewport = 0);
+
+  /** Finishing */
 
   void end();
 
@@ -141,5 +160,5 @@ public:
 
 VKR_DECLARE_ARRAY_TYPES_NON_CONV(PrimaryCommandBuffer, VkCommandBuffer)
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_COMMANDBUFFER_HPP

@@ -102,6 +102,22 @@ void CommandBuffer::bindGraphicsPipeline(GraphicsPipeline const &pipeline) {
 void CommandBuffer::bindComputePipeline(ComputePipeline const &pipeline) {
   vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
+void CommandBuffer::copyImageToBuffer(
+    ImageBase const &src, VkImageLayout layout, BufferBase const &dst,
+    std::vector<VkBufferImageCopy> const &regions) {
+  vkCmdCopyImageToBuffer(m_commandBuffer, src, layout, dst, regions.size(),
+                         regions.data());
+}
+void CommandBuffer::setScissors(std::vector<VkRect2D> const &scissors,
+                                uint32_t firstScissor) {
+  vkCmdSetScissor(m_commandBuffer, firstScissor, scissors.size(),
+                  scissors.data());
+}
+void CommandBuffer::setViewports(std::vector<VkViewport> const &viewports,
+                                 uint32_t firstViewport) {
+  vkCmdSetViewport(m_commandBuffer, firstViewport, viewports.size(),
+                   viewports.data());
+}
 
 void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
                                            const FrameBuffer &frameBuffer,
@@ -138,4 +154,4 @@ void PrimaryCommandBuffer::executeCommands(
     SecondaryCommandBufferConstRefArray const &commands) {
   vkCmdExecuteCommands(m_commandBuffer, commands.size(), commands);
 }
-} // namespace vkr
+} // namespace vkw
