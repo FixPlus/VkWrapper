@@ -6,17 +6,6 @@
 
 namespace vkw {
 
-class Device;
-class Surface;
-class Fence;
-VKR_DECLARE_ARRAY_TYPES(Fence)
-class PrimaryCommandBuffer;
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(PrimaryCommandBuffer, VkCommandBuffer)
-class Semaphore;
-VKR_DECLARE_ARRAY_TYPES(Semaphore)
-class SwapChain;
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(SwapChain, VkSwapchainKHR)
-
 class Queue {
 public:
   bool present(SwapChainConstRefArray const &swapChains,
@@ -51,5 +40,5 @@ private:
   VkQueueFlags m_flags;
   uint32_t m_familyIndex;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_QUEUE_HPP

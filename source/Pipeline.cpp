@@ -99,7 +99,7 @@ RasterizationStateCreateInfo::RasterizationStateCreateInfo(
 GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
     RenderPassCRef renderPass, uint32_t subpass, PipelineLayoutCRef layout,
     const ShaderBaseConstRefArray &shaderStages,
-    VertexInputStateCreateInfoBaseRef vertexInputState,
+    VertexInputStateCreateInfoBaseHandle vertexInputState,
     InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo,
     RasterizationStateCreateInfo rasterizationStateCreateInfo)
     : m_layout(layout), m_inputAssemblyStateCreateInfo{std::move(

@@ -9,12 +9,6 @@
 
 namespace vkw {
 
-class Surface;
-class Device;
-class Semaphore;
-class Fence;
-class ImageInterface;
-
 class SwapChain {
 public:
   SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo);
@@ -51,6 +45,5 @@ private:
   VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 };
 
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(SwapChain, VkSwapchainKHR)
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_SWAPCHAIN_HPP

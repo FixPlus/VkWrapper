@@ -9,22 +9,6 @@
 
 namespace vkw {
 
-class Device;
-class FragmentShader;
-class VertexShader;
-
-class ShaderBase;
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(ShaderBase, VkShaderModule)
-
-class RenderPass;
-
-using FragmentShaderRef = std::reference_wrapper<FragmentShader>;
-using VertexShaderRef = std::reference_wrapper<VertexShader>;
-using RenderPassRef = std::reference_wrapper<RenderPass>;
-using FragmentShaderCRef = std::reference_wrapper<FragmentShader const>;
-using VertexShaderCRef = std::reference_wrapper<VertexShader const>;
-using RenderPassCRef = std::reference_wrapper<RenderPass const>;
-
 class PipelineLayout {
 public:
   // TODO
@@ -34,9 +18,6 @@ public:
 private:
   VkPipelineLayout m_layout;
 };
-
-using PipelineLayoutRef = std::reference_wrapper<PipelineLayout>;
-using PipelineLayoutCRef = std::reference_wrapper<PipelineLayout const>;
 
 class VertexInputStateCreateInfoBase {
 public:
@@ -67,10 +48,10 @@ private:
   VkPipelineVertexInputStateCreateInfo m_createInfo{};
 };
 
-struct VertexInputStateCreateInfoBaseRef
+struct VertexInputStateCreateInfoBaseHandle
     : public std::unique_ptr<VertexInputStateCreateInfoBase> {
   template <typename... Args>
-  VertexInputStateCreateInfoBaseRef(Args... args)
+  VertexInputStateCreateInfoBaseHandle(Args... args)
       : std::unique_ptr<VertexInputStateCreateInfoBase>{
             std::make_unique<VertexInputStateCreateInfoBase>(args...)} {}
 };
@@ -236,7 +217,7 @@ public:
   GraphicsPipelineCreateInfo(
       RenderPassCRef renderPass, uint32_t subpass, PipelineLayoutCRef layout,
       ShaderBaseConstRefArray const &shaderStages,
-      VertexInputStateCreateInfoBaseRef vertexInputState =
+      VertexInputStateCreateInfoBaseHandle vertexInputState =
           NullVertexInputState(),
       InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {},
       RasterizationStateCreateInfo rasterizationStateCreateInfo = {});
@@ -282,7 +263,7 @@ private:
 
   // Fixed pipeline stages
 
-  VertexInputStateCreateInfoBaseRef m_vertexInputStateCreateInfo;
+  VertexInputStateCreateInfoBaseHandle m_vertexInputStateCreateInfo;
   InputAssemblyStateCreateInfo m_inputAssemblyStateCreateInfo;
   RasterizationStateCreateInfo m_rasterizationStateCreateInfo;
 

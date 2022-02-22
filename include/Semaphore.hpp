@@ -5,8 +5,6 @@
 #include <vulkan/vulkan.h>
 namespace vkw {
 
-class Device;
-
 class Semaphore {
 public:
   Semaphore(Device &device);
@@ -24,7 +22,5 @@ private:
   VkSemaphore m_semaphore;
 };
 
-VKR_DECLARE_ARRAY_TYPES(Semaphore)
-
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_SEMAPHORE_HPP

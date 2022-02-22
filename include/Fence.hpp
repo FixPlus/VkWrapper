@@ -7,10 +7,6 @@
 
 namespace vkw {
 
-class Device;
-
-class Fence;
-
 template <typename T>
 concept FenceIterator = std::forward_iterator<T> && requires(T a) {
   { *a } -> std::same_as<Fence &>;
@@ -66,6 +62,5 @@ private:
                         bool waitAll, uint64_t timeout);
 };
 
-VKR_DECLARE_ARRAY_TYPES(Fence)
 } // namespace vkw
 #endif // VKRENDERER_FENCE_HPP

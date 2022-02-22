@@ -7,9 +7,6 @@
 
 namespace vkw {
 
-class ImageInterface;
-class Device;
-
 class ImageView {
 public:
   ImageInterface &parent() { return *m_parent; }
@@ -31,8 +28,6 @@ private:
   VkImageView m_imageView;
   ImageInterface *m_parent;
 };
-
-VKR_DECLARE_ARRAY_TYPES(ImageView)
 
 class ImageInterface {
 public:
@@ -89,5 +84,5 @@ public:
 
   ~ImageBase() override;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_IMAGE_HPP

@@ -7,15 +7,6 @@
 
 namespace vkw {
 
-class CommandPool;
-class Device;
-class BufferBase;
-class ImageBase;
-class RenderPass;
-class FrameBuffer;
-class GraphicsPipeline;
-class ComputePipeline;
-
 class CommandBuffer {
 public:
   CommandBuffer(CommandBuffer &&another) = default;
@@ -131,8 +122,6 @@ public:
   }
 };
 
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(SecondaryCommandBuffer, VkCommandBuffer)
-
 class PrimaryCommandBuffer : public CommandBuffer {
 public:
   explicit PrimaryCommandBuffer(CommandPool &pool)
@@ -157,8 +146,6 @@ public:
     m_begin(flags, nullptr);
   }
 };
-
-VKR_DECLARE_ARRAY_TYPES_NON_CONV(PrimaryCommandBuffer, VkCommandBuffer)
 
 } // namespace vkw
 #endif // VKRENDERER_COMMANDBUFFER_HPP

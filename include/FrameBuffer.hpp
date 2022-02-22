@@ -6,12 +6,6 @@
 
 namespace vkw {
 
-class ImageView;
-class Device;
-class RenderPass;
-
-VKR_DECLARE_ARRAY_TYPES(ImageView)
-
 class FrameBuffer {
 public:
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
@@ -46,5 +40,5 @@ private:
   ImageViewConstRefArray m_views;
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_FRAMEBUFFER_HPP
