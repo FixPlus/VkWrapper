@@ -13,10 +13,31 @@ class PipelineLayout {
 public:
   // TODO
 
+  // Constructor for empty Pipeline Layout
+
+  PipelineLayout(DeviceRef device);
+
+  PipelineLayout(PipelineLayout const& another) = delete;
+  PipelineLayout const& operator=(PipelineLayout const& another) = delete;
+
+  PipelineLayout(PipelineLayout&& another) noexcept: m_device(another.m_device), m_layout(another.m_layout), m_createInfo(another.m_createInfo){
+    another.m_layout = VK_NULL_HANDLE;
+  }
+  PipelineLayout& operator=(PipelineLayout&& another) noexcept{
+      m_device = another.m_device;
+      m_createInfo = another.m_createInfo;
+      m_layout = another.m_layout;
+      another.m_layout = VK_NULL_HANDLE;
+      return *this;
+  };
+
   operator VkPipelineLayout() const { return m_layout; }
 
+  virtual ~PipelineLayout();
 private:
-  VkPipelineLayout m_layout;
+  DeviceRef m_device;
+  VkPipelineLayoutCreateInfo m_createInfo;
+  VkPipelineLayout m_layout{};
 };
 
 class VertexInputStateCreateInfoBase {
