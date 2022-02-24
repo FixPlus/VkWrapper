@@ -79,4 +79,4 @@ void freeDebugCallback(VkInstance instance) {
 }
 } // namespace debug
 
-} // namespace vkr
+} // namespace vkw

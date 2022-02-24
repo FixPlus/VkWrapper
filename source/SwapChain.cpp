@@ -61,32 +61,21 @@ bool SwapChain::acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
   }
 }
 
-std::vector<ImageInterface> SwapChain::retrieveImages() {
-  VkImageCreateInfo createInfo{};
-  createInfo.usage = m_createInfo.imageUsage;
-  createInfo.extent = VkExtent3D{m_createInfo.imageExtent.width,
-                                 m_createInfo.imageExtent.height, 1};
-  createInfo.pNext = nullptr;
-  createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-  createInfo.format = m_createInfo.imageFormat;
-  createInfo.imageType = VK_IMAGE_TYPE_2D;
-  createInfo.arrayLayers = m_createInfo.imageArrayLayers;
-  createInfo.mipLevels = 1;
-  createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-  createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-  createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-  createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+std::vector<SwapChainImage> SwapChain::retrieveImages() {
 
   std::vector<VkImage> images(m_imageCount);
   VK_CHECK_RESULT(vkGetSwapchainImagesKHR(m_device, m_swapchain, &m_imageCount,
                                           images.data()))
 
-  std::vector<ImageInterface> ret{};
+  std::vector<SwapChainImage> ret{};
 
   for (auto const &image : images) {
-    ret.emplace_back(m_device, image, createInfo);
+    ret.push_back(SwapChainImage{
+        image, m_createInfo.imageFormat, m_createInfo.imageExtent.width,
+        m_createInfo.imageExtent.height, m_createInfo.imageArrayLayers,
+        m_createInfo.imageUsage});
   }
 
   return ret;
 }
-} // namespace vkr
+} // namespace vkw

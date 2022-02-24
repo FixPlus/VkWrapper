@@ -26,7 +26,7 @@ public:
   bool acquireNextImage(Fence const &signalFence,
                         uint64_t timeout = UINT64_MAX);
 
-  std::vector<ImageInterface> retrieveImages();
+  std::vector<SwapChainImage> retrieveImages();
 
   uint32_t currentImage() const;
   uint32_t imageCount() const { return m_imageCount; }

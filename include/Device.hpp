@@ -64,6 +64,7 @@ public:
   operator VkDevice() const { return m_device; }
 
   VkPhysicalDevice getPhysicalDevice() const { return ph_device; }
+  VmaAllocator getAllocator() const { return m_allocator; }
 
   std::vector<VkQueueFamilyProperties> const &getQueueFamilyProperties() const {
     return m_queueFamilyProperties;
@@ -104,5 +105,5 @@ private:
 
   std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_DEVICE_HPP

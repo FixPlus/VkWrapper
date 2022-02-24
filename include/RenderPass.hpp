@@ -27,5 +27,5 @@ private:
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
 };
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_RENDERPASS_HPP
