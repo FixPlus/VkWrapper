@@ -17,7 +17,7 @@ class CommandPool;
 class Device;
 class Fence;
 class FrameBuffer;
-class ImageBase;
+class AllocatedImage;
 class ImageInterface;
 class ColorImageInterface;
 class DepthStencilImageInterface;
@@ -178,7 +178,7 @@ template <> struct TypeTraits<Fence> { using VType = VkFence; };
 
 template <> struct TypeTraits<FrameBuffer> { using VType = VkFramebuffer; };
 
-template <> struct TypeTraits<ImageBase> { using VType = VkImage; };
+template <> struct TypeTraits<AllocatedImage> { using VType = VkImage; };
 
 template <> struct TypeTraits<ImageInterface> { using VType = VkImage; };
 
@@ -422,7 +422,7 @@ VKR_DECLARE_ARRAY_TYPES(PrimaryCommandBuffer)
 VKR_DECLARE_ARRAY_TYPES(Device)
 VKR_DECLARE_ARRAY_TYPES(Fence)
 VKR_DECLARE_ARRAY_TYPES(FrameBuffer)
-VKR_DECLARE_ARRAY_TYPES(ImageBase)
+VKR_DECLARE_ARRAY_TYPES(AllocatedImage)
 VKR_DECLARE_ARRAY_TYPES(ImageInterface)
 VKR_DECLARE_ARRAY_TYPES(ColorImageInterface)
 VKR_DECLARE_ARRAY_TYPES(DepthStencilImageInterface)
@@ -519,7 +519,7 @@ VKR_DECLARE_REF_TYPES(PrimaryCommandBuffer)
 VKR_DECLARE_REF_TYPES(Device)
 VKR_DECLARE_REF_TYPES(Fence)
 VKR_DECLARE_REF_TYPES(FrameBuffer)
-VKR_DECLARE_REF_TYPES(ImageBase)
+VKR_DECLARE_REF_TYPES(AllocatedImage)
 VKR_DECLARE_REF_TYPES(ImageInterface)
 VKR_DECLARE_REF_TYPES(ColorImageInterface)
 VKR_DECLARE_REF_TYPES(DepthStencilImageInterface)

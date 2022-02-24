@@ -762,19 +762,20 @@ protected:
       : T(colorFormat), ImageCubeArrayInterface(cubeSize, layerCount) {}
 };
 
-class ImageBase : public Allocation, virtual public ImageInterface {
+class AllocatedImage : public Allocation, virtual public ImageInterface {
 public:
-  ImageBase(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo);
-  ImageBase(ImageBase &&another) noexcept
+  AllocatedImage(VmaAllocator allocator,
+                 VmaAllocationCreateInfo allocCreateInfo);
+  AllocatedImage(AllocatedImage &&another) noexcept
       : Allocation(another.m_allocator), ImageInterface(std::move(another)) {
     another.m_image = VK_NULL_HANDLE;
   }
 
-  ImageBase(ImageBase const &another) = delete;
-  ImageBase const &operator=(ImageBase const &another) = delete;
-  ImageBase &operator=(ImageBase &&another) = delete;
+  AllocatedImage(AllocatedImage const &another) = delete;
+  AllocatedImage const &operator=(AllocatedImage const &another) = delete;
+  AllocatedImage &operator=(AllocatedImage &&another) = delete;
 
-  ~ImageBase() override;
+  ~AllocatedImage() override;
 
 protected:
 };
@@ -799,7 +800,7 @@ private:
 
 class ColorImage2D : public ColorImage2DInterface,
                      public ImageRestInterface,
-                     public ImageBase {
+                     public AllocatedImage {
 public:
   ColorImage2D(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo,
                VkFormat format, uint32_t width, uint32_t height,
@@ -808,7 +809,7 @@ public:
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, 1, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
                            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
-        ImageBase(allocator, allocCreateInfo) {}
+        AllocatedImage(allocator, allocCreateInfo) {}
 };
 
 } // namespace vkw

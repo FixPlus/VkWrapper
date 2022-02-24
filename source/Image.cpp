@@ -44,13 +44,13 @@ bool ImageView::operator==(ImageView const &another) const {
   return m_createInfo == another.m_createInfo;
 }
 
-ImageBase::ImageBase(VmaAllocator allocator,
-                     VmaAllocationCreateInfo allocCreateInfo)
+AllocatedImage::AllocatedImage(VmaAllocator allocator,
+                               VmaAllocationCreateInfo allocCreateInfo)
     : Allocation(allocator), ImageInterface(){VK_CHECK_RESULT(vmaCreateImage(
                                  m_allocator, &m_createInfo, &allocCreateInfo,
                                  &m_image, &m_allocation, &m_allocInfo))}
 
-      ImageBase::~ImageBase() {
+      AllocatedImage::~AllocatedImage() {
   if (m_image == VK_NULL_HANDLE)
     return;
   vmaDestroyImage(m_allocator, m_image, m_allocation);

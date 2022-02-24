@@ -54,7 +54,7 @@ void CommandBuffer::copyBufferToBuffer(
 }
 
 void CommandBuffer::copyBufferToImage(
-    const BufferBase &src, const ImageBase &dst, VkImageLayout layout,
+    const BufferBase &src, const AllocatedImage &dst, VkImageLayout layout,
     const std::vector<VkBufferImageCopy> &regions) {
   vkCmdCopyBufferToImage(m_commandBuffer, src, dst, layout, regions.size(),
                          regions.data());
@@ -103,7 +103,7 @@ void CommandBuffer::bindComputePipeline(ComputePipeline const &pipeline) {
   vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
 void CommandBuffer::copyImageToBuffer(
-    ImageBase const &src, VkImageLayout layout, BufferBase const &dst,
+    AllocatedImage const &src, VkImageLayout layout, BufferBase const &dst,
     std::vector<VkBufferImageCopy> const &regions) {
   vkCmdCopyImageToBuffer(m_commandBuffer, src, layout, dst, regions.size(),
                          regions.data());

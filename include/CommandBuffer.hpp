@@ -25,10 +25,10 @@ public:
 
   void copyBufferToBuffer(BufferBase const &src, BufferBase const &dst,
                           std::vector<VkBufferCopy> const &regions);
-  void copyBufferToImage(BufferBase const &src, ImageBase const &dst,
+  void copyBufferToImage(BufferBase const &src, AllocatedImage const &dst,
                          VkImageLayout layout,
                          std::vector<VkBufferImageCopy> const &regions);
-  void copyImageToBuffer(ImageBase const &src, VkImageLayout layout,
+  void copyImageToBuffer(AllocatedImage const &src, VkImageLayout layout,
                          BufferBase const &dst,
                          std::vector<VkBufferImageCopy> const &regions);
 
