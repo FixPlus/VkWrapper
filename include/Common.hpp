@@ -9,6 +9,7 @@ namespace vkw {
 
 /** Predeclarations. */
 
+class AttachmentDescription;
 class BufferBase;
 class CommandBuffer;
 class SecondaryCommandBuffer;
@@ -153,10 +154,14 @@ class Semaphore;
 class ShaderBase;
 class VertexShader;
 class FragmentShader;
+class SubpassDependency;
+class SubpassDescription;
 class Surface;
 class SwapChain;
 
 template <typename T> struct TypeTraits {};
+
+template <> struct TypeTraits<AttachmentDescription> { using VType = VkAttachmentDescription; };
 
 template <> struct TypeTraits<BufferBase> { using VType = VkBuffer; };
 
@@ -415,6 +420,7 @@ private:
   using T##RefArray = RefArray<T>;                                             \
   using T##ConstRefArray = RefArray<T const>;
 
+VKR_DECLARE_ARRAY_TYPES(AttachmentDescription)
 VKR_DECLARE_ARRAY_TYPES(BufferBase)
 VKR_DECLARE_ARRAY_TYPES(CommandBuffer)
 VKR_DECLARE_ARRAY_TYPES(SecondaryCommandBuffer)
@@ -512,6 +518,7 @@ VKR_DECLARE_ARRAY_TYPES(SwapChain)
   using T##Ref = std::reference_wrapper<T>;                                    \
   using T##CRef = std::reference_wrapper<T const>;
 
+VKR_DECLARE_REF_TYPES(AttachmentDescription)
 VKR_DECLARE_REF_TYPES(BufferBase)
 VKR_DECLARE_REF_TYPES(CommandBuffer)
 VKR_DECLARE_REF_TYPES(SecondaryCommandBuffer)
@@ -600,6 +607,8 @@ VKR_DECLARE_REF_TYPES(Semaphore)
 VKR_DECLARE_REF_TYPES(ShaderBase)
 VKR_DECLARE_REF_TYPES(VertexShader)
 VKR_DECLARE_REF_TYPES(FragmentShader)
+VKR_DECLARE_REF_TYPES(SubpassDependency)
+VKR_DECLARE_REF_TYPES(SubpassDescription)
 VKR_DECLARE_REF_TYPES(Surface)
 VKR_DECLARE_REF_TYPES(SwapChain)
 
