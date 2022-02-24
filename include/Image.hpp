@@ -32,6 +32,8 @@ public:
 
   operator VkImageView() const { return m_imageView; };
 
+  VkFormat format() const { return m_createInfo.format; };
+
   virtual ~ImageView() = default;
 
 protected:
@@ -213,6 +215,8 @@ public:
   VkImageUsageFlags usage() const { return m_createInfo.usage; }
 
   VkFormat format() const { return m_createInfo.format; }
+
+  VkExtent3D rawExtents() const { return m_createInfo.extent; }
 
   VkImageType type() const { return m_createInfo.imageType; }
 

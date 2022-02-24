@@ -9,7 +9,11 @@ namespace vkw {
 class FrameBuffer {
 public:
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
-              ImageViewConstRefArray views, uint32_t layers = 1);
+              Image2DArrayViewConstRefArray const &views, uint32_t layers = 1);
+
+  FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
+              Image2DViewConstRefArray const &views);
+
   FrameBuffer(FrameBuffer &&another) noexcept
       : m_device(another.m_device), m_parent(another.m_parent),
         m_framebuffer(another.m_framebuffer),
@@ -27,7 +31,7 @@ public:
 
   uint32_t layers() const { return m_createInfo.layers; }
 
-  ImageViewConstRefArray &attachments() { return m_views; }
+  ImageViewConstRefArray &attachments() { return {m_views}; }
 
   ImageViewConstRefArray const &attachments() const { return m_views; }
 

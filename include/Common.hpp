@@ -161,7 +161,9 @@ class SwapChain;
 
 template <typename T> struct TypeTraits {};
 
-template <> struct TypeTraits<AttachmentDescription> { using VType = VkAttachmentDescription; };
+template <> struct TypeTraits<AttachmentDescription> {
+  using VType = VkAttachmentDescription;
+};
 
 template <> struct TypeTraits<BufferBase> { using VType = VkBuffer; };
 
@@ -378,13 +380,40 @@ public:
   using VType = typename TypeTraits<typename std::remove_const<T>::type>::VType;
   using IterT = typename std::vector<TRef>::const_iterator;
 
-  RefArray(std::initializer_list<TRef> array) : m_container(array) {
+  // default constructor for empty arrays
+  RefArray() : m_container({}), m_raw({}){};
+
+  template <typename U>
+  requires std::derived_from<U, T> && std::same_as<
+      VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
+  RefArray(std::vector<std::reference_wrapper<U>> array)
+      : m_container(std::move(array)) {
+    m_raw.reserve(m_container.size());
+    for (auto &elem : m_container)
+      m_raw.template emplace_back(elem.get());
+  }
+
+  template <typename U>
+  requires std::derived_from<U, T> && std::same_as<
+      VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
+  RefArray(RefArray<U> const &array)
+      : m_container(m_convert<>(array.begin(), array.end())) {
+    m_raw.reserve(m_container.size());
+    for (auto &elem : m_container)
+      m_raw.template emplace_back(elem.get());
+  }
+
+  template <typename U>
+  requires std::derived_from<U, T> && std::same_as<
+      VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
+  RefArray(std::initializer_list<std::reference_wrapper<U>> array)
+      : m_container(array) {
     m_raw.reserve(m_container.size());
     for (auto &elem : m_container)
       m_raw.template emplace_back(elem.get());
   }
   // should be implicit to allow passing single object by reference
-  RefArray(T &single) : RefArray({single}) {}
+  RefArray(T &single) : RefArray(std::initializer_list<TRef>{single}) {}
 
   // Range-based for operators
 
@@ -410,6 +439,12 @@ public:
   bool empty() const { return m_container.empty(); }
 
 private:
+  template <typename Iter> std::vector<TRef> m_convert(Iter begin, Iter end) {
+    std::vector<TRef> ret;
+    ret.reserve(end - begin);
+    std::copy(begin, end, ret.begin());
+    return ret;
+  }
   std::vector<TRef> const m_container;
   std::vector<VType> m_raw;
 };
