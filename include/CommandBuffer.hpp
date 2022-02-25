@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "VertexBuffer.hpp"
+#include <optional>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -145,6 +146,10 @@ public:
 
     m_begin(flags, nullptr);
   }
+
+private:
+  std::optional<RenderPassCRef> m_currentPass;
+  uint32_t m_currentSubpass;
 };
 
 } // namespace vkw

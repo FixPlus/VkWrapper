@@ -393,6 +393,26 @@ public:
       m_raw.template emplace_back(elem.get());
   }
 
+  template <typename... Args, typename Extra, typename Extra1>
+  RefArray(Extra const &extra, Extra1 const &extra1, Args const &...args)
+      : m_container{TRef{static_cast<T const &>(args)}...,
+                    TRef{static_cast<T const &>(extra)},
+                    TRef{static_cast<T const &>(extra1)}} {
+    m_raw.reserve(m_container.size());
+    for (auto &elem : m_container)
+      m_raw.template emplace_back(elem.get());
+  }
+
+  template <typename... Args, typename Extra, typename Extra1>
+  RefArray(Extra &extra, Extra1 &extra1, Args &...args)
+      : m_container{TRef{static_cast<T &>(args)}...,
+                    TRef{static_cast<T &>(extra)},
+                    TRef{static_cast<T &>(extra1)}} {
+    m_raw.reserve(m_container.size());
+    for (auto &elem : m_container)
+      m_raw.template emplace_back(elem.get());
+  }
+
   template <typename U>
   requires std::derived_from<U, T> && std::same_as<
       VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
@@ -403,17 +423,20 @@ public:
       m_raw.template emplace_back(elem.get());
   }
 
+  RefArray(RefArray &&another)
+      : m_container(std::move(another.m_container)),
+        m_raw(std::move(another.m_raw)) {}
+  // should be implicit to allow passing single object by reference
   template <typename U>
   requires std::derived_from<U, T> && std::same_as<
       VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
-  RefArray(std::initializer_list<std::reference_wrapper<U>> array)
-      : m_container(array) {
-    m_raw.reserve(m_container.size());
-    for (auto &elem : m_container)
-      m_raw.template emplace_back(elem.get());
+  RefArray(U const &single) : m_container{single} {
+    m_raw.template emplace_back(single);
   }
-  // should be implicit to allow passing single object by reference
-  RefArray(T &single) : RefArray(std::initializer_list<TRef>{single}) {}
+
+  RefArray(TRef const &single) : m_container{single} {
+    m_raw.template emplace_back(single.get());
+  }
 
   // Range-based for operators
 
@@ -441,8 +464,9 @@ public:
 private:
   template <typename Iter> std::vector<TRef> m_convert(Iter begin, Iter end) {
     std::vector<TRef> ret;
-    ret.reserve(end - begin);
-    std::copy(begin, end, ret.begin());
+    for (auto it = begin; it != end; ++it) {
+      ret.template emplace_back(*it);
+    }
     return ret;
   }
   std::vector<TRef> const m_container;

@@ -14,7 +14,8 @@ public:
   SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo);
   SwapChain(SwapChain &&another)
       : m_device(another.m_device), m_createInfo(another.m_createInfo),
-        m_swapchain(another.m_swapchain) {
+        m_swapchain(another.m_swapchain), m_imageCount(another.m_imageCount),
+        m_currentImage(another.m_currentImage) {
     another.m_swapchain = VK_NULL_HANDLE;
   }
 

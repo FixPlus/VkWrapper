@@ -6,8 +6,7 @@
 
 namespace vkw {
 
-
-PipelineLayout::PipelineLayout(DeviceRef device): m_device(device){
+PipelineLayout::PipelineLayout(DeviceRef device) : m_device(device) {
   VkPipelineLayoutCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   createInfo.pNext = nullptr;
@@ -15,11 +14,12 @@ PipelineLayout::PipelineLayout(DeviceRef device): m_device(device){
   createInfo.setLayoutCount = 0;
   createInfo.pushConstantRangeCount = 0;
 
-  VK_CHECK_RESULT(vkCreatePipelineLayout(m_device.get(), &createInfo, nullptr, &m_layout))
+  VK_CHECK_RESULT(
+      vkCreatePipelineLayout(m_device.get(), &createInfo, nullptr, &m_layout))
 }
 
 PipelineLayout::~PipelineLayout() {
-  if(m_layout != VK_NULL_HANDLE)
+  if (m_layout == VK_NULL_HANDLE)
     return;
 
   vkDestroyPipelineLayout(m_device.get(), m_layout, nullptr);

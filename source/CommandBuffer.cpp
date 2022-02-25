@@ -125,6 +125,10 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
                                            bool useSecondary,
                                            uint32_t clearValuesCount,
                                            VkClearValue *pClearValues) {
+  if (m_currentPass.has_value())
+    throw Error("CommandBuffer record failed: called beginRenderPass() while "
+                "having another RenderPass active");
+
   VkRenderPassBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   beginInfo.pNext = nullptr;
@@ -138,16 +142,30 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
                        useSecondary
                            ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
                            : VK_SUBPASS_CONTENTS_INLINE);
+  m_currentPass = renderPass;
+  m_currentSubpass = 0;
 }
 
 void PrimaryCommandBuffer::nextSubpass(bool useSecondary) {
+  if (!m_currentPass.has_value())
+    throw Error("CommandBuffer record failed: called nextSubpass() while "
+                "having no RenderPass active");
+  if (m_currentPass.value().get().info().subpassCount() == m_currentSubpass)
+    throw Error("CommandBuffer record failed: call to nextSubpass() caused "
+                "subpass overflow");
+
   vkCmdNextSubpass(m_commandBuffer,
                    useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
                                 : VK_SUBPASS_CONTENTS_INLINE);
+  m_currentSubpass++;
 }
 
 void PrimaryCommandBuffer::endRenderPass() {
+  if (!m_currentPass.has_value())
+    throw Error("CommandBuffer record failed: called endRenderPass() while "
+                "having no RenderPass active");
   vkCmdEndRenderPass(m_commandBuffer);
+  m_currentPass.reset();
 }
 
 void PrimaryCommandBuffer::executeCommands(

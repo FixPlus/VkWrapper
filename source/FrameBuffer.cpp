@@ -34,18 +34,19 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   uint32_t counter = 0;
 
   // format match check
-  std::for_each(
-      renderPassAttachments.begin(), renderPassAttachments.end(),
-      [&viewIter, &counter](AttachmentDescription const &desc) {
-        if (desc.format() == viewIter->get().format()) {
-          throw Error("Attachment format mismatch on (" +
-                      std::to_string(counter) + ") index: FrameBuffer(" +
-                      std::to_string(viewIter->get().format()) +
-                      ")<->RenderPass(" + std::to_string(desc.format()) + ")");
-        }
-        ++counter;
-        ++viewIter;
-      });
+  if (std::any_of(renderPassAttachments.begin(), renderPassAttachments.end(),
+                  [&viewIter, &counter](AttachmentDescription const &desc) {
+                    return counter++,
+                           desc.format() != (viewIter++)->get().format();
+                  })) {
+    throw Error("Attachment format mismatch on (" + std::to_string(counter) +
+                ") index: FrameBuffer(" +
+                std::to_string((--viewIter)->get().format()) +
+                ")<->RenderPass(" +
+                std::to_string(
+                    (renderPassAttachments.begin() + counter)->get().format()) +
+                ")");
+  }
 
   counter = 0;
 

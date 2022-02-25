@@ -111,6 +111,8 @@ private:
 
 class RenderPassCreateInfo {
 public:
+  RenderPassCreateInfo(RenderPassCreateInfo &&another);
+  RenderPassCreateInfo(RenderPassCreateInfo const &another) = delete;
   RenderPassCreateInfo(AttachmentDescriptionConstRefArray attachments,
                        std::vector<SubpassDescriptionCRef> const &subpasses,
                        std::vector<SubpassDependency> const &dependencies,
@@ -144,7 +146,8 @@ public:
   RenderPass(Device &device, RenderPassCreateInfo createInfo);
 
   RenderPass(RenderPass &&another) noexcept
-      : m_parent(another.m_parent), m_createInfo(another.m_createInfo),
+      : m_parent(another.m_parent),
+        m_createInfo(std::move(another.m_createInfo)),
         m_renderPass(another.m_renderPass) {
     another.m_renderPass = VK_NULL_HANDLE;
   }

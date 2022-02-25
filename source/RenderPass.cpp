@@ -72,6 +72,27 @@ RenderPass::RenderPass(Device &device, RenderPassCreateInfo createInfo)
 
   vkDestroyRenderPass(m_parent, m_renderPass, nullptr);
 }
+
+RenderPassCreateInfo::RenderPassCreateInfo(RenderPassCreateInfo &&another)
+    : m_createInfo(another.m_createInfo),
+      m_attachments(std::move(another.m_attachments)),
+      m_subpasses(another.m_subpasses),
+      m_subpassesDescs(another.m_subpassesDescs),
+      m_dependencies(another.m_dependencies) {
+  m_createInfo.pSubpasses = m_subpasses.data();
+  m_createInfo.pAttachments = m_attachments;
+  m_createInfo.pDependencies = m_dependencies.data();
+  auto descIter = m_subpassesDescs.begin();
+  for (auto &subpass : m_subpasses) {
+    subpass.pInputAttachments = descIter->inputAttachments.data();
+    subpass.pColorAttachments = descIter->colorAttachments.data();
+    subpass.pDepthStencilAttachment = descIter->depthAttachment.has_value()
+                                          ? &descIter->depthAttachment.value()
+                                          : nullptr;
+    subpass.pPreserveAttachments = descIter->preserveAttachments.data();
+  }
+}
+
 RenderPassCreateInfo::RenderPassCreateInfo(
     AttachmentDescriptionConstRefArray attachments,
     const std::vector<SubpassDescriptionCRef> &subpasses,
@@ -89,7 +110,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found = std::find_if(
           attachments.begin(), attachments.end(),
           [&inputAttachment](AttachmentDescriptionCRef const &attachment) {
-            return &attachment == &inputAttachment.first;
+            return &attachment.get() == &inputAttachment.first.get();
           });
       if (found == attachments.end()) {
         throw Error("Subpass referenced unknown input attachment");
@@ -103,7 +124,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found = std::find_if(
           attachments.begin(), attachments.end(),
           [&colorAttachment](AttachmentDescriptionCRef const &attachment) {
-            return &attachment == &colorAttachment.first;
+            return &attachment.get() == &colorAttachment.first.get();
           });
       if (found == attachments.end()) {
         throw Error("Subpass referenced unknown color attachment");
@@ -120,7 +141,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found = std::find_if(
           attachments.begin(), attachments.end(),
           [&preserveAttachment](AttachmentDescriptionCRef const &attachment) {
-            return &attachment == &preserveAttachment;
+            return &attachment.get() == &preserveAttachment.get();
           });
       if (found == attachments.end()) {
         throw Error("Subpass referenced unknown attachment to preserve");
@@ -134,7 +155,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found = std::find_if(
           attachments.begin(), attachments.end(),
           [&depthAttachment](AttachmentDescriptionCRef const &attachment) {
-            return &attachment == &depthAttachment.first;
+            return &attachment.get() == &depthAttachment.first.get();
           });
       if (found == attachments.end()) {
         throw Error("Subpass referenced unknown depth/stencil attachment");
@@ -158,7 +179,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
                                        : nullptr;
     desc.pResolveAttachments = nullptr; // TODO: support MSAA
 
-    m_subpassesDescs.emplace_back(subpassDesc);
+    m_subpassesDescs.emplace_back(std::move(subpassDesc));
     m_subpasses.emplace_back(desc);
   }
 
@@ -170,7 +191,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found_src =
           std::find_if(subpasses.begin(), subpasses.end(),
                        [&srcSubpassRef](SubpassDescriptionCRef const &subpass) {
-                         return &subpass == &srcSubpassRef;
+                         return &subpass.get() == &srcSubpassRef.get();
                        });
       if (found_src == subpasses.end()) {
         throw Error("Subpass Dependency referenced bad subpass");
@@ -186,7 +207,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
       auto found_dst =
           std::find_if(subpasses.begin(), subpasses.end(),
                        [&dstSubpassRef](SubpassDescriptionCRef const &subpass) {
-                         return &subpass == &dstSubpassRef;
+                         return &subpass.get() == &dstSubpassRef.get();
                        });
       if (found_dst == subpasses.end()) {
         throw Error("Subpass Dependency referenced bad subpass");

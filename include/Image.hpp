@@ -363,8 +363,8 @@ private:
   friend CompatibleImageType;
   friend CompatibleArrayedImageType;
 
-  T_Image2DArrayView(Device const &device,
-                     CompatibleArrayedImageType const *image, VkFormat format,
+  T_Image2DArrayView(Device const &device, VkFormat format,
+                     CompatibleArrayedImageType const *image,
                      VkComponentMapping componentMapping,
                      uint32_t baseLayer = 0, uint32_t layerCount = 1,
                      uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
@@ -724,7 +724,7 @@ public:
                  VkImageViewCreateFlags flags = 0) {
     return *dynamic_cast<T_Image2DArrayView<U> *>(
         m_cacheView(std::unique_ptr<ImageView>{new T_Image2DArrayView<U>{
-            device, this, format, baseLayer, layerCount, componentMapping,
+            device, format, this, componentMapping, baseLayer, layerCount,
             baseMipLevel, mipLevelCount, flags}}));
   }
 
