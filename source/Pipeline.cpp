@@ -152,14 +152,26 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   m_colorBlendState.pNext = nullptr;
   m_colorBlendState.flags = 0;
-  m_colorBlendState.attachmentCount = 0;
+  m_colorBlendState.attachmentCount =
+      m_renderPass.get().info().subpassInfo(subpass).colorAttachments.size();
+  VkPipelineColorBlendAttachmentState state{};
+  state.blendEnable = VK_FALSE;
+  state.colorWriteMask = 0xf;
+  m_blendStates.resize(m_colorBlendState.attachmentCount, state);
+  m_colorBlendState.pAttachments = m_blendStates.data();
   m_colorBlendState.logicOpEnable = VK_FALSE;
 
   // for now will assume viewport state to be dynamic
-  VkDynamicState dynamicState = VK_DYNAMIC_STATE_VIEWPORT;
+  m_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+  m_viewportState.pNext = nullptr;
+  m_viewportState.flags = 0;
+  m_viewportState.viewportCount = m_viewportState.scissorCount = 1;
+  m_dynStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
+  m_dynStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+  m_dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   m_dynamicState.pNext = nullptr;
-  m_dynamicState.dynamicStateCount = 1;
-  m_dynamicState.pDynamicStates = &dynamicState;
+  m_dynamicState.dynamicStateCount = m_dynStates.size();
+  m_dynamicState.pDynamicStates = m_dynStates.data();
   m_dynamicState.flags = 0;
 
   m_createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -171,6 +183,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.pColorBlendState = &m_colorBlendState;
   m_createInfo.pDepthStencilState = &m_depthStencilState;
   m_createInfo.pDynamicState = &m_dynamicState;
+  m_createInfo.pViewportState = &m_viewportState;
   m_createInfo.pInputAssemblyState =
       &(m_inputAssemblyStateCreateInfo.
         operator const VkPipelineInputAssemblyStateCreateInfo &());
@@ -183,10 +196,8 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.pVertexInputState =
       &(m_vertexInputStateCreateInfo->
         operator const VkPipelineVertexInputStateCreateInfo &());
-  m_createInfo.pViewportState = nullptr;
 
-  std::vector<VkPipelineShaderStageCreateInfo> m_stages;
-  m_stages.reserve(shaderStages.size());
+  m_shaderStages.reserve(shaderStages.size());
   for (auto const &shader : shaderStages) {
     VkPipelineShaderStageCreateInfo ci{};
     ci.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -196,11 +207,11 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
     ci.pName = "main"; // TODO: allow configure shader/kernel entry point name
     ci.stage = shader.get().stage();
     ci.pSpecializationInfo = nullptr; // TODO: implement spec constant support
-    m_stages.push_back(ci);
+    m_shaderStages.push_back(ci);
   }
 
-  m_createInfo.stageCount = m_stages.size();
-  m_createInfo.pStages = m_stages.data();
+  m_createInfo.stageCount = m_shaderStages.size();
+  m_createInfo.pStages = m_shaderStages.data();
 }
 
 VertexShaderCRef GraphicsPipelineCreateInfo::m_find_vertex_shader(

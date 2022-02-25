@@ -17,23 +17,26 @@ public:
 
   PipelineLayout(DeviceRef device);
 
-  PipelineLayout(PipelineLayout const& another) = delete;
-  PipelineLayout const& operator=(PipelineLayout const& another) = delete;
+  PipelineLayout(PipelineLayout const &another) = delete;
+  PipelineLayout const &operator=(PipelineLayout const &another) = delete;
 
-  PipelineLayout(PipelineLayout&& another) noexcept: m_device(another.m_device), m_layout(another.m_layout), m_createInfo(another.m_createInfo){
+  PipelineLayout(PipelineLayout &&another) noexcept
+      : m_device(another.m_device), m_layout(another.m_layout),
+        m_createInfo(another.m_createInfo) {
     another.m_layout = VK_NULL_HANDLE;
   }
-  PipelineLayout& operator=(PipelineLayout&& another) noexcept{
-      m_device = another.m_device;
-      m_createInfo = another.m_createInfo;
-      m_layout = another.m_layout;
-      another.m_layout = VK_NULL_HANDLE;
-      return *this;
+  PipelineLayout &operator=(PipelineLayout &&another) noexcept {
+    m_device = another.m_device;
+    m_createInfo = another.m_createInfo;
+    m_layout = another.m_layout;
+    another.m_layout = VK_NULL_HANDLE;
+    return *this;
   };
 
   operator VkPipelineLayout() const { return m_layout; }
 
   virtual ~PipelineLayout();
+
 private:
   DeviceRef m_device;
   VkPipelineLayoutCreateInfo m_createInfo;
@@ -216,9 +219,10 @@ private:
 class RasterizationStateCreateInfo {
 public:
   RasterizationStateCreateInfo(
-      VkBool32 depthClampEnable = true, VkBool32 rasterizerDiscardEnable = true,
+      VkBool32 depthClampEnable = VK_FALSE,
+      VkBool32 rasterizerDiscardEnable = VK_FALSE,
       VkPolygonMode polygonMode = VK_POLYGON_MODE_FILL,
-      VkCullModeFlags cullMode = VK_CULL_MODE_BACK_BIT,
+      VkCullModeFlags cullMode = VK_CULL_MODE_NONE,
       VkFrontFace frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
       VkBool32 depthBiasEnable = false, float depthBiasConstantFactor = 0,
       float depthBiasClamp = 0, float depthBiasSlopeFactor = 0,
@@ -231,7 +235,7 @@ public:
   }
 
 private:
-  VkPipelineRasterizationStateCreateInfo m_createInfo;
+  VkPipelineRasterizationStateCreateInfo m_createInfo{};
 };
 class GraphicsPipelineCreateInfo {
 public:
@@ -242,6 +246,10 @@ public:
           NullVertexInputState(),
       InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {},
       RasterizationStateCreateInfo rasterizationStateCreateInfo = {});
+
+  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) = default;
+  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another) =
+      delete;
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 
@@ -277,6 +285,8 @@ private:
 
   // Shader Stages
 
+  std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
+
   VertexShaderCRef m_vertexShader; // Vertex Shader stage is obligatory
                                    // according to Vulkan Spec
   std::optional<FragmentShaderCRef> m_fragmentShader;
@@ -293,10 +303,15 @@ private:
   VkPipelineMultisampleStateCreateInfo m_multisampleState{};
   VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
   VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
-  VkPipelineDynamicStateCreateInfo m_dynamicState{};
+  std::vector<VkPipelineColorBlendAttachmentState> m_blendStates{};
 
   PipelineLayoutCRef m_layout;
   VkGraphicsPipelineCreateInfo m_createInfo{};
+
+  // dynamic states
+
+  VkPipelineDynamicStateCreateInfo m_dynamicState{};
+  std::vector<VkDynamicState> m_dynStates;
 };
 
 class ComputePipelineCreateInfo {

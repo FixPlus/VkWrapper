@@ -122,17 +122,22 @@ public:
 
   uint32_t subpassCount() const { return m_subpasses.size(); }
 
-  AttachmentDescriptionConstRefArray const &attachmentDescriptions() const {
-    return m_attachments;
-  }
-
-private:
   struct M_subpassDesc {
     std::vector<VkAttachmentReference> inputAttachments;
     std::vector<VkAttachmentReference> colorAttachments;
     std::optional<VkAttachmentReference> depthAttachment;
     std::vector<uint32_t> preserveAttachments;
   };
+
+  M_subpassDesc const &subpassInfo(uint32_t subpass) const {
+    return m_subpassesDescs.at(subpass);
+  }
+
+  AttachmentDescriptionConstRefArray const &attachmentDescriptions() const {
+    return m_attachments;
+  }
+
+private:
   AttachmentDescriptionConstRefArray m_attachments;
   std::vector<M_subpassDesc> m_subpassesDescs;
   std::vector<VkSubpassDescription> m_subpasses;

@@ -17,7 +17,8 @@ public:
   FrameBuffer(FrameBuffer &&another) noexcept
       : m_device(another.m_device), m_parent(another.m_parent),
         m_framebuffer(another.m_framebuffer),
-        m_views(std::move(another.m_views)) {
+        m_views(std::move(another.m_views)),
+        m_createInfo(another.m_createInfo) {
     another.m_framebuffer = VK_NULL_HANDLE;
   }
 
