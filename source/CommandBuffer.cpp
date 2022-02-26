@@ -1,6 +1,7 @@
 #include "CommandBuffer.hpp"
 #include "Buffer.hpp"
 #include "CommandPool.hpp"
+#include "DescriptorSet.hpp"
 #include "Device.hpp"
 #include "FrameBuffer.hpp"
 #include "Image.hpp"
@@ -117,6 +118,23 @@ void CommandBuffer::setViewports(std::vector<VkViewport> const &viewports,
                                  uint32_t firstViewport) {
   vkCmdSetViewport(m_commandBuffer, firstViewport, viewports.size(),
                    viewports.data());
+}
+void CommandBuffer::bindDescriptorSets(const PipelineLayout &layout,
+                                       VkPipelineBindPoint bindPoint,
+                                       DescriptorSetConstRefArray sets,
+                                       uint32_t firstSet) {
+  std::vector<uint32_t> dynamicOffsets{};
+  for (auto const &set : sets) {
+    auto offsetCount = set.get().dynamicOffsetsCount();
+    if (offsetCount == 0)
+      continue;
+    auto cachedSize = dynamicOffsets.size();
+    dynamicOffsets.resize(cachedSize + offsetCount);
+    set.get().copyOffsets(dynamicOffsets.data() + cachedSize);
+  }
+  vkCmdBindDescriptorSets(m_commandBuffer, bindPoint, layout, firstSet,
+                          sets.size(), sets, dynamicOffsets.size(),
+                          dynamicOffsets.data());
 }
 
 void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,

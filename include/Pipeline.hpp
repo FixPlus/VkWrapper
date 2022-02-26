@@ -11,27 +11,40 @@ namespace vkw {
 
 class PipelineLayout {
 public:
-  // TODO
-
-  // Constructor for empty Pipeline Layout
-
-  PipelineLayout(DeviceRef device);
+  PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
+  PipelineLayout(DeviceRef device,
+                 DescriptorSetLayoutConstRefArray const &setLayouts,
+                 VkPipelineLayoutCreateFlags flags = 0);
 
   PipelineLayout(PipelineLayout const &another) = delete;
   PipelineLayout const &operator=(PipelineLayout const &another) = delete;
 
   PipelineLayout(PipelineLayout &&another) noexcept
       : m_device(another.m_device), m_layout(another.m_layout),
-        m_createInfo(another.m_createInfo) {
+        m_createInfo(another.m_createInfo),
+        m_descriptorLayouts(std::move(another.m_descriptorLayouts)) {
     another.m_layout = VK_NULL_HANDLE;
   }
   PipelineLayout &operator=(PipelineLayout &&another) noexcept {
     m_device = another.m_device;
     m_createInfo = another.m_createInfo;
     m_layout = another.m_layout;
+    m_descriptorLayouts = std::move(another.m_descriptorLayouts);
     another.m_layout = VK_NULL_HANDLE;
     return *this;
   };
+
+  bool operator==(PipelineLayout const &rhs) const;
+
+  bool operator!=(PipelineLayout const &rhs) const { return !(*this == rhs); }
+
+  auto begin() { return m_descriptorLayouts.begin(); }
+
+  auto end() { return m_descriptorLayouts.begin(); }
+
+  auto begin() const { return m_descriptorLayouts.begin(); }
+
+  auto end() const { return m_descriptorLayouts.begin(); }
 
   operator VkPipelineLayout() const { return m_layout; }
 
@@ -39,7 +52,8 @@ public:
 
 private:
   DeviceRef m_device;
-  VkPipelineLayoutCreateInfo m_createInfo;
+  std::vector<DescriptorSetLayoutCRef> m_descriptorLayouts{};
+  VkPipelineLayoutCreateInfo m_createInfo{};
   VkPipelineLayout m_layout{};
 };
 
@@ -336,6 +350,8 @@ public:
         m_pipelineLayout(another.m_pipelineLayout) {
     another.m_pipeline = VK_NULL_HANDLE;
   }
+
+  PipelineLayout const &layout() const { return m_pipelineLayout; }
 
   virtual ~Pipeline();
 

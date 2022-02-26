@@ -15,6 +15,10 @@ class CommandBuffer;
 class SecondaryCommandBuffer;
 class PrimaryCommandBuffer;
 class CommandPool;
+class DescriptorPool;
+class DescriptorSet;
+class DescriptorSetLayout;
+class DescriptorSetLayoutBinding;
 class Device;
 class Fence;
 class FrameBuffer;
@@ -178,6 +182,20 @@ template <> struct TypeTraits<PrimaryCommandBuffer> {
 };
 
 template <> struct TypeTraits<CommandPool> { using VType = VkCommandPool; };
+
+template <> struct TypeTraits<DescriptorPool> {
+  using VType = VkDescriptorPool;
+};
+
+template <> struct TypeTraits<DescriptorSet> { using VType = VkDescriptorSet; };
+
+template <> struct TypeTraits<DescriptorSetLayout> {
+  using VType = VkDescriptorSetLayout;
+};
+
+template <> struct TypeTraits<DescriptorSetLayoutBinding> {
+  using VType = VkDescriptorSetLayoutBinding;
+};
 
 template <> struct TypeTraits<Device> { using VType = VkDevice; };
 
@@ -484,6 +502,9 @@ VKR_DECLARE_ARRAY_TYPES(BufferBase)
 VKR_DECLARE_ARRAY_TYPES(CommandBuffer)
 VKR_DECLARE_ARRAY_TYPES(SecondaryCommandBuffer)
 VKR_DECLARE_ARRAY_TYPES(PrimaryCommandBuffer)
+VKR_DECLARE_ARRAY_TYPES(DescriptorSet)
+VKR_DECLARE_ARRAY_TYPES(DescriptorSetLayout)
+VKR_DECLARE_ARRAY_TYPES(DescriptorSetLayoutBinding)
 VKR_DECLARE_ARRAY_TYPES(Device)
 VKR_DECLARE_ARRAY_TYPES(Fence)
 VKR_DECLARE_ARRAY_TYPES(FrameBuffer)
@@ -582,6 +603,10 @@ VKR_DECLARE_REF_TYPES(BufferBase)
 VKR_DECLARE_REF_TYPES(CommandBuffer)
 VKR_DECLARE_REF_TYPES(SecondaryCommandBuffer)
 VKR_DECLARE_REF_TYPES(PrimaryCommandBuffer)
+VKR_DECLARE_REF_TYPES(DescriptorPool)
+VKR_DECLARE_REF_TYPES(DescriptorSet)
+VKR_DECLARE_REF_TYPES(DescriptorSetLayout)
+VKR_DECLARE_REF_TYPES(DescriptorSetLayoutBinding)
 VKR_DECLARE_REF_TYPES(Device)
 VKR_DECLARE_REF_TYPES(Fence)
 VKR_DECLARE_REF_TYPES(FrameBuffer)

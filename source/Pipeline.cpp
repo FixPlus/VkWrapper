@@ -1,4 +1,5 @@
 #include "Pipeline.hpp"
+#include "DescriptorSet.hpp"
 #include "Device.hpp"
 #include "RenderPass.hpp"
 #include "Shader.hpp"
@@ -6,16 +7,37 @@
 
 namespace vkw {
 
-PipelineLayout::PipelineLayout(DeviceRef device) : m_device(device) {
-  VkPipelineLayoutCreateInfo createInfo{};
-  createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  createInfo.pNext = nullptr;
-  createInfo.flags = 0;
-  createInfo.setLayoutCount = 0;
-  createInfo.pushConstantRangeCount = 0;
+PipelineLayout::PipelineLayout(DeviceRef device,
+                               VkPipelineLayoutCreateFlags flags)
+    : m_device(device) {
+  m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.flags = flags;
+  m_createInfo.setLayoutCount = 0;
+  m_createInfo.pushConstantRangeCount = 0;
 
   VK_CHECK_RESULT(
-      vkCreatePipelineLayout(m_device.get(), &createInfo, nullptr, &m_layout))
+      vkCreatePipelineLayout(m_device.get(), &m_createInfo, nullptr, &m_layout))
+}
+PipelineLayout::PipelineLayout(
+    DeviceRef device, DescriptorSetLayoutConstRefArray const &setLayouts,
+    VkPipelineLayoutCreateFlags flags)
+    : m_device(device) {
+  m_descriptorLayouts.reserve(setLayouts.size());
+
+  for (auto const &layout : setLayouts) {
+    m_descriptorLayouts.emplace_back(layout);
+  }
+
+  m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.flags = flags;
+  m_createInfo.setLayoutCount = setLayouts.size();
+  m_createInfo.pSetLayouts = setLayouts;
+  m_createInfo.pushConstantRangeCount = 0; // TODO
+
+  VK_CHECK_RESULT(
+      vkCreatePipelineLayout(m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 
 PipelineLayout::~PipelineLayout() {
@@ -23,6 +45,16 @@ PipelineLayout::~PipelineLayout() {
     return;
 
   vkDestroyPipelineLayout(m_device.get(), m_layout, nullptr);
+}
+bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
+  if (m_createInfo.flags != rhs.m_createInfo.flags ||
+      m_descriptorLayouts.size() != rhs.m_descriptorLayouts.size())
+    return false;
+  auto rhsLayoutIter = rhs.m_descriptorLayouts.begin();
+  return std::all_of(m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
+                     [&rhsLayoutIter](DescriptorSetLayout const &layout) {
+                       return layout == *(rhsLayoutIter++);
+                     });
 }
 
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)

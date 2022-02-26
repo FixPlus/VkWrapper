@@ -76,6 +76,10 @@ public:
   void bindGraphicsPipeline(GraphicsPipeline const &pipeline);
   void bindComputePipeline(ComputePipeline const &pipeline);
 
+  void bindDescriptorSets(PipelineLayout const &layout,
+                          VkPipelineBindPoint bindPoint,
+                          DescriptorSetConstRefArray sets, uint32_t firstSet);
+
   /** Draw commands */
 
   void draw(uint32_t vertexCount, uint32_t instanceCount = 0,
