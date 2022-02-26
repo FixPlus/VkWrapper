@@ -2,6 +2,7 @@
 #define VKWRAPPER_DESCRIPTORSET_HPP
 
 #include "Common.hpp"
+#include "UniformBuffer.hpp"
 
 namespace vkw {
 
@@ -117,6 +118,15 @@ public:
     return *this;
   };
 
+  template <typename T>
+  void write(uint32_t binding, UniformBuffer<T> const &uniformBuffer) {
+    VkDescriptorBufferInfo info{};
+    info.offset = 0;
+    info.range = sizeof(T);
+    info.buffer = uniformBuffer.operator const vkw::BufferBase &();
+    m_write_uniformBuffer(binding, info);
+  }
+
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
 
   void copyOffsets(uint32_t *pOffsets) const {
@@ -138,6 +148,9 @@ protected:
   void m_write(uint32_t writeCount, VkWriteDescriptorSet *pWrites);
 
 private:
+  void m_write_uniformBuffer(uint32_t binding,
+                             VkDescriptorBufferInfo bufferInfo);
+
   struct M_DynamicOffset {
     uint32_t binding;
     uint32_t offset{0};

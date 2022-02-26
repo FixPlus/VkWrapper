@@ -99,4 +99,18 @@ void DescriptorSet::setDynamicOffset(uint32_t binding, uint32_t offset) {
   found->offset = offset;
 }
 
+void DescriptorSet::m_write_uniformBuffer(uint32_t binding,
+                                          VkDescriptorBufferInfo bufferInfo) {
+  VkWriteDescriptorSet writeSet{};
+  writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeSet.pNext = nullptr;
+  writeSet.descriptorCount = 1;
+  writeSet.dstSet = m_set;
+  writeSet.dstArrayElement = 0;
+  writeSet.pBufferInfo = &bufferInfo;
+  writeSet.dstBinding = binding;
+  writeSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  m_write(1, &writeSet);
+}
+
 } // namespace vkw
