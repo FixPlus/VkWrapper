@@ -127,6 +127,13 @@ public:
     m_write_uniformBuffer(binding, info);
   }
 
+  void write(uint32_t binding, ColorImageView const &image,
+             VkImageLayout layout, Sampler const &sampler);
+  void write(uint32_t binding, DepthImageView const &image,
+             VkImageLayout layout, Sampler const &sampler);
+  void write(uint32_t binding, StencilImageView const &image,
+             VkImageLayout layout, Sampler const &sampler);
+
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
 
   void copyOffsets(uint32_t *pOffsets) const {
@@ -148,6 +155,8 @@ protected:
   void m_write(uint32_t writeCount, VkWriteDescriptorSet *pWrites);
 
 private:
+  void m_write_combined_image_sampler(uint32_t binding,
+                                      VkDescriptorImageInfo imageInfo);
   void m_write_uniformBuffer(uint32_t binding,
                              VkDescriptorBufferInfo bufferInfo);
 

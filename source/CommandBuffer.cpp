@@ -61,6 +61,15 @@ void CommandBuffer::copyBufferToImage(
                          regions.data());
 }
 
+void CommandBuffer::copyImageToImage(AllocatedImage const &src,
+                                     VkImageLayout srcLayout,
+                                     AllocatedImage const &dst,
+                                     VkImageLayout dstLayout,
+                                     std::vector<VkImageCopy> const &regions) {
+  vkCmdCopyImage(m_commandBuffer, src, srcLayout, dst, dstLayout,
+                 regions.size(), regions.data());
+}
+
 void CommandBuffer::pipelineBarrier(
     VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
     const std::vector<VkMemoryBarrier> &memBarriers,

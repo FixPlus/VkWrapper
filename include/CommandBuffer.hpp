@@ -33,6 +33,10 @@ public:
                          BufferBase const &dst,
                          std::vector<VkBufferImageCopy> const &regions);
 
+  void copyImageToImage(AllocatedImage const &src, VkImageLayout srcLayout,
+                        AllocatedImage const &dst, VkImageLayout dstLayout,
+                        std::vector<VkImageCopy> const &regions);
+
   /** Synchronization */
   void
   pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,

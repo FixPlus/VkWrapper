@@ -90,7 +90,16 @@ protected:
   }
 };
 
-class DepthStencilImageView : public StencilImageView, public DepthImageView {};
+class DepthStencilImageView : virtual public ImageView {
+public:
+  using ImageAspect = DepthStencilImageInterface;
+
+protected:
+  DepthStencilImageView() {
+    m_createInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    m_createInfo.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_DEPTH_BIT;
+  }
+};
 
 class Image1DView : virtual public ImageView {
 public:
@@ -786,6 +795,12 @@ protected:
 
 /** ********************** Complete Image Types. ****************************/
 
+/**
+ *                            Swap chain Image
+ *     This class represents the image retrieved from swap chain.
+ *
+ */
+
 class SwapChainImage : public ColorImage2DArrayInterface {
 public:
 private:
@@ -799,7 +814,44 @@ private:
     m_createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     m_createInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
     m_createInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    m_createInfo.usage = usage;
   }
+};
+
+/**
+ *                            Staging Image
+ *     This class represents the image with linear tiling layout.
+ *     In Vulkan, images with such tiling are strongly limited and are
+ *     capable only of transfer in/out operations. However this is the only
+ *     type of images that can be mapped to host memory and be filled directly.
+ *
+ */
+class StagingImage : public ColorImage2DInterface,
+                     public ImageRestInterface,
+                     private AllocatedImage {
+public:
+  StagingImage(VmaAllocator allocator, VkFormat colorFormat, uint32_t width,
+               uint32_t height)
+      : ColorImage2DInterface(colorFormat, width, height),
+        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, 1,
+                           VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                           0, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_LINEAR,
+                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+        AllocatedImage(allocator,
+                       {.usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
+                        .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}) {
+  }
+
+  unsigned char *map() {
+    return static_cast<unsigned char *>(AllocatedImage::map());
+  }
+
+  void unmap() { AllocatedImage::unmap(); }
+
+  void flush() { AllocatedImage::flush(0, VK_WHOLE_SIZE); }
+
+  void invalidate() { AllocatedImage::invalidate(0, VK_WHOLE_SIZE); }
 };
 
 class ColorImage2D : public ColorImage2DInterface,
@@ -808,9 +860,10 @@ class ColorImage2D : public ColorImage2DInterface,
 public:
   ColorImage2D(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo,
                VkFormat format, uint32_t width, uint32_t height,
-               VkImageUsageFlags usage, VkImageCreateFlags flags = 0)
+               uint32_t mipLevels, VkImageUsageFlags usage,
+               VkImageCreateFlags flags = 0)
       : ColorImage2DInterface(format, width, height),
-        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, 1, usage, flags,
+        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
                            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
         AllocatedImage(allocator, allocCreateInfo) {}
