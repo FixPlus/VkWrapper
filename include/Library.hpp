@@ -28,7 +28,7 @@ class Library final {
 public:
   Library();
 
-  ~Library() = default;
+  ~Library();
 
 #define VKW_VK_GLOBAL_FUNCTION_1_0(X) PFN_vk##X vk##X;
 #define VKW_VK_GLOBAL_FUNCTION_1_1(X) PFN_vk##X vk##X;

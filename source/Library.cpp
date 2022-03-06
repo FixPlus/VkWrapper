@@ -31,5 +31,6 @@ ApiVersion Library::instanceAPIVersion() const {
   this->vkEnumerateInstanceVersion(&encoded);
   return ApiVersion{encoded};
 }
+Library::~Library() {}
 
 } // namespace vkw
