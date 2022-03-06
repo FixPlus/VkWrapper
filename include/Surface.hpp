@@ -7,12 +7,17 @@
 namespace vkw {
 
 class Instance;
+class VkSurfaceKHRExtension;
 
 class Surface final {
 public:
+#ifdef _WIN32
+  Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd);
+#endif
   Surface(Surface const &another) = delete;
   Surface(Surface &&another) noexcept
-      : m_parent(another.m_parent), m_surface(another.m_surface) {
+      : m_parent(another.m_parent), m_surface(another.m_surface),
+        m_surface_ext(another.m_surface_ext) {
     another.m_surface = VK_NULL_HANDLE;
   }
   Surface const &operator=(Surface const &another) = delete;
@@ -34,12 +39,9 @@ public:
   ~Surface();
 
 private:
-  Surface(Instance &parent, VkSurfaceKHR surface)
-      : m_parent(parent), m_surface(surface){};
   VkSurfaceKHR m_surface;
+  VkSurfaceKHRExtension const *m_surface_ext{};
   Instance &m_parent;
-
-  friend class Instance;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_SURFACE_HPP

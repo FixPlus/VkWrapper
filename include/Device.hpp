@@ -1,11 +1,15 @@
 #ifndef VKRENDERER_DEVICE_HPP
 #define VKRENDERER_DEVICE_HPP
 
+#include "Exception.hpp"
+#include "Library.hpp"
+#include "SymbolTable.hpp"
 #include "vma/vk_mem_alloc.h"
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -70,6 +74,21 @@ public:
     return m_queueFamilyProperties;
   }
 
+  DeviceCore_1_0 const &core_1_0() const { return *m_coreDeviceSymbols; }
+
+  DeviceCore_1_1 const &core_1_1() const {
+    if (m_apiVer < ApiVersion{1, 1, 0})
+      throw Error{"Cannot use core 1.1 vulkan symbols. Version loaded: " +
+                  std::string(m_apiVer)};
+    return *static_cast<DeviceCore_1_1 const *>(m_coreDeviceSymbols.get());
+  }
+
+  DeviceExtensionBase const *getExtension(std::string const &extName) const {
+    if (!m_extensions.contains(extName))
+      return nullptr;
+    return m_extensions.at(extName).get();
+  }
+
   void waitIdle();
 
 private:
@@ -104,6 +123,11 @@ private:
   std::vector<std::pair<uint32_t, uint32_t>> m_available_queues;
 
   std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
+
+  std::unique_ptr<DeviceCore_1_0> m_coreDeviceSymbols;
+  std::unordered_map<std::string, std::unique_ptr<DeviceExtensionBase>>
+      m_extensions;
+  ApiVersion m_apiVer;
 };
 } // namespace vkw
 #endif // VKRENDERER_DEVICE_HPP

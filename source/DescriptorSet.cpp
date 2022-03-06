@@ -58,13 +58,14 @@ DescriptorSetLayout::DescriptorSetLayout(
   m_createInfo.bindingCount = bindings.size();
   m_createInfo.pBindings = bindings;
 
-  VK_CHECK_RESULT(vkCreateDescriptorSetLayout(m_device.get(), &m_createInfo,
-                                              nullptr, &m_layout))
+  VK_CHECK_RESULT(m_device.get().core_1_0().vkCreateDescriptorSetLayout(
+      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 DescriptorSetLayout::~DescriptorSetLayout() {
   if (m_layout == VK_NULL_HANDLE)
     return;
-  vkDestroyDescriptorSetLayout(m_device.get(), m_layout, nullptr);
+  m_device.get().core_1_0().vkDestroyDescriptorSetLayout(m_device.get(),
+                                                         m_layout, nullptr);
 }
 
 DescriptorSet::DescriptorSet(DescriptorPool &pool,
@@ -86,8 +87,8 @@ void DescriptorSet::m_write(uint32_t writeCount,
   for (uint32_t i = 0; i < writeCount; ++i)
     pWrites[i].dstSet = m_set;
 
-  vkUpdateDescriptorSets(m_pool.get().device(), writeCount, pWrites, 0,
-                         nullptr);
+  m_pool.get().device().core_1_0().vkUpdateDescriptorSets(
+      m_pool.get().device(), writeCount, pWrites, 0, nullptr);
 }
 void DescriptorSet::setDynamicOffset(uint32_t binding, uint32_t offset) {
   auto found = std::find_if(m_dynamicOffsets.begin(), m_dynamicOffsets.end(),

@@ -2,7 +2,9 @@
 #include "Buffer.hpp"
 #include "Instance.hpp"
 #include "Queue.hpp"
+#include "SymbolTable.hpp"
 #include "Utils.hpp"
+#include <cassert>
 #include <iostream>
 #include <vector>
 
@@ -31,6 +33,10 @@ Device::Device(Device &&another) : m_parent(another.m_parent) {
   m_allocator = another.m_allocator;
 
   m_available_queues = another.m_available_queues;
+
+  m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
+
+  m_extensions = std::move(another.m_extensions);
 
   another.m_device = VK_NULL_HANDLE;
 }
@@ -87,29 +93,31 @@ Device::Device(Instance &parent, uint32_t id) : m_parent(parent) {
 
   // Store Properties features, limits and properties of the physical device for
   // later use Device properties also contain limits and sparse properties
-  vkGetPhysicalDeviceProperties(ph_device, &m_properties);
+  m_parent.core_1_0().vkGetPhysicalDeviceProperties(ph_device, &m_properties);
   // Features should be checked by the examples before using them
-  vkGetPhysicalDeviceFeatures(ph_device, &m_features);
+  m_parent.core_1_0().vkGetPhysicalDeviceFeatures(ph_device, &m_features);
   // Memory properties are used regularly for creating all kinds of buffers
-  vkGetPhysicalDeviceMemoryProperties(ph_device, &m_memoryProperties);
+  m_parent.core_1_0().vkGetPhysicalDeviceMemoryProperties(ph_device,
+                                                          &m_memoryProperties);
   // Queue family properties, used for setting up requested queues upon device
   // creation
   uint32_t queueFamilyCount;
-  vkGetPhysicalDeviceQueueFamilyProperties(ph_device, &queueFamilyCount,
-                                           nullptr);
+  m_parent.core_1_0().vkGetPhysicalDeviceQueueFamilyProperties(
+      ph_device, &queueFamilyCount, nullptr);
 
   m_queueFamilyProperties.resize(queueFamilyCount);
-  vkGetPhysicalDeviceQueueFamilyProperties(ph_device, &queueFamilyCount,
-                                           m_queueFamilyProperties.data());
+  m_parent.core_1_0().vkGetPhysicalDeviceQueueFamilyProperties(
+      ph_device, &queueFamilyCount, m_queueFamilyProperties.data());
 
   m_info.name = m_properties.deviceName;
 
   // Get list of supported extensions
   uint32_t extCount = 0;
-  vkEnumerateDeviceExtensionProperties(ph_device, nullptr, &extCount, nullptr);
+  m_parent.core_1_0().vkEnumerateDeviceExtensionProperties(ph_device, nullptr,
+                                                           &extCount, nullptr);
   if (extCount > 0) {
     std::vector<VkExtensionProperties> extensions(extCount);
-    if (vkEnumerateDeviceExtensionProperties(
+    if (m_parent.core_1_0().vkEnumerateDeviceExtensionProperties(
             ph_device, nullptr, &extCount, &extensions.front()) == VK_SUCCESS) {
       for (auto ext : extensions) {
         m_supportedExtensions.emplace_back(ext.extensionName);
@@ -210,14 +218,57 @@ Device::Device(Instance &parent, uint32_t id) : m_parent(parent) {
     deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
   }
 
-  VK_CHECK_RESULT(
-      vkCreateDevice(ph_device, &deviceCreateInfo, nullptr, &m_device))
+  VK_CHECK_RESULT(m_parent.core_1_0().vkCreateDevice(
+      ph_device, &deviceCreateInfo, nullptr, &m_device))
+
+  m_coreDeviceSymbols = std::make_unique<DeviceCore_1_0>(
+      m_parent.core_1_0().vkGetDeviceProcAddr, m_device);
+
+  for (auto &extName : deviceExtensions) {
+    std::unique_ptr<DeviceExtensionBase> ext;
+    auto initializer = m_deviceExtInitializers.find(extName);
+    assert(initializer != m_deviceExtInitializers.end() &&
+           "Bad extension name");
+    m_extensions.emplace(
+        extName,
+        std::unique_ptr<DeviceExtensionBase>(initializer->second->initialize(
+            m_parent.core_1_0().vkGetDeviceProcAddr, m_device)));
+  }
+
+  m_apiVer = {1, 0, 0};
 
   VmaAllocatorCreateInfo allocatorInfo = {};
   allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
   allocatorInfo.physicalDevice = ph_device;
   allocatorInfo.device = m_device;
   allocatorInfo.instance = parent;
+
+  VmaVulkanFunctions vmaVulkanFunctions;
+  vmaVulkanFunctions.vkCmdCopyBuffer = core_1_0().vkCmdCopyBuffer;
+  vmaVulkanFunctions.vkAllocateMemory = core_1_0().vkAllocateMemory;
+  vmaVulkanFunctions.vkBindBufferMemory = core_1_0().vkBindBufferMemory;
+  vmaVulkanFunctions.vkBindImageMemory = core_1_0().vkBindImageMemory;
+  vmaVulkanFunctions.vkCreateBuffer = core_1_0().vkCreateBuffer;
+  vmaVulkanFunctions.vkCreateImage = core_1_0().vkCreateImage;
+  vmaVulkanFunctions.vkDestroyBuffer = core_1_0().vkDestroyBuffer;
+  vmaVulkanFunctions.vkDestroyImage = core_1_0().vkDestroyImage;
+  vmaVulkanFunctions.vkFlushMappedMemoryRanges =
+      core_1_0().vkFlushMappedMemoryRanges;
+  vmaVulkanFunctions.vkFreeMemory = core_1_0().vkFreeMemory;
+  vmaVulkanFunctions.vkGetBufferMemoryRequirements =
+      core_1_0().vkGetBufferMemoryRequirements;
+  vmaVulkanFunctions.vkGetImageMemoryRequirements =
+      core_1_0().vkGetImageMemoryRequirements;
+  vmaVulkanFunctions.vkGetPhysicalDeviceMemoryProperties =
+      m_parent.core_1_0().vkGetPhysicalDeviceMemoryProperties;
+  vmaVulkanFunctions.vkGetPhysicalDeviceProperties =
+      m_parent.core_1_0().vkGetPhysicalDeviceProperties;
+  vmaVulkanFunctions.vkInvalidateMappedMemoryRanges =
+      core_1_0().vkInvalidateMappedMemoryRanges;
+  vmaVulkanFunctions.vkMapMemory = core_1_0().vkMapMemory;
+  vmaVulkanFunctions.vkUnmapMemory = core_1_0().vkUnmapMemory;
+
+  allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
   VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &m_allocator))
 }
@@ -229,7 +280,7 @@ Device::~Device() {
 
   vmaDestroyAllocator(m_allocator);
 
-  vkDestroyDevice(m_device, nullptr);
+  core_1_0().vkDestroyDevice(m_device, nullptr);
 }
 
 std::shared_ptr<Queue> Device::getQueue(uint32_t queueFamilyIndex,
@@ -260,5 +311,7 @@ Device::createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
       BufferBase(m_allocator, createInfo, allocCreateInfo));
 }
 
-void Device::waitIdle() { VK_CHECK_RESULT(vkDeviceWaitIdle(m_device)) }
-} // namespace vkr
+void Device::waitIdle() {
+  VK_CHECK_RESULT(core_1_0().vkDeviceWaitIdle(m_device))
+}
+} // namespace vkw

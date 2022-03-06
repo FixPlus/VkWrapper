@@ -2,13 +2,15 @@
 #include "Device.hpp"
 #include "Exception.hpp"
 #include "Utils.hpp"
-#include <vulkan/vulkan.h>
+#include "loader/DynamicLoader.hpp"
+#include <cassert>
 
 namespace vkw {
 
-Instance::Instance(std::vector<std::string> reqExtensions,
+Instance::Instance(Library const &library,
+                   std::vector<std::string> reqExtensions,
                    bool enableValidation)
-    : m_validation(enableValidation), m_extensions(std::move(reqExtensions)) {
+    : m_validation(enableValidation), m_vulkanLib(library) {
   VkApplicationInfo appInfo{};
 
   // TODO: all this information should be filled externally using wrapper
@@ -21,12 +23,13 @@ Instance::Instance(std::vector<std::string> reqExtensions,
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.apiVersion = VK_API_VERSION_1_0;
 
-  std::vector<const char *> reqExtensionsNames{};
-  reqExtensionsNames.resize(m_extensions.size(), nullptr);
+  m_apiVer = {1, 0, 0};
 
-  std::transform(m_extensions.begin(), m_extensions.end(),
-                 reqExtensionsNames.begin(),
-                 [](std::string const &string) { return string.c_str(); });
+  std::vector<const char *> reqExtensionsNames{};
+  reqExtensionsNames.reserve(reqExtensions.size());
+
+  for (auto &ext : reqExtensions)
+    reqExtensionsNames.emplace_back(ext.c_str());
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -35,10 +38,11 @@ Instance::Instance(std::vector<std::string> reqExtensions,
   if (m_validation) {
     const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
     uint32_t instanceLayerCount;
-    vkEnumerateInstanceLayerProperties(&instanceLayerCount, nullptr);
+    m_vulkanLib.get().vkEnumerateInstanceLayerProperties(&instanceLayerCount,
+                                                         nullptr);
     std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerCount);
-    vkEnumerateInstanceLayerProperties(&instanceLayerCount,
-                                       instanceLayerProperties.data());
+    m_vulkanLib.get().vkEnumerateInstanceLayerProperties(
+        &instanceLayerCount, instanceLayerProperties.data());
     bool validationLayerPresent = false;
     for (VkLayerProperties layer : instanceLayerProperties) {
       if (strcmp(layer.layerName, validationLayerName) == 0) {
@@ -63,7 +67,22 @@ Instance::Instance(std::vector<std::string> reqExtensions,
   createInfo.enabledExtensionCount = reqExtensionsNames.size();
   createInfo.ppEnabledExtensionNames = reqExtensionsNames.data();
 
-  VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &m_instance))
+  VK_CHECK_RESULT(
+      m_vulkanLib.get().vkCreateInstance(&createInfo, nullptr, &m_instance))
+
+  m_coreInstanceSymbols = std::make_unique<InstanceCore_1_0>(
+      m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
+
+  for (auto &extName : reqExtensionsNames) {
+    std::unique_ptr<InstanceExtensionBase> ext;
+    auto initializer = m_instanceExtInitializers.find(extName);
+    assert(initializer != m_instanceExtInitializers.end() &&
+           "Bad extension name");
+    m_extensions.emplace(
+        extName,
+        std::unique_ptr<InstanceExtensionBase>(initializer->second->initialize(
+            m_vulkanLib.get().vkGetInstanceProcAddr, m_instance)));
+  }
 
   std::cout << "Vulkan initialized successfully" << std::endl;
 }
@@ -76,31 +95,27 @@ Device *Instance::createDevice(uint32_t id) {
       .first->second.get();
 }
 
-std::unique_ptr<Surface>
-Instance::createSurface(SurfaceCreator surfaceCreator) {
-
-  checkExtensions(VK_KHR_SURFACE_EXTENSION_NAME);
-
-  return std::make_unique<Surface>(Surface(*this, surfaceCreator(*this)));
-}
-
 std::vector<DeviceInfo> Instance::enumerateAvailableDevices() const {
   std::vector<DeviceInfo> ret;
   uint32_t deviceCount = 0;
-  vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+  core_1_0().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
   if (deviceCount == 0)
     return ret;
 
   std::vector<VkPhysicalDevice> availableDevices(deviceCount);
-  vkEnumeratePhysicalDevices(m_instance, &deviceCount, availableDevices.data());
+  core_1_0().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
+                                        availableDevices.data());
 
   uint32_t id = 0;
   ret.resize(availableDevices.size());
 
+  auto p_vkGetPhysicalDeviceProperties =
+      core_1_0().vkGetPhysicalDeviceProperties;
+
   std::transform(availableDevices.begin(), availableDevices.end(), ret.begin(),
-                 [&id](VkPhysicalDevice d) {
+                 [&id, p_vkGetPhysicalDeviceProperties](VkPhysicalDevice d) {
                    VkPhysicalDeviceProperties properties;
-                   vkGetPhysicalDeviceProperties(d, &properties);
+                   p_vkGetPhysicalDeviceProperties(d, &properties);
                    return DeviceInfo{id++, properties.deviceName, d};
                  });
 
@@ -109,7 +124,8 @@ std::vector<DeviceInfo> Instance::enumerateAvailableDevices() const {
 
 Instance::Instance(Instance &&another) noexcept
     : m_instance(another.m_instance), m_validation(another.m_validation),
-      m_extensions(another.m_extensions) {
+      m_extensions(std::move(another.m_extensions)),
+      m_vulkanLib(another.m_vulkanLib) {
   m_devices.swap(another.m_devices);
   another.m_instance = VK_NULL_HANDLE;
 }
@@ -117,7 +133,7 @@ Instance::Instance(Instance &&another) noexcept
 Instance &Instance::operator=(Instance &&another) noexcept {
   m_instance = another.m_instance;
   m_validation = another.m_validation;
-  m_extensions = another.m_extensions;
+  m_extensions = std::move(another.m_extensions);
   m_devices.swap(another.m_devices);
   another.m_instance = VK_NULL_HANDLE;
 
@@ -130,8 +146,7 @@ Instance::~Instance() {
 
   m_devices.clear();
 
-  vkDestroyInstance(m_instance, nullptr);
-
+  core_1_0().vkDestroyInstance(m_instance, nullptr);
 }
 
-} // namespace vkr
+} // namespace vkw

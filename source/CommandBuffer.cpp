@@ -20,8 +20,8 @@ CommandBuffer::CommandBuffer(CommandPool &pool,
   allocInfo.commandBufferCount = 1;
   allocInfo.commandPool = pool;
 
-  VK_CHECK_RESULT(
-      vkAllocateCommandBuffers(m_device, &allocInfo, &m_commandBuffer))
+  VK_CHECK_RESULT(m_device.core_1_0().vkAllocateCommandBuffers(
+      m_device, &allocInfo, &m_commandBuffer))
 }
 
 uint32_t CommandBuffer::queueFamily() const {
@@ -37,13 +37,14 @@ void CommandBuffer::m_begin(
   beginInfo.pInheritanceInfo = inheritanceInfo;
   beginInfo.pNext = nullptr;
 
-  VK_CHECK_RESULT(vkBeginCommandBuffer(m_commandBuffer, &beginInfo))
+  VK_CHECK_RESULT(
+      m_device.core_1_0().vkBeginCommandBuffer(m_commandBuffer, &beginInfo))
 
   m_recording = true;
 }
 
 void CommandBuffer::end() {
-  VK_CHECK_RESULT(vkEndCommandBuffer(m_commandBuffer))
+  VK_CHECK_RESULT(m_device.core_1_0().vkEndCommandBuffer(m_commandBuffer))
   m_recording = false;
   m_executable = true;
 }
@@ -51,14 +52,15 @@ void CommandBuffer::end() {
 void CommandBuffer::copyBufferToBuffer(
     const BufferBase &src, const BufferBase &dst,
     const std::vector<VkBufferCopy> &regions) {
-  vkCmdCopyBuffer(m_commandBuffer, src, dst, regions.size(), regions.data());
+  m_device.core_1_0().vkCmdCopyBuffer(m_commandBuffer, src, dst, regions.size(),
+                                      regions.data());
 }
 
 void CommandBuffer::copyBufferToImage(
     const BufferBase &src, const AllocatedImage &dst, VkImageLayout layout,
     const std::vector<VkBufferImageCopy> &regions) {
-  vkCmdCopyBufferToImage(m_commandBuffer, src, dst, layout, regions.size(),
-                         regions.data());
+  m_device.core_1_0().vkCmdCopyBufferToImage(m_commandBuffer, src, dst, layout,
+                                             regions.size(), regions.data());
 }
 
 void CommandBuffer::copyImageToImage(AllocatedImage const &src,
@@ -66,8 +68,8 @@ void CommandBuffer::copyImageToImage(AllocatedImage const &src,
                                      AllocatedImage const &dst,
                                      VkImageLayout dstLayout,
                                      std::vector<VkImageCopy> const &regions) {
-  vkCmdCopyImage(m_commandBuffer, src, srcLayout, dst, dstLayout,
-                 regions.size(), regions.data());
+  m_device.core_1_0().vkCmdCopyImage(m_commandBuffer, src, srcLayout, dst,
+                                     dstLayout, regions.size(), regions.data());
 }
 
 void CommandBuffer::pipelineBarrier(
@@ -76,57 +78,63 @@ void CommandBuffer::pipelineBarrier(
     const std::vector<VkImageMemoryBarrier> &imageMemoryBarrier,
     const std::vector<VkBufferMemoryBarrier> &bufferMemoryBarrier,
     VkDependencyFlags flags) {
-  vkCmdPipelineBarrier(m_commandBuffer, srcStage, dstStage, flags,
-                       memBarriers.size(), memBarriers.data(),
-                       bufferMemoryBarrier.size(), bufferMemoryBarrier.data(),
-                       imageMemoryBarrier.size(), imageMemoryBarrier.data());
+  m_device.core_1_0().vkCmdPipelineBarrier(
+      m_commandBuffer, srcStage, dstStage, flags, memBarriers.size(),
+      memBarriers.data(), bufferMemoryBarrier.size(),
+      bufferMemoryBarrier.data(), imageMemoryBarrier.size(),
+      imageMemoryBarrier.data());
 }
 
 void CommandBuffer::m_bindVertexBuffer(VkBuffer buffer, uint32_t binding,
                                        VkDeviceSize offset) {
-  vkCmdBindVertexBuffers(m_commandBuffer, binding, 1, &buffer, &offset);
+  m_device.core_1_0().vkCmdBindVertexBuffers(m_commandBuffer, binding, 1,
+                                             &buffer, &offset);
 }
 
 void CommandBuffer::m_bindIndexBuffer(VkBuffer buffer, VkIndexType type,
                                       VkDeviceSize offset) {
-  vkCmdBindIndexBuffer(m_commandBuffer, buffer, offset, type);
+  m_device.core_1_0().vkCmdBindIndexBuffer(m_commandBuffer, buffer, offset,
+                                           type);
 }
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount,
                          uint32_t firstVertex, uint32_t firstInstance) {
-  vkCmdDraw(m_commandBuffer, vertexCount, instanceCount, firstVertex,
-            firstInstance);
+  m_device.core_1_0().vkCmdDraw(m_commandBuffer, vertexCount, instanceCount,
+                                firstVertex, firstInstance);
 }
 
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                 uint32_t firstIndex, int32_t vertexOffset,
                                 uint32_t firstInstance) {
-  vkCmdDrawIndexed(m_commandBuffer, indexCount, instanceCount, firstIndex,
-                   vertexOffset, firstInstance);
+  m_device.core_1_0().vkCmdDrawIndexed(m_commandBuffer, indexCount,
+                                       instanceCount, firstIndex, vertexOffset,
+                                       firstInstance);
 }
 
 void CommandBuffer::bindGraphicsPipeline(GraphicsPipeline const &pipeline) {
-  vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
+  m_device.core_1_0().vkCmdBindPipeline(
+      m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
 void CommandBuffer::bindComputePipeline(ComputePipeline const &pipeline) {
-  vkCmdBindPipeline(m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
+  m_device.core_1_0().vkCmdBindPipeline(
+      m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
 void CommandBuffer::copyImageToBuffer(
     AllocatedImage const &src, VkImageLayout layout, BufferBase const &dst,
     std::vector<VkBufferImageCopy> const &regions) {
-  vkCmdCopyImageToBuffer(m_commandBuffer, src, layout, dst, regions.size(),
-                         regions.data());
+  m_device.core_1_0().vkCmdCopyImageToBuffer(m_commandBuffer, src, layout, dst,
+                                             regions.size(), regions.data());
 }
 void CommandBuffer::setScissors(std::vector<VkRect2D> const &scissors,
                                 uint32_t firstScissor) {
-  vkCmdSetScissor(m_commandBuffer, firstScissor, scissors.size(),
-                  scissors.data());
+  m_device.core_1_0().vkCmdSetScissor(m_commandBuffer, firstScissor,
+                                      scissors.size(), scissors.data());
 }
 void CommandBuffer::setViewports(std::vector<VkViewport> const &viewports,
                                  uint32_t firstViewport) {
-  vkCmdSetViewport(m_commandBuffer, firstViewport, viewports.size(),
-                   viewports.data());
+  m_device.core_1_0().vkCmdSetViewport(m_commandBuffer, firstViewport,
+                                       viewports.size(), viewports.data());
 }
 void CommandBuffer::bindDescriptorSets(const PipelineLayout &layout,
                                        VkPipelineBindPoint bindPoint,
@@ -141,9 +149,9 @@ void CommandBuffer::bindDescriptorSets(const PipelineLayout &layout,
     dynamicOffsets.resize(cachedSize + offsetCount);
     set.get().copyOffsets(dynamicOffsets.data() + cachedSize);
   }
-  vkCmdBindDescriptorSets(m_commandBuffer, bindPoint, layout, firstSet,
-                          sets.size(), sets, dynamicOffsets.size(),
-                          dynamicOffsets.data());
+  m_device.core_1_0().vkCmdBindDescriptorSets(
+      m_commandBuffer, bindPoint, layout, firstSet, sets.size(), sets,
+      dynamicOffsets.size(), dynamicOffsets.data());
 }
 
 void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
@@ -165,10 +173,10 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
   beginInfo.clearValueCount = clearValuesCount;
   beginInfo.pClearValues = pClearValues;
 
-  vkCmdBeginRenderPass(m_commandBuffer, &beginInfo,
-                       useSecondary
-                           ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-                           : VK_SUBPASS_CONTENTS_INLINE);
+  m_device.core_1_0().vkCmdBeginRenderPass(
+      m_commandBuffer, &beginInfo,
+      useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+                   : VK_SUBPASS_CONTENTS_INLINE);
   m_currentPass = renderPass;
   m_currentSubpass = 0;
 }
@@ -181,9 +189,10 @@ void PrimaryCommandBuffer::nextSubpass(bool useSecondary) {
     throw Error("CommandBuffer record failed: call to nextSubpass() caused "
                 "subpass overflow");
 
-  vkCmdNextSubpass(m_commandBuffer,
-                   useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
-                                : VK_SUBPASS_CONTENTS_INLINE);
+  m_device.core_1_0().vkCmdNextSubpass(
+      m_commandBuffer, useSecondary
+                           ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
+                           : VK_SUBPASS_CONTENTS_INLINE);
   m_currentSubpass++;
 }
 
@@ -191,12 +200,13 @@ void PrimaryCommandBuffer::endRenderPass() {
   if (!m_currentPass.has_value())
     throw Error("CommandBuffer record failed: called endRenderPass() while "
                 "having no RenderPass active");
-  vkCmdEndRenderPass(m_commandBuffer);
+  m_device.core_1_0().vkCmdEndRenderPass(m_commandBuffer);
   m_currentPass.reset();
 }
 
 void PrimaryCommandBuffer::executeCommands(
     SecondaryCommandBufferConstRefArray const &commands) {
-  vkCmdExecuteCommands(m_commandBuffer, commands.size(), commands);
+  m_device.core_1_0().vkCmdExecuteCommands(m_commandBuffer, commands.size(),
+                                           commands);
 }
 } // namespace vkw

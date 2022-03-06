@@ -15,6 +15,10 @@ private:
 };
 
 enum class ErrorCode {
+
+  DYNAMIC_LIBRARY_NOT_FOUND,
+  DYNAMIC_LIBRARY_SYMBOL_MISSING,
+
   VULKAN_ERROR,
   EXTENSION_MISSING,
   SURFACE_OUTDATED,
@@ -116,5 +120,5 @@ private:
   VkResult m_result;
 };
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_EXCEPTION_HPP

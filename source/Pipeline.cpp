@@ -16,8 +16,8 @@ PipelineLayout::PipelineLayout(DeviceRef device,
   m_createInfo.setLayoutCount = 0;
   m_createInfo.pushConstantRangeCount = 0;
 
-  VK_CHECK_RESULT(
-      vkCreatePipelineLayout(m_device.get(), &m_createInfo, nullptr, &m_layout))
+  VK_CHECK_RESULT(m_device.get().core_1_0().vkCreatePipelineLayout(
+      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 PipelineLayout::PipelineLayout(
     DeviceRef device, DescriptorSetLayoutConstRefArray const &setLayouts,
@@ -36,15 +36,16 @@ PipelineLayout::PipelineLayout(
   m_createInfo.pSetLayouts = setLayouts;
   m_createInfo.pushConstantRangeCount = 0; // TODO
 
-  VK_CHECK_RESULT(
-      vkCreatePipelineLayout(m_device.get(), &m_createInfo, nullptr, &m_layout))
+  VK_CHECK_RESULT(m_device.get().core_1_0().vkCreatePipelineLayout(
+      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 
 PipelineLayout::~PipelineLayout() {
   if (m_layout == VK_NULL_HANDLE)
     return;
 
-  vkDestroyPipelineLayout(m_device.get(), m_layout, nullptr);
+  m_device.get().core_1_0().vkDestroyPipelineLayout(m_device.get(), m_layout,
+                                                    nullptr);
 }
 bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
   if (m_createInfo.flags != rhs.m_createInfo.flags ||
@@ -60,22 +61,22 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkGraphicsPipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &CI,
-                                            nullptr, &m_pipeline))
+  VK_CHECK_RESULT(m_device.core_1_0().vkCreateGraphicsPipelines(
+      device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
 }
 
 Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkComputePipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &CI,
-                                           nullptr, &m_pipeline))
+  VK_CHECK_RESULT(m_device.core_1_0().vkCreateComputePipelines(
+      device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
 }
 
 Pipeline::~Pipeline() {
   if (m_pipeline == VK_NULL_HANDLE)
     return;
 
-  vkDestroyPipeline(m_device, m_pipeline, nullptr);
+  m_device.core_1_0().vkDestroyPipeline(m_device, m_pipeline, nullptr);
 }
 
 VertexInputStateCreateInfoBase::VertexInputStateCreateInfoBase(

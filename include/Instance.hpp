@@ -3,21 +3,23 @@
 
 #include "Device.hpp"
 #include "Exception.hpp"
+#include "Library.hpp"
 #include "Surface.hpp"
+#include "SymbolTable.hpp"
 #include <functional>
+#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <vector>
-#include <iostream>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
 
-using SurfaceCreator = std::function<VkSurfaceKHR(VkInstance)>;
+class DynamicLoader;
 
 class Instance {
 public:
-  Instance(std::vector<std::string> reqExtensions = {},
+  Instance(Library const &library, std::vector<std::string> reqExtensions = {},
            bool enableValidation = true);
   Instance(Instance const &another) = delete;
   Instance const &operator=(Instance const &another) = delete;
@@ -41,46 +43,51 @@ public:
   }
 
   bool isExtensionEnabled(std::string const &extension) {
-    return std::find(m_extensions.begin(), m_extensions.end(), extension) !=
-           m_extensions.end();
+    return m_extensions.contains(extension);
   };
 
-  std::unique_ptr<Surface> createSurface(SurfaceCreator surfaceCreator);
-
   operator VkInstance() const { return m_instance; }
-
-  void checkExtensions(std::string const &ext) {
-    if (!isExtensionEnabled(ext)) {
-      throw ExtensionMissing(ext);
-    }
-  }
-
-  template <typename... Args>
-  void checkExtensions(std::string const &ext, Args... args) {
-    if (!isExtensionEnabled(ext)) {
-      throw ExtensionMissing(ext);
-    }
-    checkExtensions(args...);
-  }
 
   virtual ~Instance();
 
   // ****** DEBUG *******
 
   void printExtensions() const {
-    std::for_each(
-        m_extensions.begin(), m_extensions.end(),
-        [](std::string const &ext) { std::cout << ext << std::endl; });
+    for (auto &ext : m_extensions) {
+      std::cout << ext.first << std::endl;
+    }
+  }
+
+  InstanceCore_1_0 const &core_1_0() const { return *m_coreInstanceSymbols; }
+
+  InstanceCore_1_1 const &core_1_1() const {
+    if (m_apiVer < ApiVersion{1, 1, 0})
+      throw Error{"Cannot use core 1.1 vulkan symbols. Version loaded: " +
+                  std::string(m_apiVer)};
+
+    auto *ptr =
+        static_cast<InstanceCore_1_1 const *>(m_coreInstanceSymbols.get());
+    return *ptr;
+  }
+
+  InstanceExtensionBase *getExtension(std::string const &name) const {
+    if (!m_extensions.contains(name))
+      return nullptr;
+    return m_extensions.at(name).get();
   }
 
 private:
   VkInstance m_instance{};
 
-  std::vector<std::string> m_extensions{};
+  std::unordered_map<std::string, std::unique_ptr<InstanceExtensionBase>>
+      m_extensions;
   // TODO: instance owing device handles is questionable
   std::unordered_map<uint32_t, std::unique_ptr<Device>> m_devices;
+  std::reference_wrapper<Library const> m_vulkanLib;
+  std::unique_ptr<InstanceCore_1_0> m_coreInstanceSymbols{};
+  ApiVersion m_apiVer;
   bool m_validation;
 };
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_INSTANCE_HPP

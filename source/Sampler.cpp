@@ -6,13 +6,15 @@ namespace vkw {
 
 Sampler::Sampler(Device const &device, VkSamplerCreateInfo createInfo)
     : m_device(device),
-      m_createInfo(createInfo){VK_CHECK_RESULT(
-          vkCreateSampler(m_device.get(), &m_createInfo, nullptr, &m_sampler))}
+      m_createInfo(createInfo){
+          VK_CHECK_RESULT(m_device.get().core_1_0().vkCreateSampler(
+              m_device.get(), &m_createInfo, nullptr, &m_sampler))}
 
       Sampler::~Sampler() {
   if (m_sampler == VK_NULL_HANDLE)
     return;
 
-  vkDestroySampler(m_device.get(), m_sampler, nullptr);
+  m_device.get().core_1_0().vkDestroySampler(m_device.get(), m_sampler,
+                                             nullptr);
 }
 } // namespace vkw

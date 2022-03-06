@@ -2,6 +2,7 @@
 #include "CommandBuffer.hpp"
 #include "Device.hpp"
 #include "Fence.hpp"
+#include "Instance.hpp"
 #include "Semaphore.hpp"
 #include "Surface.hpp"
 #include "SwapChain.hpp"
@@ -12,7 +13,8 @@ namespace vkw {
 
 Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
     : m_parent(parent), m_familyIndex(queueFamilyIndex) {
-  vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex, &m_queue);
+  m_parent.core_1_0().vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex,
+                                       &m_queue);
 
   auto &queueFamilyProperties = m_parent.getQueueFamilyProperties();
 
@@ -20,13 +22,22 @@ Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
 }
 
 bool Queue::supportsPresenting(Surface const &surface) const {
+
+  auto *surfaceExt = static_cast<VkSurfaceKHRExtension const *>(
+      m_parent.getParent().getExtension(VK_KHR_SURFACE_EXTENSION_NAME));
+
+  if (!surfaceExt)
+    return false;
+
   VkBool32 ret;
-  VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceSupportKHR(
+  VK_CHECK_RESULT(surfaceExt->vkGetPhysicalDeviceSurfaceSupportKHR(
       m_parent.getPhysicalDevice(), m_familyIndex, surface, &ret))
   return ret;
 }
 
-void Queue::waitIdle() { VK_CHECK_RESULT(vkQueueWaitIdle(m_queue)) }
+void Queue::waitIdle() {
+  VK_CHECK_RESULT(m_parent.core_1_0().vkQueueWaitIdle(m_queue))
+}
 
 void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
                    const SemaphoreConstRefArray &waitFor,
@@ -47,13 +58,14 @@ void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
   submitInfo.pWaitSemaphores = waitFor;
   submitInfo.pWaitDstStageMask = waitTill.data();
 
-  VK_CHECK_RESULT(
-      vkQueueSubmit(m_queue, 1, &submitInfo,
-                    fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
+  VK_CHECK_RESULT(m_parent.core_1_0().vkQueueSubmit(
+      m_queue, 1, &submitInfo,
+      fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
 }
 
-static bool queuePresent(VkQueue queue, VkPresentInfoKHR *pPresentInfo) {
-  auto result = vkQueuePresentKHR(queue, pPresentInfo);
+static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
+                         VkQueue queue, VkPresentInfoKHR *pPresentInfo) {
+  auto result = p_vkQueuePresentKHR(queue, pPresentInfo);
 
   if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR) {
     return true;
@@ -88,7 +100,8 @@ bool Queue::present(const SwapChainConstRefArray &swapChains,
   presentInfo.pImageIndices = images.data();
   presentInfo.pResults = nullptr;
 
-  return queuePresent(m_queue, &presentInfo);
+  return queuePresent(swapChains.begin()->get().ext()->vkQueuePresentKHR,
+                      m_queue, &presentInfo);
 }
 
 bool Queue::present(const SwapChain &swapChain,
@@ -106,6 +119,7 @@ bool Queue::present(const SwapChain &swapChain,
   presentInfo.pImageIndices = &image;
   presentInfo.pResults = nullptr;
 
-  return queuePresent(m_queue, &presentInfo);
+  return queuePresent(swapChain.ext()->vkQueuePresentKHR, m_queue,
+                      &presentInfo);
 }
-} // namespace vkr
+} // namespace vkw

@@ -16,15 +16,16 @@ DescriptorPool::DescriptorPool(Device const &device, uint32_t maxSets,
   m_createInfo.poolSizeCount = m_poolSizes.size();
   m_createInfo.pPoolSizes = m_poolSizes.data();
 
-  VK_CHECK_RESULT(vkCreateDescriptorPool(m_device.get(), &m_createInfo, nullptr,
-                                         &m_descriptorPool))
+  VK_CHECK_RESULT(m_device.get().core_1_0().vkCreateDescriptorPool(
+      m_device.get(), &m_createInfo, nullptr, &m_descriptorPool))
 }
 
 DescriptorPool::~DescriptorPool() {
   if (m_descriptorPool == VK_NULL_HANDLE)
     return;
 
-  vkDestroyDescriptorPool(m_device.get(), m_descriptorPool, nullptr);
+  m_device.get().core_1_0().vkDestroyDescriptorPool(m_device.get(),
+                                                    m_descriptorPool, nullptr);
 }
 VkDescriptorSet DescriptorPool::allocateSet(const DescriptorSetLayout &layout) {
   VkDescriptorSetAllocateInfo allocateInfo{};
@@ -36,7 +37,8 @@ VkDescriptorSet DescriptorPool::allocateSet(const DescriptorSetLayout &layout) {
   allocateInfo.pSetLayouts = &v_layout;
 
   VkDescriptorSet set;
-  VK_CHECK_RESULT(vkAllocateDescriptorSets(m_device.get(), &allocateInfo, &set))
+  VK_CHECK_RESULT(m_device.get().core_1_0().vkAllocateDescriptorSets(
+      m_device.get(), &allocateInfo, &set))
 
   return set;
 }
@@ -49,8 +51,8 @@ void DescriptorPool::freeSet(const DescriptorSet &set) {
   // That means we are not allowed to pass any exceptions out and handle them
   // here.
   try {
-    VK_CHECK_RESULT(
-        vkFreeDescriptorSets(m_device.get(), m_descriptorPool, 1, &vSet))
+    VK_CHECK_RESULT(m_device.get().core_1_0().vkFreeDescriptorSets(
+        m_device.get(), m_descriptorPool, 1, &vSet))
   } catch (VulkanError &e) {
     // do something
   }
