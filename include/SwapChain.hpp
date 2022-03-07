@@ -9,7 +9,7 @@
 
 namespace vkw {
 
-class VkSwapchainKHRExtension;
+class VkKhrSwapchain;
 
 class SwapChain {
 public:
@@ -37,7 +37,7 @@ public:
 
   virtual ~SwapChain();
 
-  VkSwapchainKHRExtension const *ext() const { return m_swapchain_ext; }
+  VkKhrSwapchain const *ext() const { return m_swapchain_ext; }
 
   operator VkSwapchainKHR() const { return m_swapchain; }
 
@@ -47,7 +47,7 @@ private:
                             uint64_t timeout);
   std::optional<uint32_t> m_currentImage{};
   Device &m_device;
-  VkSwapchainKHRExtension const *m_swapchain_ext{};
+  VkKhrSwapchain const *m_swapchain_ext{};
   VkSwapchainCreateInfoKHR m_createInfo;
   VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 };

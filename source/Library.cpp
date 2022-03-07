@@ -1,5 +1,7 @@
 #include "Library.hpp"
+#include "Exception.hpp"
 #include "loader/DynamicLoader.hpp"
+#include <cassert>
 
 namespace vkw {
 
@@ -10,13 +12,26 @@ Library::Library() {
 #endif
   m_loader = std::make_unique<DynamicLoader>(libName);
 
-#define STRINGIFY(X) #X
-#define VKW_VK_GLOBAL_FUNCTION_1_0(X)                                          \
-  vk##X = reinterpret_cast<PFN_vk##X>(m_loader->getSymbol(STRINGIFY(vk##X)));
-#define VKW_VK_GLOBAL_FUNCTION_1_1(X)                                          \
-  vk##X = reinterpret_cast<PFN_vk##X>(m_loader->getSymbol(STRINGIFY(vk##X)));
-#include "VulkanFunctionList.hpp"
-#undef STRINGIFY
+  vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(
+      m_loader->getSymbol("vkCreateInstance"));
+  vkEnumerateInstanceExtensionProperties =
+      reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(
+          m_loader->getSymbol("vkEnumerateInstanceExtensionProperties"));
+  vkEnumerateInstanceLayerProperties =
+      reinterpret_cast<PFN_vkEnumerateInstanceLayerProperties>(
+          m_loader->getSymbol("vkEnumerateInstanceLayerProperties"));
+  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+      m_loader->getSymbol("vkGetInstanceProcAddr"));
+  try {
+    vkEnumerateInstanceVersion =
+        reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
+            m_loader->getSymbol("vkEnumerateInstanceVersion"));
+  } catch (Error &e) {
+    if (e.code() == ErrorCode::DYNAMIC_LIBRARY_SYMBOL_MISSING) {
+      // it's okay, because Vulkan 1.0 doesn't have this function yet
+    } else
+      throw;
+  }
 }
 
 ApiVersion::ApiVersion(uint32_t encoded)

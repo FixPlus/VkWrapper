@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.18)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED TRUE)
@@ -12,7 +12,6 @@ include(cmake/find_vulkan.cmake)
 
 include_directories(include)
 include_directories(external)
-
 add_subdirectory(source)
 
 install(TARGETS ${PROJECT_NAME})

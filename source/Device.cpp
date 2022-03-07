@@ -221,7 +221,7 @@ Device::Device(Instance &parent, uint32_t id) : m_parent(parent) {
   VK_CHECK_RESULT(m_parent.core_1_0().vkCreateDevice(
       ph_device, &deviceCreateInfo, nullptr, &m_device))
 
-  m_coreDeviceSymbols = std::make_unique<DeviceCore_1_0>(
+  m_coreDeviceSymbols = std::make_unique<DeviceCore<1, 0>>(
       m_parent.core_1_0().vkGetDeviceProcAddr, m_device);
 
   for (auto &extName : deviceExtensions) {

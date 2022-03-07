@@ -58,15 +58,15 @@ public:
     }
   }
 
-  InstanceCore_1_0 const &core_1_0() const { return *m_coreInstanceSymbols; }
+  InstanceCore<1, 0> const &core_1_0() const { return *m_coreInstanceSymbols; }
 
-  InstanceCore_1_1 const &core_1_1() const {
+  InstanceCore<1, 1> const &core_1_1() const {
     if (m_apiVer < ApiVersion{1, 1, 0})
       throw Error{"Cannot use core 1.1 vulkan symbols. Version loaded: " +
                   std::string(m_apiVer)};
 
     auto *ptr =
-        static_cast<InstanceCore_1_1 const *>(m_coreInstanceSymbols.get());
+        static_cast<InstanceCore<1, 1> const *>(m_coreInstanceSymbols.get());
     return *ptr;
   }
 
@@ -84,7 +84,7 @@ private:
   // TODO: instance owing device handles is questionable
   std::unordered_map<uint32_t, std::unique_ptr<Device>> m_devices;
   std::reference_wrapper<Library const> m_vulkanLib;
-  std::unique_ptr<InstanceCore_1_0> m_coreInstanceSymbols{};
+  std::unique_ptr<InstanceCore<1, 0>> m_coreInstanceSymbols{};
   ApiVersion m_apiVer;
   bool m_validation;
 };

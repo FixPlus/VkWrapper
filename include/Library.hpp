@@ -30,9 +30,13 @@ public:
 
   ~Library();
 
-#define VKW_VK_GLOBAL_FUNCTION_1_0(X) PFN_vk##X vk##X;
-#define VKW_VK_GLOBAL_FUNCTION_1_1(X) PFN_vk##X vk##X;
-#include "VulkanFunctionList.hpp"
+  PFN_vkCreateInstance vkCreateInstance;
+  PFN_vkEnumerateInstanceExtensionProperties
+      vkEnumerateInstanceExtensionProperties;
+  PFN_vkEnumerateInstanceLayerProperties vkEnumerateInstanceLayerProperties;
+  PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
+  PFN_vkEnumerateInstanceVersion vkEnumerateInstanceVersion;
+
   ApiVersion instanceAPIVersion() const;
 
 private:

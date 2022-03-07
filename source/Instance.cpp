@@ -70,7 +70,7 @@ Instance::Instance(Library const &library,
   VK_CHECK_RESULT(
       m_vulkanLib.get().vkCreateInstance(&createInfo, nullptr, &m_instance))
 
-  m_coreInstanceSymbols = std::make_unique<InstanceCore_1_0>(
+  m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
       m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
 
   for (auto &extName : reqExtensionsNames) {

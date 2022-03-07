@@ -7,7 +7,7 @@
 namespace vkw {
 
 class Instance;
-class VkSurfaceKHRExtension;
+class VkKhrSurface;
 
 class Surface final {
 public:
@@ -40,7 +40,7 @@ public:
 
 private:
   VkSurfaceKHR m_surface;
-  VkSurfaceKHRExtension const *m_surface_ext{};
+  VkKhrSurface const *m_surface_ext{};
   Instance &m_parent;
 };
 } // namespace vkw

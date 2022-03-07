@@ -23,7 +23,7 @@ Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
 
 bool Queue::supportsPresenting(Surface const &surface) const {
 
-  auto *surfaceExt = static_cast<VkSurfaceKHRExtension const *>(
+  auto *surfaceExt = static_cast<VkKhrSurface const *>(
       m_parent.getParent().getExtension(VK_KHR_SURFACE_EXTENSION_NAME));
 
   if (!surfaceExt)
