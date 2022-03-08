@@ -83,7 +83,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   m_createInfo.attachmentCount = m_views.size();
   m_createInfo.pAttachments = m_views;
 
-  VK_CHECK_RESULT(m_device.core_1_0().vkCreateFramebuffer(
+  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateFramebuffer(
       m_device, &m_createInfo, nullptr, &m_framebuffer))
 }
 
@@ -151,7 +151,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   m_createInfo.attachmentCount = m_views.size();
   m_createInfo.pAttachments = m_views;
 
-  VK_CHECK_RESULT(m_device.core_1_0().vkCreateFramebuffer(
+  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateFramebuffer(
       m_device, &m_createInfo, nullptr, &m_framebuffer))
 }
 
@@ -159,6 +159,6 @@ FrameBuffer::~FrameBuffer() {
   if (m_framebuffer == VK_NULL_HANDLE)
     return;
 
-  m_device.core_1_0().vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+  m_device.core<1, 0>().vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
 }
 } // namespace vkw

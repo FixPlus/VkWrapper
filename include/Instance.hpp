@@ -58,15 +58,15 @@ public:
     }
   }
 
-  InstanceCore<1, 0> const &core_1_0() const { return *m_coreInstanceSymbols; }
+  template <uint32_t major, uint32_t minor>
+  InstanceCore<major, minor> const &core() const {
+    if (m_apiVer < ApiVersion{major, minor, 0})
+      throw Error{"Cannot use core " + std::to_string(major) + "." +
+                  std::to_string(minor) +
+                  " vulkan symbols. Version loaded: " + std::string(m_apiVer)};
 
-  InstanceCore<1, 1> const &core_1_1() const {
-    if (m_apiVer < ApiVersion{1, 1, 0})
-      throw Error{"Cannot use core 1.1 vulkan symbols. Version loaded: " +
-                  std::string(m_apiVer)};
-
-    auto *ptr =
-        static_cast<InstanceCore<1, 1> const *>(m_coreInstanceSymbols.get());
+    auto *ptr = static_cast<InstanceCore<major, minor> const *>(
+        m_coreInstanceSymbols.get());
     return *ptr;
   }
 

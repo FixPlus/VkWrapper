@@ -13,8 +13,8 @@ namespace vkw {
 
 Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
     : m_parent(parent), m_familyIndex(queueFamilyIndex) {
-  m_parent.core_1_0().vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex,
-                                       &m_queue);
+  m_parent.core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex,
+                                         &m_queue);
 
   auto &queueFamilyProperties = m_parent.getQueueFamilyProperties();
 
@@ -36,7 +36,7 @@ bool Queue::supportsPresenting(Surface const &surface) const {
 }
 
 void Queue::waitIdle() {
-  VK_CHECK_RESULT(m_parent.core_1_0().vkQueueWaitIdle(m_queue))
+  VK_CHECK_RESULT(m_parent.core<1, 0>().vkQueueWaitIdle(m_queue))
 }
 
 void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
@@ -58,7 +58,7 @@ void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
   submitInfo.pWaitSemaphores = waitFor;
   submitInfo.pWaitDstStageMask = waitTill.data();
 
-  VK_CHECK_RESULT(m_parent.core_1_0().vkQueueSubmit(
+  VK_CHECK_RESULT(m_parent.core<1, 0>().vkQueueSubmit(
       m_queue, 1, &submitInfo,
       fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
 }

@@ -79,7 +79,7 @@ Surface::getSurfaceCapabilities(VkPhysicalDevice device) const {
 std::vector<uint32_t> Surface::getQueueFamilyIndicesThatSupportPresenting(
     VkPhysicalDevice device) const {
   uint32_t queueFamilyCount;
-  m_parent.core_1_0().vkGetPhysicalDeviceQueueFamilyProperties(
+  m_parent.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
       device, &queueFamilyCount, nullptr);
 
   std::vector<uint32_t> ret;

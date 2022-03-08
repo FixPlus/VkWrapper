@@ -74,13 +74,14 @@ public:
     return m_queueFamilyProperties;
   }
 
-  DeviceCore<1, 0> const &core_1_0() const { return *m_coreDeviceSymbols; }
-
-  DeviceCore<1, 1> const &core_1_1() const {
-    if (m_apiVer < ApiVersion{1, 1, 0})
-      throw Error{"Cannot use core 1.1 vulkan symbols. Version loaded: " +
-                  std::string(m_apiVer)};
-    return *static_cast<DeviceCore<1, 1> const *>(m_coreDeviceSymbols.get());
+  template <uint32_t major, uint32_t minor>
+  DeviceCore<major, minor> core() const {
+    if (m_apiVer < ApiVersion{major, minor, 0})
+      throw Error{"Cannot use core " + std::to_string(major) + "." +
+                  std::to_string(minor) +
+                  " vulkan symbols. Version loaded: " + std::string(m_apiVer)};
+    return *static_cast<DeviceCore<major, minor> const *>(
+        m_coreDeviceSymbols.get());
   }
 
   DeviceExtensionBase const *getExtension(std::string const &extName) const {

@@ -98,19 +98,19 @@ Device *Instance::createDevice(uint32_t id) {
 std::vector<DeviceInfo> Instance::enumerateAvailableDevices() const {
   std::vector<DeviceInfo> ret;
   uint32_t deviceCount = 0;
-  core_1_0().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
+  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
   if (deviceCount == 0)
     return ret;
 
   std::vector<VkPhysicalDevice> availableDevices(deviceCount);
-  core_1_0().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
-                                        availableDevices.data());
+  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
+                                          availableDevices.data());
 
   uint32_t id = 0;
   ret.resize(availableDevices.size());
 
   auto p_vkGetPhysicalDeviceProperties =
-      core_1_0().vkGetPhysicalDeviceProperties;
+      core<1, 0>().vkGetPhysicalDeviceProperties;
 
   std::transform(availableDevices.begin(), availableDevices.end(), ret.begin(),
                  [&id, p_vkGetPhysicalDeviceProperties](VkPhysicalDevice d) {
@@ -146,7 +146,7 @@ Instance::~Instance() {
 
   m_devices.clear();
 
-  core_1_0().vkDestroyInstance(m_instance, nullptr);
+  core<1, 0>().vkDestroyInstance(m_instance, nullptr);
 }
 
 } // namespace vkw

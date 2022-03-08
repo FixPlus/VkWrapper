@@ -14,13 +14,13 @@ ShaderBase::ShaderBase(Device &device, size_t codeSize, uint32_t *pCode,
   createInfo.flags = flags;
   createInfo.codeSize = codeSize;
   createInfo.pCode = pCode;
-  VK_CHECK_RESULT(m_device.core_1_0().vkCreateShaderModule(
+  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateShaderModule(
       m_device, &createInfo, nullptr, &m_shader))
 }
 
 ShaderBase::~ShaderBase() {
   if (m_shader == VK_NULL_HANDLE)
     return;
-  m_device.core_1_0().vkDestroyShaderModule(m_device, m_shader, nullptr);
+  m_device.core<1, 0>().vkDestroyShaderModule(m_device, m_shader, nullptr);
 }
 } // namespace vkw

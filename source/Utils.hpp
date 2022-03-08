@@ -5,12 +5,12 @@
 #include <string>
 namespace vkw {
 
-#define VK_CHECK_RESULT(f)                                                     \
+#define VK_CHECK_RESULT(...)                                                   \
   {                                                                            \
-    VkResult res = (f);                                                        \
+    VkResult res = (__VA_ARGS__);                                              \
     if (res != VK_SUCCESS)                                                     \
       throw VulkanError(res, __FILE__, __LINE__);                              \
   }
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_UTILS_HPP
