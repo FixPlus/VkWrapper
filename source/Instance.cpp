@@ -87,46 +87,24 @@ Instance::Instance(Library const &library,
   std::cout << "Vulkan initialized successfully" << std::endl;
 }
 
-Device *Instance::createDevice(uint32_t id) {
-  if (getDevice(id) != nullptr)
-    throw Error("Device with current id has been already created");
-  return (m_devices.insert(
-              std::make_pair(id, std::make_unique<Device>(Device(*this, id)))))
-      .first->second.get();
-}
-
-std::vector<DeviceInfo> Instance::enumerateAvailableDevices() const {
-  std::vector<DeviceInfo> ret;
+std::vector<VkPhysicalDevice> Instance::enumerateAvailableDevices() const {
+  std::vector<VkPhysicalDevice> ret;
   uint32_t deviceCount = 0;
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
   if (deviceCount == 0)
     return ret;
 
-  std::vector<VkPhysicalDevice> availableDevices(deviceCount);
-  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
-                                          availableDevices.data());
+  ret.resize(deviceCount);
 
-  uint32_t id = 0;
-  ret.resize(availableDevices.size());
-
-  auto p_vkGetPhysicalDeviceProperties =
-      core<1, 0>().vkGetPhysicalDeviceProperties;
-
-  std::transform(availableDevices.begin(), availableDevices.end(), ret.begin(),
-                 [&id, p_vkGetPhysicalDeviceProperties](VkPhysicalDevice d) {
-                   VkPhysicalDeviceProperties properties;
-                   p_vkGetPhysicalDeviceProperties(d, &properties);
-                   return DeviceInfo{id++, properties.deviceName, d};
-                 });
-
+  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, ret.data());
   return ret;
 }
 
 Instance::Instance(Instance &&another) noexcept
     : m_instance(another.m_instance), m_validation(another.m_validation),
       m_extensions(std::move(another.m_extensions)),
-      m_vulkanLib(another.m_vulkanLib) {
-  m_devices.swap(another.m_devices);
+      m_vulkanLib(another.m_vulkanLib),
+      m_coreInstanceSymbols(std::move(another.m_coreInstanceSymbols)) {
   another.m_instance = VK_NULL_HANDLE;
 }
 
@@ -134,7 +112,8 @@ Instance &Instance::operator=(Instance &&another) noexcept {
   m_instance = another.m_instance;
   m_validation = another.m_validation;
   m_extensions = std::move(another.m_extensions);
-  m_devices.swap(another.m_devices);
+  m_vulkanLib = another.m_vulkanLib;
+  m_coreInstanceSymbols = std::move(another.m_coreInstanceSymbols);
   another.m_instance = VK_NULL_HANDLE;
 
   return *this;
@@ -143,8 +122,6 @@ Instance &Instance::operator=(Instance &&another) noexcept {
 Instance::~Instance() {
   if (m_instance == VK_NULL_HANDLE)
     return;
-
-  m_devices.clear();
 
   core<1, 0>().vkDestroyInstance(m_instance, nullptr);
 }

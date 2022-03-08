@@ -37,8 +37,9 @@ class DeviceCore : public SymbolTableBase<VkInstance> {};
 class InstanceExtensionBase : public SymbolTableBase<VkInstance> {
 public:
   InstanceExtensionBase(PFN_getProcAddr getProcAddr, VkInstance instance,
-                        std::string const &extName)
-      : SymbolTableBase<VkInstance>(getProcAddr, instance), m_name(extName) {}
+                        std::string extName)
+      : SymbolTableBase<VkInstance>(getProcAddr, instance),
+        m_name(std::move(extName)) {}
 
   std::string const &name() const { return m_name; }
 
@@ -68,10 +69,9 @@ public:
 class DeviceExtensionBase : public SymbolTableBase<VkDevice> {
 public:
   DeviceExtensionBase(PFN_getProcAddr getProcAddr, VkDevice instance,
-                      std::string const &extName)
-      :
-
-        SymbolTableBase<VkDevice>(getProcAddr, instance), m_name(extName) {}
+                      std::string extName)
+      : SymbolTableBase<VkDevice>(getProcAddr, instance),
+        m_name(std::move(extName)) {}
 
   std::string const &name() const { return m_name; }
 

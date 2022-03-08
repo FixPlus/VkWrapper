@@ -10,7 +10,7 @@ namespace vkw {
 SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo)
     : m_device(device), m_createInfo(createInfo) {
   m_swapchain_ext = static_cast<VkKhrSwapchain const *>(
-      device.getExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
+      device.extension(VK_KHR_SWAPCHAIN_EXTENSION_NAME));
   if (!m_swapchain_ext)
     throw ExtensionMissing(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   VK_CHECK_RESULT(m_swapchain_ext->vkCreateSwapchainKHR(device, &createInfo,

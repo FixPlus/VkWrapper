@@ -26,21 +26,7 @@ public:
   Instance(Instance &&another) noexcept;
   Instance &operator=(Instance &&another) noexcept;
 
-  std::vector<DeviceInfo> enumerateAvailableDevices() const;
-
-  Device *getDevice(uint32_t id) {
-    return m_devices.count(id) ? m_devices.at(id).get() : nullptr;
-  }
-
-  // TODO: don't use raw pointer here
-  Device *createDevice(uint32_t id);
-
-  void destroyDevice(uint32_t id) {
-    if (getDevice(id) == nullptr)
-      throw Error("No device with id provided to destroyDevice()");
-
-    m_devices.erase(id);
-  }
+  std::vector<VkPhysicalDevice> enumerateAvailableDevices() const;
 
   bool isExtensionEnabled(std::string const &extension) {
     return m_extensions.contains(extension);
@@ -70,7 +56,7 @@ public:
     return *ptr;
   }
 
-  InstanceExtensionBase *getExtension(std::string const &name) const {
+  InstanceExtensionBase *extension(std::string const &name) const {
     if (!m_extensions.contains(name))
       return nullptr;
     return m_extensions.at(name).get();
@@ -81,8 +67,6 @@ private:
 
   std::unordered_map<std::string, std::unique_ptr<InstanceExtensionBase>>
       m_extensions;
-  // TODO: instance owing device handles is questionable
-  std::unordered_map<uint32_t, std::unique_ptr<Device>> m_devices;
   std::reference_wrapper<Library const> m_vulkanLib;
   std::unique_ptr<InstanceCore<1, 0>> m_coreInstanceSymbols{};
   ApiVersion m_apiVer;

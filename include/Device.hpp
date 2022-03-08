@@ -36,7 +36,7 @@ public:
   Device(Device &&another);
   Device &operator=(Device &&another) = delete;
 
-  Device(Instance &parent, uint32_t id);
+  Device(Instance &parent, VkPhysicalDevice phDevice);
   virtual ~Device();
 
   bool extensionSupported(std::string const &extension) const {
@@ -84,7 +84,7 @@ public:
         m_coreDeviceSymbols.get());
   }
 
-  DeviceExtensionBase const *getExtension(std::string const &extName) const {
+  DeviceExtensionBase const *extension(std::string const &extName) const {
     if (!m_extensions.contains(extName))
       return nullptr;
     return m_extensions.at(extName).get();

@@ -51,8 +51,8 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
 void setupDebugging(Instance const &instance, VkDebugReportFlagsEXT flags,
                     VkDebugReportCallbackEXT callBack) {
 
-  VkExtDebugUtils const *debugUtilsExt = static_cast<VkExtDebugUtils const *>(
-      instance.getExtension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+  auto *debugUtilsExt = static_cast<VkExtDebugUtils const *>(
+      instance.extension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
 
   assert(debugUtilsExt && "VK_EXT_debug_utils must be present here");
 

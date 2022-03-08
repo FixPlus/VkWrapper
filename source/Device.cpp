@@ -84,12 +84,9 @@ uint32_t getQueueFamilyIndex(
   throw Error("Could not find a matching queue family index");
 }
 
-Device::Device(Instance &parent, uint32_t id) : m_parent(parent) {
+Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
 
-  m_info.id = id;
-  auto devices = parent.enumerateAvailableDevices();
-
-  ph_device = devices.at(id).physicalDevice;
+  ph_device = phDevice;
 
   // Store Properties features, limits and properties of the physical device for
   // later use Device properties also contain limits and sparse properties

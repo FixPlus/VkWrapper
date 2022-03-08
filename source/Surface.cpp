@@ -12,11 +12,11 @@ Surface::~Surface() {
 Surface::Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd)
     : m_parent(parent) {
   m_surface_ext = static_cast<VkKhrSurface const *>(
-      parent.getExtension(VK_KHR_SURFACE_EXTENSION_NAME));
+      parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
   if (!m_surface_ext)
     throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
   auto *win32SurfaceExt = static_cast<VkKhrWin32Surface const *>(
-      parent.getExtension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
+      parent.extension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
   if (!win32SurfaceExt)
     throw ExtensionMissing(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 
