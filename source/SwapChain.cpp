@@ -1,9 +1,9 @@
-#include "SwapChain.hpp"
-#include "Device.hpp"
-#include "Fence.hpp"
-#include "Image.hpp"
-#include "Semaphore.hpp"
+#include "vkw/SwapChain.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Fence.hpp"
+#include "vkw/Image.hpp"
+#include "vkw/Semaphore.hpp"
 
 namespace vkw {
 

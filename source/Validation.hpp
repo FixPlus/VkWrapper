@@ -1,7 +1,7 @@
 #ifndef VKRENDERER_VALIDATION_H
 #define VKRENDERER_VALIDATION_H
 
-#include "SymbolTable.hpp"
+#include "vkw/SymbolTable.hpp"
 #include "vulkan/vulkan.h"
 
 namespace vkw {

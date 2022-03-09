@@ -46,5 +46,5 @@ protected:
   VmaAllocation m_allocation = VK_NULL_HANDLE;
   VmaAllocationInfo m_allocInfo{};
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_ALLOCATION_HPP

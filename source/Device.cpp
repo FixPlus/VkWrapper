@@ -1,9 +1,9 @@
-#include "Device.hpp"
-#include "Buffer.hpp"
-#include "Instance.hpp"
-#include "Queue.hpp"
-#include "SymbolTable.hpp"
+#include "vkw/Device.hpp"
 #include "Utils.hpp"
+#include "vkw/Buffer.hpp"
+#include "vkw/Instance.hpp"
+#include "vkw/Queue.hpp"
+#include "vkw/SymbolTable.hpp"
 #include <cassert>
 #include <iostream>
 #include <vector>

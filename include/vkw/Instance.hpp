@@ -4,7 +4,6 @@
 #include "Device.hpp"
 #include "Exception.hpp"
 #include "Library.hpp"
-#include "Surface.hpp"
 #include "SymbolTable.hpp"
 #include <functional>
 #include <iostream>

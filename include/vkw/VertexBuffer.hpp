@@ -154,5 +154,5 @@ public:
             device, count, usage | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             createInfo) {}
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_VERTEXBUFFER_HPP

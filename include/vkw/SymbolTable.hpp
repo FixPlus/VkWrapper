@@ -95,8 +95,16 @@ public:
     return new T(getProcAddr, device);
   };
 };
-
+#define VKW_DUMP_EXTENSION_CLASSES
+#define VKW_DUMP_CORE_CLASSES
 #include "SymbolTable.inc"
+#undef VKW_DUMP_EXTENSION_CLASSES
+#undef VKW_DUMP_CORE_CLASSES
+
+extern std::unordered_map<std::string, InstanceExtensionInitializerBase const *>
+    m_instanceExtInitializers;
+extern std::unordered_map<std::string, DeviceExtensionInitializerBase const *>
+    m_deviceExtInitializers;
 
 } // namespace vkw
 #endif // VKWRAPPER_SYMBOLTABLE_HPP

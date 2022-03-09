@@ -1,6 +1,6 @@
-#include "Fence.hpp"
-#include "Device.hpp"
+#include "vkw/Fence.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
 
 namespace vkw {
 

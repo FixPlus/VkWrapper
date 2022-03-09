@@ -1,9 +1,9 @@
-#include "DescriptorSet.hpp"
-#include "DescriptorPool.hpp"
-#include "Device.hpp"
-#include "Image.hpp"
-#include "Sampler.hpp"
+#include "vkw/DescriptorSet.hpp"
 #include "Utils.hpp"
+#include "vkw/DescriptorPool.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Image.hpp"
+#include "vkw/Sampler.hpp"
 
 namespace vkw {
 

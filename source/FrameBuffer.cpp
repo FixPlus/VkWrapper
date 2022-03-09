@@ -1,8 +1,8 @@
-#include "FrameBuffer.hpp"
-#include "Device.hpp"
-#include "Image.hpp"
-#include "RenderPass.hpp"
+#include "vkw/FrameBuffer.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Image.hpp"
+#include "vkw/RenderPass.hpp"
 
 namespace vkw {
 

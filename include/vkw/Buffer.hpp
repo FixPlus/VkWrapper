@@ -110,5 +110,5 @@ private:
   std::unique_ptr<BufferBase> m_buffer;
 };
 
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_BUFFER_HPP

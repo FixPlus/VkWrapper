@@ -1,12 +1,12 @@
-#include "Queue.hpp"
-#include "CommandBuffer.hpp"
-#include "Device.hpp"
-#include "Fence.hpp"
-#include "Instance.hpp"
-#include "Semaphore.hpp"
-#include "Surface.hpp"
-#include "SwapChain.hpp"
+#include "vkw/Queue.hpp"
 #include "Utils.hpp"
+#include "vkw/CommandBuffer.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Fence.hpp"
+#include "vkw/Instance.hpp"
+#include "vkw/Semaphore.hpp"
+#include "vkw/Surface.hpp"
+#include "vkw/SwapChain.hpp"
 #include <cassert>
 
 namespace vkw {

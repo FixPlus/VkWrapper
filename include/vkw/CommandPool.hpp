@@ -39,5 +39,5 @@ private:
   VkCommandPoolCreateFlags m_createFlags;
   uint32_t m_queueFamily;
 };
-} // namespace vkr
+} // namespace vkw
 #endif // VKRENDERER_COMMANDPOOL_HPP

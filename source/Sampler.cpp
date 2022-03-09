@@ -1,6 +1,6 @@
-#include "Sampler.hpp"
-#include "Device.hpp"
+#include "vkw/Sampler.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
 
 namespace vkw {
 

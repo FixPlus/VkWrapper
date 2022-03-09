@@ -1,6 +1,6 @@
-#include "Buffer.hpp"
-#include "Device.hpp"
+#include "vkw/Buffer.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
 
 namespace vkw {
 
@@ -33,4 +33,4 @@ createBufferBaseOnDevice(Device &device,
                          VmaAllocationCreateInfo const &allocCreateInfo) {
   return device.createBuffer(allocCreateInfo, bufferCreateInfo);
 }
-} // namespace vkr
+} // namespace vkw

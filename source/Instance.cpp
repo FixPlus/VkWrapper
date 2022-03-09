@@ -1,9 +1,10 @@
-#include "Instance.hpp"
-#include "Device.hpp"
-#include "Exception.hpp"
+#include "vkw/Instance.hpp"
 #include "Utils.hpp"
 #include "loader/DynamicLoader.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Exception.hpp"
 #include <cassert>
+#include <cstring>
 
 namespace vkw {
 

@@ -1,6 +1,6 @@
-#include "Image.hpp"
-#include "Device.hpp"
+#include "vkw/Image.hpp"
 #include "Utils.hpp"
+#include "vkw/Device.hpp"
 #include <cassert>
 
 namespace vkw {

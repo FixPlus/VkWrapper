@@ -1,6 +1,12 @@
 import xml.etree.ElementTree as xmlReader
 import argparse
 
+class VulkanExtension:
+    def __init__(self, extension_body, extension_name):
+        self.body = extension_body
+        self.name = reformatExtensionName(extension_name)
+        self.string_name = extension_name
+
 
 def reformatExtensionName(name):
     name_len = len(name)
@@ -57,42 +63,80 @@ def generateExtension(extension):
 
     class_header += "constexpr static const " + initialize_type + "<" + extension_name + "> m_initializer{};\n"
     class_header += "};\n"
-    return class_header
+    return VulkanExtension(class_header, extension.attrib.get('name'))
 
 
 def generateExtensionDefinitions():
     docRoot = doc.getroot()
-
-
-    instance_ext_name_list = []
-    device_ext_name_list = []
+    
+    platform_macro_map = { platform.attrib.get('name'): platform.attrib.get('protect') for platform in docRoot.find('platforms').findall('platform')}
+ 
+    instance_ext_list ={ platform.attrib.get('name'): [] for platform in docRoot.find('platforms').findall('platform')}
+    instance_ext_list['base'] = []
+    device_ext_list = { platform.attrib.get('name'): [] for platform in docRoot.find('platforms').findall('platform')}
+    device_ext_list['base'] = []
 
     for extension in docRoot.find('extensions'):
         if len(extension) == 0 or extension.attrib.get('supported') != "vulkan":
             continue
-        if extension.attrib.get('platform') is not None and extension.attrib.get('platform') != platform:
-            continue
-        print(generateExtension(extension))
+        platform = extension.attrib.get('platform')
+        if(platform is None):
+           platform = 'base'
+           
         if extension.attrib.get('type') == 'instance':
-            instance_ext_name_list.append(extension.attrib.get('name'))
+            instance_ext_list[platform].append(generateExtension(extension))
         else:
-            device_ext_name_list.append(extension.attrib.get('name'))
+            device_ext_list[platform].append(generateExtension(extension))
 
-    print("const std::unordered_map < std::string, InstanceExtensionInitializerBase const * >")
-    print(" m_instanceExtInitializers {")
+    print("#ifdef VKW_DUMP_EXTENSION_CLASSES")
 
-    for extension in instance_ext_name_list:
-        print("{\"" + extension + "\", &" + reformatExtensionName(extension) + "::m_initializer},")
+    for ext_platform in instance_ext_list.keys():
+        if len(instance_ext_list[ext_platform]) == 0:
+            continue
+        insert_protect = ext_platform != 'base'
+        if insert_protect:
+            print("#ifdef " + platform_macro_map[ext_platform])
+        for ext in instance_ext_list[ext_platform]:
+            print(ext.body)
+        if insert_protect:
+            print("#endif")
+            
+    for ext_platform in device_ext_list.keys():
+        if len(device_ext_list[ext_platform]) == 0:
+            continue
+        insert_protect = ext_platform != 'base'
+        if insert_protect:
+            print("#ifdef " + platform_macro_map[ext_platform])
+        for ext in device_ext_list[ext_platform]:
+            print(ext.body)
+        if insert_protect:
+            print("#endif")
 
-    print('};')
+    print("#endif") # #ifdef VKW_DUMP_EXTENSION_CLASSES
 
-    print("const std::unordered_map < std::string, DeviceExtensionInitializerBase const * >")
-    print(" m_deviceExtInitializers {")
+    print("#ifdef VKW_DUMP_EXTENSION_INITIALIZERS_MAP_DEFINITION")
+    for ext_platform in instance_ext_list.keys():
+        if len(instance_ext_list[ext_platform]) == 0:
+            continue
+        insert_protect = ext_platform != 'base'
+        if insert_protect:
+            print("#ifdef " + platform_macro_map[ext_platform])
+        for ext in instance_ext_list[ext_platform]:
+            print("VKW_INSTANCE_MAP_ENTRY(\"" + ext.string_name + "\", &" + ext.name + "::m_initializer)")
+        if insert_protect:
+            print("#endif")
 
-    for extension in device_ext_name_list:
-        print("{\"" + extension + "\", &" + reformatExtensionName(extension) + "::m_initializer},")
-
-    print('};')
+    for ext_platform in device_ext_list.keys():
+        if len(device_ext_list[ext_platform]) == 0:
+            continue
+        insert_protect = ext_platform != 'base'
+        if insert_protect:
+            print("#ifdef " + platform_macro_map[ext_platform])
+        for ext in device_ext_list[ext_platform]:
+            print("VKW_DEVICE_MAP_ENTRY(\"" + ext.string_name + "\", &" + ext.name + "::m_initializer)")
+        if insert_protect:
+            print("#endif")
+    print("#endif")
     return
 
 
@@ -136,6 +180,8 @@ def generateCoreDefinitions():
     major = 1
     prev_instance_class = "SymbolTableBase<VkInstance>"
     prev_device_class = "SymbolTableBase<VkDevice>"
+
+    print("#ifdef VKW_DUMP_CORE_CLASSES")
 
     for feature in feature_apis:
         if feature.attrib.get('number') != str(major) + '.' + str(minor):
@@ -191,20 +237,15 @@ def generateCoreDefinitions():
         prev_device_class = current_device_class
 
         minor += 1
-
+    print("#endif") # #ifdef VKW_DUMP_CORE_CLASSES
 
 if __name__ == '__main__':
     args = argparse.ArgumentParser()
-
-    args.add_argument('-platform', action='store', default='win32',
-                      help='only those platform-specific extensions with will be built')
 
     args.add_argument('-path', action='store', default='.',
                       help='path to vk.xml')
 
     parsed_args = args.parse_args()
-
-    platform = parsed_args.platform
 
     doc = xmlReader.parse(parsed_args.path + '/vk.xml')
 

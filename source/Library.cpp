@@ -1,14 +1,21 @@
-#include "Library.hpp"
-#include "Exception.hpp"
+#include "vkw/Library.hpp"
 #include "loader/DynamicLoader.hpp"
+#include "vkw/Exception.hpp"
 #include <cassert>
 
 namespace vkw {
 
-Library::Library() {
+std::unordered_map<std::string, InstanceExtensionInitializerBase const *>
+    m_instanceExtInitializers{};
+std::unordered_map<std::string, DeviceExtensionInitializerBase const *>
+    m_deviceExtInitializers{};
+
+Library::Library(PFN_m_fill_extension_map p) {
   static constexpr const char *libName =
 #ifdef _WIN32
       "vulkan-1.dll";
+#elif defined __linux__
+      "libvulkan.so.1";
 #endif
   m_loader = std::make_unique<DynamicLoader>(libName);
 
@@ -32,6 +39,7 @@ Library::Library() {
     } else
       throw;
   }
+  p(); // fill extension table
 }
 
 ApiVersion::ApiVersion(uint32_t encoded)

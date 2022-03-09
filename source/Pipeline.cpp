@@ -1,9 +1,9 @@
-#include "Pipeline.hpp"
-#include "DescriptorSet.hpp"
-#include "Device.hpp"
-#include "RenderPass.hpp"
-#include "Shader.hpp"
+#include "vkw/Pipeline.hpp"
 #include "Utils.hpp"
+#include "vkw/DescriptorSet.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/RenderPass.hpp"
+#include "vkw/Shader.hpp"
 
 namespace vkw {
 

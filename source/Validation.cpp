@@ -1,6 +1,6 @@
 #include "Validation.hpp"
 
-#include "Instance.hpp"
+#include "vkw/Instance.hpp"
 #include <assert.h>
 #include <iostream>
 #include <sstream>

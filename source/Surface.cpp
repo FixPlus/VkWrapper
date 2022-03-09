@@ -1,6 +1,6 @@
-#include "Surface.hpp"
-#include "Instance.hpp"
+#include "vkw/Surface.hpp"
 #include "Utils.hpp"
+#include "vkw/Instance.hpp"
 
 namespace vkw {
 
@@ -8,30 +8,6 @@ Surface::~Surface() {
   if (m_surface != VK_NULL_HANDLE)
     m_surface_ext->vkDestroySurfaceKHR(m_parent, m_surface, nullptr);
 }
-#if _WIN32
-Surface::Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd)
-    : m_parent(parent) {
-  m_surface_ext = static_cast<VkKhrSurface const *>(
-      parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
-  if (!m_surface_ext)
-    throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
-  auto *win32SurfaceExt = static_cast<VkKhrWin32Surface const *>(
-      parent.extension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
-  if (!win32SurfaceExt)
-    throw ExtensionMissing(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
-
-  VkWin32SurfaceCreateInfoKHR createInfo{};
-
-  createInfo.sType = VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR;
-  createInfo.pNext = nullptr;
-  createInfo.flags = 0;
-  createInfo.hinstance = hinstance;
-  createInfo.hwnd = hwnd;
-
-  VK_CHECK_RESULT(win32SurfaceExt->vkCreateWin32SurfaceKHR(
-      m_parent, &createInfo, nullptr, &m_surface))
-}
-#endif
 std::vector<VkPresentModeKHR>
 Surface::getAvailablePresentModes(VkPhysicalDevice device) const {
   uint32_t modeCount = 0;

@@ -1,7 +1,7 @@
 #ifndef VKRENDERER_UTILS_HPP
 #define VKRENDERER_UTILS_HPP
 
-#include "Exception.hpp"
+#include "vkw/Exception.hpp"
 #include <string>
 namespace vkw {
 
