@@ -10,23 +10,9 @@
 
 namespace vkw {
 
-Device::Device(Device &&another) : m_parent(another.m_parent) {
+Device::Device(Device &&another)
+    : m_parent(another.m_parent), m_ph_device(std::move(another.m_ph_device)) {
   m_device = another.m_device;
-  m_info = another.m_info;
-
-  ph_device = another.ph_device;
-
-  m_properties = another.m_properties;
-
-  m_features = another.m_features;
-
-  m_enabledFeatures = another.m_enabledFeatures;
-
-  m_memoryProperties = another.m_memoryProperties;
-
-  m_queueFamilyProperties = another.m_queueFamilyProperties;
-
-  m_supportedExtensions = another.m_supportedExtensions;
 
   queueFamilyIndices = another.queueFamilyIndices;
 
@@ -84,43 +70,8 @@ uint32_t getQueueFamilyIndex(
   throw Error("Could not find a matching queue family index");
 }
 
-Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
-
-  ph_device = phDevice;
-
-  // Store Properties features, limits and properties of the physical device for
-  // later use Device properties also contain limits and sparse properties
-  m_parent.core<1, 0>().vkGetPhysicalDeviceProperties(ph_device, &m_properties);
-  // Features should be checked by the examples before using them
-  m_parent.core<1, 0>().vkGetPhysicalDeviceFeatures(ph_device, &m_features);
-  // Memory properties are used regularly for creating all kinds of buffers
-  m_parent.core<1, 0>().vkGetPhysicalDeviceMemoryProperties(
-      ph_device, &m_memoryProperties);
-  // Queue family properties, used for setting up requested queues upon device
-  // creation
-  uint32_t queueFamilyCount;
-  m_parent.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
-      ph_device, &queueFamilyCount, nullptr);
-
-  m_queueFamilyProperties.resize(queueFamilyCount);
-  m_parent.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
-      ph_device, &queueFamilyCount, m_queueFamilyProperties.data());
-
-  m_info.name = m_properties.deviceName;
-
-  // Get list of supported extensions
-  uint32_t extCount = 0;
-  m_parent.core<1, 0>().vkEnumerateDeviceExtensionProperties(
-      ph_device, nullptr, &extCount, nullptr);
-  if (extCount > 0) {
-    std::vector<VkExtensionProperties> extensions(extCount);
-    if (m_parent.core<1, 0>().vkEnumerateDeviceExtensionProperties(
-            ph_device, nullptr, &extCount, &extensions.front()) == VK_SUCCESS) {
-      for (auto ext : extensions) {
-        m_supportedExtensions.emplace_back(ext.extensionName);
-      }
-    }
-  }
+Device::Device(Instance &parent, PhysicalDevice phDevice)
+    : m_parent(parent), m_ph_device(std::move(phDevice)) {
 
   // TODO: move this logic to DeviceCreateInfo level
 
@@ -132,8 +83,8 @@ Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
 
   // Graphics queue
   if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT) {
-    queueFamilyIndices.graphics =
-        getQueueFamilyIndex(m_queueFamilyProperties, VK_QUEUE_GRAPHICS_BIT);
+    queueFamilyIndices.graphics = getQueueFamilyIndex(
+        m_ph_device.queueProperties(), VK_QUEUE_GRAPHICS_BIT);
     VkDeviceQueueCreateInfo queueInfo{};
     queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
     queueInfo.queueFamilyIndex = queueFamilyIndices.graphics;
@@ -147,8 +98,8 @@ Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
 
   // Dedicated compute queue
   if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT) {
-    queueFamilyIndices.compute =
-        getQueueFamilyIndex(m_queueFamilyProperties, VK_QUEUE_COMPUTE_BIT);
+    queueFamilyIndices.compute = getQueueFamilyIndex(
+        m_ph_device.queueProperties(), VK_QUEUE_COMPUTE_BIT);
     if (queueFamilyIndices.compute != queueFamilyIndices.graphics) {
       // If compute family index differs, we need an additional queue create
       // info for the compute queue
@@ -167,8 +118,8 @@ Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
 
   // Dedicated transfer queue
   if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT) {
-    queueFamilyIndices.transfer =
-        getQueueFamilyIndex(m_queueFamilyProperties, VK_QUEUE_TRANSFER_BIT);
+    queueFamilyIndices.transfer = getQueueFamilyIndex(
+        m_ph_device.queueProperties(), VK_QUEUE_TRANSFER_BIT);
     if ((queueFamilyIndices.transfer != queueFamilyIndices.graphics) &&
         (queueFamilyIndices.transfer != queueFamilyIndices.compute)) {
       // If compute family index differs, we need an additional queue create
@@ -186,42 +137,30 @@ Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
     queueFamilyIndices.transfer = queueFamilyIndices.graphics;
   }
 
-  std::vector<const char *> deviceExtensions{};
-
-  // TODO: ask for swap chain support on DeviceCreateInfo level
-  deviceExtensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
   VkDeviceCreateInfo deviceCreateInfo = {};
   deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
   deviceCreateInfo.queueCreateInfoCount =
       static_cast<uint32_t>(queueCreateInfos.size());
   deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
-  deviceCreateInfo.pEnabledFeatures = &m_enabledFeatures;
+  deviceCreateInfo.pEnabledFeatures = &m_ph_device.enabledFeatures();
 
-  // TODO: enable only if validation/debug mode enabled
-  if (extensionSupported(VK_EXT_DEBUG_MARKER_EXTENSION_NAME)) {
-    deviceExtensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-  }
+  std::vector<const char *> extensionsRaw{};
+  extensionsRaw.reserve(m_ph_device.enabledExtensions().size());
+  std::transform(m_ph_device.enabledExtensions().begin(),
+                 m_ph_device.enabledExtensions().end(),
+                 std::back_inserter(extensionsRaw),
+                 [](std::string const &ext) { return ext.c_str(); });
 
-  if (!deviceExtensions.empty()) {
-    for (const char *enabledExtension : deviceExtensions) {
-      if (!extensionSupported(enabledExtension)) {
-        throw Error("device has no support for enabled extension " +
-                    std::string(enabledExtension));
-      }
-    }
-
-    deviceCreateInfo.enabledExtensionCount = (uint32_t)deviceExtensions.size();
-    deviceCreateInfo.ppEnabledExtensionNames = deviceExtensions.data();
-  }
+  deviceCreateInfo.enabledExtensionCount = extensionsRaw.size();
+  deviceCreateInfo.ppEnabledExtensionNames = extensionsRaw.data();
 
   VK_CHECK_RESULT(m_parent.core<1, 0>().vkCreateDevice(
-      ph_device, &deviceCreateInfo, nullptr, &m_device))
+      m_ph_device, &deviceCreateInfo, nullptr, &m_device))
 
   m_coreDeviceSymbols = std::make_unique<DeviceCore<1, 0>>(
       m_parent.core<1, 0>().vkGetDeviceProcAddr, m_device);
 
-  for (auto &extName : deviceExtensions) {
+  for (auto &extName : extensionsRaw) {
     std::unique_ptr<DeviceExtensionBase> ext;
     auto initializer = m_deviceExtInitializers.find(extName);
     assert(initializer != m_deviceExtInitializers.end() &&
@@ -236,7 +175,7 @@ Device::Device(Instance &parent, VkPhysicalDevice phDevice) : m_parent(parent) {
 
   VmaAllocatorCreateInfo allocatorInfo = {};
   allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
-  allocatorInfo.physicalDevice = ph_device;
+  allocatorInfo.physicalDevice = m_ph_device;
   allocatorInfo.device = m_device;
   allocatorInfo.instance = parent;
 

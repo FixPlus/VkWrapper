@@ -87,16 +87,26 @@ Instance::Instance(Library const &library,
   std::cout << "Vulkan initialized successfully" << std::endl;
 }
 
-std::vector<VkPhysicalDevice> Instance::enumerateAvailableDevices() const {
-  std::vector<VkPhysicalDevice> ret;
+std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
+  std::vector<VkPhysicalDevice> devs;
   uint32_t deviceCount = 0;
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
   if (deviceCount == 0)
-    return ret;
+    return {};
 
-  ret.resize(deviceCount);
+  devs.resize(deviceCount);
 
-  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, ret.data());
+  core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
+                                          devs.data());
+
+  std::vector<PhysicalDevice> ret;
+  ret.reserve(devs.size());
+
+  std::transform(devs.begin(), devs.end(), std::back_inserter(ret),
+                 [this](VkPhysicalDevice device) {
+                   return PhysicalDevice{*this, device};
+                 });
+
   return ret;
 }
 

@@ -26,7 +26,7 @@ public:
   Instance(Instance &&another) noexcept;
   Instance &operator=(Instance &&another) noexcept;
 
-  std::vector<VkPhysicalDevice> enumerateAvailableDevices() const;
+  std::vector<PhysicalDevice> enumerateAvailableDevices() const;
 
   bool isExtensionEnabled(std::string const &extension) {
     return m_extensions.contains(extension);

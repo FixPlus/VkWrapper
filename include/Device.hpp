@@ -3,6 +3,7 @@
 
 #include "Exception.hpp"
 #include "Library.hpp"
+#include "PhysicalDevice.hpp"
 #include "SymbolTable.hpp"
 #include "vma/vk_mem_alloc.h"
 #include <cstdint>
@@ -15,20 +16,12 @@
 
 namespace vkw {
 
-struct DeviceInfo {
-  uint32_t id;
-  std::string name;
-  VkPhysicalDevice physicalDevice;
-};
-
 class Instance;
 class BufferBase;
 class Queue;
 
 class Device {
 public:
-  DeviceInfo const &getInfo() const { return m_info; };
-
   Instance const &getParent() const { return m_parent; };
 
   Device(Device const &another) = delete;
@@ -36,17 +29,11 @@ public:
   Device(Device &&another);
   Device &operator=(Device &&another) = delete;
 
-  Device(Instance &parent, VkPhysicalDevice phDevice);
+  Device(Instance &parent, PhysicalDevice phDevice);
   virtual ~Device();
 
-  bool extensionSupported(std::string const &extension) const {
-    return (std::find(m_supportedExtensions.begin(),
-                      m_supportedExtensions.end(),
-                      extension) != m_supportedExtensions.end());
-  }
-
   bool supportsPresenting() const {
-    return extensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    return m_ph_device.extensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   }
 
   std::unique_ptr<BufferBase>
@@ -67,12 +54,9 @@ public:
 
   operator VkDevice() const { return m_device; }
 
-  VkPhysicalDevice getPhysicalDevice() const { return ph_device; }
   VmaAllocator getAllocator() const { return m_allocator; }
 
-  std::vector<VkQueueFamilyProperties> const &getQueueFamilyProperties() const {
-    return m_queueFamilyProperties;
-  }
+  PhysicalDevice const &physicalDevice() const { return m_ph_device; }
 
   template <uint32_t major, uint32_t minor>
   DeviceCore<major, minor> core() const {
@@ -95,25 +79,10 @@ public:
 private:
   Instance &m_parent;
   VkDevice m_device;
-  DeviceInfo m_info;
 
   VmaAllocator m_allocator;
 
-  VkPhysicalDevice ph_device;
-  /** @brief Properties of the physical device including limits that the
-   * application can check against */
-  VkPhysicalDeviceProperties m_properties{};
-  /** @brief Features of the physical device that an application can use to
-   * check if a feature is supported */
-  VkPhysicalDeviceFeatures m_features{};
-  /** @brief Features that have been enabled for use on the physical device */
-  VkPhysicalDeviceFeatures m_enabledFeatures{};
-  /** @brief Memory types and heaps of the physical device */
-  VkPhysicalDeviceMemoryProperties m_memoryProperties{};
-  /** @brief Queue family properties of the physical device */
-  std::vector<VkQueueFamilyProperties> m_queueFamilyProperties{};
-  /** @brief List of extensions supported by the device */
-  std::vector<std::string> m_supportedExtensions{};
+  PhysicalDevice m_ph_device;
 
   struct {
     uint32_t graphics;

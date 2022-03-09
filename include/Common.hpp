@@ -148,6 +148,7 @@ using DepthImageCubeArrayView = T_ImageCubeArrayView<DepthImageView>;
 using StencilImageCubeArrayView = T_ImageCubeArrayView<StencilImageView>;
 
 class Instance;
+class PhysicalDevice;
 class Pipeline;
 class PipelineLayout;
 class GraphicsPipeline;
@@ -360,6 +361,10 @@ template <> struct TypeTraits<StencilImageCubeArrayView> {
 };
 
 template <> struct TypeTraits<Instance> { using VType = VkInstance; };
+
+template <> struct TypeTraits<PhysicalDevice> {
+  using VType = VkPhysicalDevice;
+};
 
 template <> struct TypeTraits<Pipeline> { using VType = VkPipeline; };
 
@@ -582,6 +587,7 @@ VKR_DECLARE_ARRAY_TYPES(DepthImageCubeArrayView)
 VKR_DECLARE_ARRAY_TYPES(StencilImageCubeArrayView)
 
 VKR_DECLARE_ARRAY_TYPES(Instance)
+VKR_DECLARE_ARRAY_TYPES(PhysicalDevice)
 VKR_DECLARE_ARRAY_TYPES(Pipeline)
 VKR_DECLARE_ARRAY_TYPES(PipelineLayout)
 VKR_DECLARE_ARRAY_TYPES(GraphicsPipeline)
@@ -685,6 +691,7 @@ VKR_DECLARE_REF_TYPES(DepthImageCubeArrayView)
 VKR_DECLARE_REF_TYPES(StencilImageCubeArrayView)
 
 VKR_DECLARE_REF_TYPES(Instance)
+VKR_DECLARE_REF_TYPES(PhysicalDevice)
 VKR_DECLARE_REF_TYPES(Pipeline)
 VKR_DECLARE_REF_TYPES(PipelineLayout)
 VKR_DECLARE_REF_TYPES(GraphicsPipeline)

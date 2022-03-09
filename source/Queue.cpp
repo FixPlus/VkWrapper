@@ -16,7 +16,7 @@ Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
   m_parent.core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex,
                                          &m_queue);
 
-  auto &queueFamilyProperties = m_parent.getQueueFamilyProperties();
+  auto &queueFamilyProperties = m_parent.physicalDevice().queueProperties();
 
   queueFamilyProperties.at(queueFamilyIndex).queueFlags;
 }
@@ -31,7 +31,7 @@ bool Queue::supportsPresenting(Surface const &surface) const {
 
   VkBool32 ret;
   VK_CHECK_RESULT(surfaceExt->vkGetPhysicalDeviceSurfaceSupportKHR(
-      m_parent.getPhysicalDevice(), m_familyIndex, surface, &ret))
+      m_parent.physicalDevice(), m_familyIndex, surface, &ret))
   return ret;
 }
 
