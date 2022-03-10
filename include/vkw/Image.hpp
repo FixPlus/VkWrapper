@@ -367,9 +367,11 @@ class T_Image2DArrayView : public T,
                            public ImageViewCreator {
 private:
   using CompatibleImageType = T_Image3DInterface<typename T::ImageAspect>;
+  using CompatibleImageType2 = T_Image2DInterface<typename T::ImageAspect>;
   using CompatibleArrayedImageType =
       T_Image2DArrayInterface<typename T::ImageAspect>;
   friend CompatibleImageType;
+  friend CompatibleImageType2;
   friend CompatibleArrayedImageType;
 
   T_Image2DArrayView(Device const &device, VkFormat format,
@@ -385,6 +387,17 @@ private:
                                   };
 
   T_Image2DArrayView(Device const &device, CompatibleImageType const *image,
+                     VkFormat format, VkComponentMapping componentMapping,
+                     uint32_t baseLayer = 0, uint32_t layerCount = 1,
+                     uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
+                     VkImageViewCreateFlags flags = 0)
+      : ImageView(image, format, baseMipLevel, mipLevelCount, componentMapping,
+                  flags),
+        ImageViewCreator(device), Image2DArrayView(baseLayer, layerCount){
+
+                                  };
+
+  T_Image2DArrayView(Device const &device, CompatibleImageType2 const *image,
                      VkFormat format, VkComponentMapping componentMapping,
                      uint32_t baseLayer = 0, uint32_t layerCount = 1,
                      uint32_t baseMipLevel = 0, uint32_t mipLevelCount = 1,
@@ -608,6 +621,17 @@ public:
         m_cacheView(std::unique_ptr<ImageView>{
             new T_Image2DView<U>{device, this, format, componentMapping,
                                  baseMipLevel, mipLevelCount, flags}}));
+  }
+
+  template <ImageViewAspectInterface U>
+  requires std::same_as<typename U::ImageAspect, T> T_Image2DArrayView<U>
+  const &getView(Device const &device, VkComponentMapping componentMapping,
+                 VkFormat format, uint32_t baseMipLevel = 0,
+                 uint32_t mipLevelCount = 1, VkImageViewCreateFlags flags = 0) {
+    return *dynamic_cast<T_Image2DArrayView<U> *>(
+        m_cacheView(std::unique_ptr<ImageView>{
+            new T_Image2DArrayView<U>{device, this, format, componentMapping, 0,
+                                      1, baseMipLevel, mipLevelCount, flags}}));
   }
 
 protected:
@@ -863,6 +887,21 @@ public:
                uint32_t mipLevels, VkImageUsageFlags usage,
                VkImageCreateFlags flags = 0)
       : ColorImage2DInterface(format, width, height),
+        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
+                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
+                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+        AllocatedImage(allocator, allocCreateInfo) {}
+};
+
+class DepthStencilImage2D : public DepthStencilImage2DInterface,
+                            public ImageRestInterface,
+                            public AllocatedImage {
+public:
+  DepthStencilImage2D(VmaAllocator allocator,
+                      VmaAllocationCreateInfo allocCreateInfo, VkFormat format,
+                      uint32_t width, uint32_t height, uint32_t mipLevels,
+                      VkImageUsageFlags usage, VkImageCreateFlags flags = 0)
+      : DepthStencilImage2DInterface(format, width, height),
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
                            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),

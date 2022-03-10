@@ -92,6 +92,21 @@ struct VertexInputStateCreateInfoBaseHandle
   VertexInputStateCreateInfoBaseHandle(Args... args)
       : std::unique_ptr<VertexInputStateCreateInfoBase>{
             std::make_unique<VertexInputStateCreateInfoBase>(args...)} {}
+  VertexInputStateCreateInfoBaseHandle(
+      VertexInputStateCreateInfoBaseHandle const &another)
+      : std::unique_ptr<VertexInputStateCreateInfoBase>{
+            std::make_unique<VertexInputStateCreateInfoBase>(*another.get())} {}
+
+  VertexInputStateCreateInfoBaseHandle(
+      VertexInputStateCreateInfoBaseHandle &&another) noexcept
+      : std::unique_ptr<VertexInputStateCreateInfoBase>{std::move(another)} {}
+
+  VertexInputStateCreateInfoBaseHandle &
+  operator=(VertexInputStateCreateInfoBaseHandle &&another) noexcept {
+    std::unique_ptr<VertexInputStateCreateInfoBase>::operator=(
+        std::move(another));
+    return *this;
+  }
 };
 
 template <typename T>
@@ -251,19 +266,41 @@ public:
 private:
   VkPipelineRasterizationStateCreateInfo m_createInfo{};
 };
+
+class DepthTestStateCreateInfo {
+public:
+  DepthTestStateCreateInfo(VkCompareOp compareOp, bool writeEnable,
+                           float minDepth = 0.0f, float maxDepth = 1.0f) {
+    m_createInfo.depthCompareOp = compareOp;
+    m_createInfo.depthWriteEnable = writeEnable;
+    m_createInfo.minDepthBounds = minDepth;
+    m_createInfo.maxDepthBounds = maxDepth;
+  }
+  operator VkPipelineDepthStencilStateCreateInfo const &() const {
+    return m_createInfo;
+  }
+
+private:
+  VkPipelineDepthStencilStateCreateInfo m_createInfo{};
+};
+
 class GraphicsPipelineCreateInfo {
 public:
-  GraphicsPipelineCreateInfo(
-      RenderPassCRef renderPass, uint32_t subpass, PipelineLayoutCRef layout,
-      ShaderBaseConstRefArray const &shaderStages,
-      VertexInputStateCreateInfoBaseHandle vertexInputState =
-          NullVertexInputState(),
-      InputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {},
-      RasterizationStateCreateInfo rasterizationStateCreateInfo = {});
+  GraphicsPipelineCreateInfo(RenderPassCRef renderPass, uint32_t subpass,
+                             PipelineLayoutCRef layout);
 
-  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) = default;
-  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another) =
-      delete;
+  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) noexcept;
+  GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another);
+
+  void addDepthTestState(DepthTestStateCreateInfo depthTest);
+  void addVertexShader(VertexShader const &shader);
+  void addFragmentShader(FragmentShader const &shader);
+  void
+  addVertexInputState(VertexInputStateCreateInfoBaseHandle vertexInputState);
+  void
+  addInputAssemblyState(InputAssemblyStateCreateInfo const &inputAssemblyState);
+  void
+  addRasterizationState(RasterizationStateCreateInfo const &rasterizationState);
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 
@@ -271,11 +308,11 @@ public:
     return *m_vertexInputStateCreateInfo;
   }
 
-  InputAssemblyStateCreateInfo const &inputAssemblyState() const {
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyState() const {
     return m_inputAssemblyStateCreateInfo;
   }
 
-  RasterizationStateCreateInfo const &rasterizationState() const {
+  VkPipelineRasterizationStateCreateInfo rasterizationState() const {
     return m_rasterizationStateCreateInfo;
   }
 
@@ -285,32 +322,31 @@ public:
 
   uint32_t subpass() const { return m_createInfo.subpass; }
 
-  VertexShader const &vertexShader() const { return m_vertexShader; }
+  std::optional<VertexShaderCRef> vertexShader() const {
+    return m_vertexShader;
+  }
 
   std::optional<FragmentShaderCRef> fragmentShader() const {
     return m_fragmentShader;
   }
 
 private:
-  static VertexShaderCRef
-  m_find_vertex_shader(ShaderBaseConstRefArray const &shaderStages);
-
   RenderPassCRef m_renderPass;
 
   // Shader Stages
 
   std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
-
-  VertexShaderCRef m_vertexShader; // Vertex Shader stage is obligatory
-                                   // according to Vulkan Spec
+  std::optional<VertexShaderCRef> m_vertexShader;
   std::optional<FragmentShaderCRef> m_fragmentShader;
+
   // TODO: support other shader stages
 
   // Fixed pipeline stages
 
-  VertexInputStateCreateInfoBaseHandle m_vertexInputStateCreateInfo;
-  InputAssemblyStateCreateInfo m_inputAssemblyStateCreateInfo;
-  RasterizationStateCreateInfo m_rasterizationStateCreateInfo;
+  VertexInputStateCreateInfoBaseHandle m_vertexInputStateCreateInfo =
+      NullVertexInputState();
+  VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyStateCreateInfo;
+  VkPipelineRasterizationStateCreateInfo m_rasterizationStateCreateInfo;
 
   // TODO: support configure for these stages
   VkPipelineViewportStateCreateInfo m_viewportState{};

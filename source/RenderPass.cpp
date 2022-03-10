@@ -54,7 +54,7 @@ void SubpassDescription::addColorAttachment(
 }
 void SubpassDescription::addDepthAttachment(
     AttachmentDescription const &attachment, VkImageLayout layout) {
-  m_depthAttachment = std::make_pair(attachment, layout);
+  m_depthAttachment = std::make_pair(std::ref(attachment), layout);
 }
 void SubpassDescription::addPreserveAttachment(
     AttachmentDescription const &attachment) {
