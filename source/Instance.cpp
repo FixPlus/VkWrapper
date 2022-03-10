@@ -1,5 +1,6 @@
 #include "vkw/Instance.hpp"
 #include "Utils.hpp"
+#include "Validation.hpp"
 #include "loader/DynamicLoader.hpp"
 #include "vkw/Device.hpp"
 #include "vkw/Exception.hpp"
@@ -84,8 +85,8 @@ Instance::Instance(Library const &library,
         std::unique_ptr<InstanceExtensionBase>(initializer->second->initialize(
             m_vulkanLib.get().vkGetInstanceProcAddr, m_instance)));
   }
-
-  std::cout << "Vulkan initialized successfully" << std::endl;
+  if (m_validation)
+    debug::setupDebugging(*this, 0, nullptr);
 }
 
 std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
@@ -133,6 +134,9 @@ Instance &Instance::operator=(Instance &&another) noexcept {
 Instance::~Instance() {
   if (m_instance == VK_NULL_HANDLE)
     return;
+
+  if (m_validation)
+    debug::freeDebugCallback(*this);
 
   core<1, 0>().vkDestroyInstance(m_instance, nullptr);
 }

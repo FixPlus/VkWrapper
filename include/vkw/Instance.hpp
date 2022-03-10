@@ -6,7 +6,6 @@
 #include "Library.hpp"
 #include "SymbolTable.hpp"
 #include <functional>
-#include <iostream>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -35,14 +34,6 @@ public:
 
   virtual ~Instance();
 
-  // ****** DEBUG *******
-
-  void printExtensions() const {
-    for (auto &ext : m_extensions) {
-      std::cout << ext.first << std::endl;
-    }
-  }
-
   template <uint32_t major, uint32_t minor>
   InstanceCore<major, minor> const &core() const {
     if (m_apiVer < ApiVersion{major, minor, 0})
@@ -60,6 +51,22 @@ public:
       return nullptr;
     return m_extensions.at(name).get();
   }
+
+  /** Iterators for extensions.*/
+
+  auto extensions_begin() { return m_extensions.begin(); }
+
+  auto extensions_end() { return m_extensions.end(); }
+
+  auto extensions_begin() const { return m_extensions.begin(); }
+
+  auto extensions_end() const { return m_extensions.end(); }
+
+  using extension_iterator =
+      std::unordered_map<std::string,
+                         std::unique_ptr<InstanceExtensionBase>>::iterator;
+  using extension_const_iterator = std::unordered_map<
+      std::string, std::unique_ptr<InstanceExtensionBase>>::const_iterator;
 
 private:
   VkInstance m_instance{};
