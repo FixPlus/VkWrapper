@@ -10,6 +10,7 @@ enum class VertexAttributeType {
   VEC3F,
   VEC2F,
   FLOAT,
+  RGBA8_UNORM,
 };
 
 constexpr uint64_t size_of(VertexAttributeType attrType) {
@@ -23,6 +24,8 @@ constexpr uint64_t size_of(VertexAttributeType attrType) {
     return 2 * sizeof(float);
   case VertexAttributeType::FLOAT:
     return 1 * sizeof(float);
+  case VertexAttributeType::RGBA8_UNORM:
+    return 1 * sizeof(uint32_t);
   }
   return 0;
 }
@@ -37,6 +40,8 @@ constexpr VkFormat format_of(VertexAttributeType attrType) {
     return VK_FORMAT_R32G32_SFLOAT;
   case VertexAttributeType::FLOAT:
     return VK_FORMAT_R32_SFLOAT;
+  case VertexAttributeType::RGBA8_UNORM:
+    return VK_FORMAT_R8G8B8A8_UINT;
   }
 
   return VK_FORMAT_MAX_ENUM;
@@ -48,6 +53,7 @@ constexpr uint32_t locations_hold(VertexAttributeType attrType) {
   case VertexAttributeType::VEC3F:
   case VertexAttributeType::VEC2F:
   case VertexAttributeType::FLOAT:
+  case VertexAttributeType::RGBA8_UNORM:
     return 1u;
   }
   return 0xFFFFFFFF;

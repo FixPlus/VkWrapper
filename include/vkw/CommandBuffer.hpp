@@ -74,7 +74,7 @@ public:
 
   template <VkIndexType type>
   void bindIndexBuffer(IndexBuffer<type> const &ibuf, VkDeviceSize offset) {
-    m_bindVertexBuffer(static_cast<BufferBase const &>(ibuf), type, offset);
+    m_bindIndexBuffer(static_cast<BufferBase const &>(ibuf), type, offset);
   }
 
   void bindGraphicsPipeline(GraphicsPipeline const &pipeline);
@@ -84,6 +84,12 @@ public:
                           VkPipelineBindPoint bindPoint,
                           DescriptorSetConstRefArray sets, uint32_t firstSet);
 
+  template <typename T>
+  void pushConstants(PipelineLayout const &layout,
+                     VkShaderStageFlagBits shaderStage, uint32_t offset,
+                     T const &constant) {
+    m_pushConstants(layout, shaderStage, offset, sizeof(constant), &constant);
+  }
   /** Draw commands */
 
   void draw(uint32_t vertexCount, uint32_t instanceCount = 0,
@@ -112,6 +118,9 @@ protected:
                VkCommandBufferInheritanceInfo const *inheritanceInfo);
 
 private:
+  void m_pushConstants(PipelineLayout const &layout,
+                       VkShaderStageFlagBits shaderStage, uint32_t offset,
+                       uint32_t size, const void *data);
   void m_bindVertexBuffer(VkBuffer buffer, uint32_t binding,
                           VkDeviceSize offset);
   void m_bindIndexBuffer(VkBuffer buffer, VkIndexType type,

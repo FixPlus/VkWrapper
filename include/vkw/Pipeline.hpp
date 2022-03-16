@@ -14,6 +14,7 @@ public:
   PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
   PipelineLayout(DeviceRef device,
                  DescriptorSetLayoutConstRefArray const &setLayouts,
+                 std::vector<VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0);
 
   PipelineLayout(PipelineLayout const &another) = delete;
@@ -22,7 +23,8 @@ public:
   PipelineLayout(PipelineLayout &&another) noexcept
       : m_device(another.m_device), m_layout(another.m_layout),
         m_createInfo(another.m_createInfo),
-        m_descriptorLayouts(std::move(another.m_descriptorLayouts)) {
+        m_descriptorLayouts(std::move(another.m_descriptorLayouts)),
+        m_pushConstants(std::move(another.m_pushConstants)) {
     another.m_layout = VK_NULL_HANDLE;
   }
   PipelineLayout &operator=(PipelineLayout &&another) noexcept {
@@ -30,6 +32,7 @@ public:
     m_createInfo = another.m_createInfo;
     m_layout = another.m_layout;
     m_descriptorLayouts = std::move(another.m_descriptorLayouts);
+    m_pushConstants = std::move(another.m_pushConstants);
     another.m_layout = VK_NULL_HANDLE;
     return *this;
   };
@@ -53,6 +56,7 @@ public:
 private:
   DeviceRef m_device;
   std::vector<DescriptorSetLayoutCRef> m_descriptorLayouts{};
+  std::vector<VkPushConstantRange> m_pushConstants{};
   VkPipelineLayoutCreateInfo m_createInfo{};
   VkPipelineLayout m_layout{};
 };
@@ -177,12 +181,11 @@ private:
     template <BindingPointDescriptionLike M_binding,
               BindingPointDescriptionLike M_dummy,
               BindingPointDescriptionLike... M_bindings>
-    void m_init_array(uint32_t initIndex = 0) {
+    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) {
       uint32_t offset = 0u;
-      uint32_t location = 0u;
       for (uint32_t i = initIndex;
            i < initIndex + M_binding::Attributes::count(); ++i) {
-        auto attrType = M_binding::Attributes::getAttrType(i);
+        auto attrType = M_binding::Attributes::getAttrType(i - initIndex);
         m_attr_desc[i].binding = M_binding::binding;
         m_attr_desc[i].location = location;
         m_attr_desc[i].offset = offset;
@@ -190,17 +193,16 @@ private:
         location += locations_hold(attrType);
         offset += size_of(attrType);
       }
-      m_init_array<M_dummy, M_bindings...>(initIndex +
-                                           M_binding::Attributes::count());
+      m_init_array<M_dummy, M_bindings...>(
+          initIndex + M_binding::Attributes::count(), location);
     }
 
     template <BindingPointDescriptionLike M_binding>
-    void m_init_array(uint32_t initIndex = 0) {
+    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) {
       uint32_t offset = 0u;
-      uint32_t location = 0u;
       for (uint32_t i = initIndex;
            i < initIndex + M_binding::Attributes::count(); ++i) {
-        auto attrType = M_binding::Attributes::getAttrType(i);
+        auto attrType = M_binding::Attributes::getAttrType(i - initIndex);
         m_attr_desc[i].binding = M_binding::binding;
         m_attr_desc[i].location = location;
         m_attr_desc[i].offset = offset;
@@ -292,15 +294,18 @@ public:
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) noexcept;
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another);
 
-  void addDepthTestState(DepthTestStateCreateInfo depthTest);
-  void addVertexShader(VertexShader const &shader);
-  void addFragmentShader(FragmentShader const &shader);
-  void
+  GraphicsPipelineCreateInfo &
+  addDepthTestState(DepthTestStateCreateInfo depthTest);
+  GraphicsPipelineCreateInfo &addVertexShader(VertexShader const &shader);
+  GraphicsPipelineCreateInfo &addFragmentShader(FragmentShader const &shader);
+  GraphicsPipelineCreateInfo &
   addVertexInputState(VertexInputStateCreateInfoBaseHandle vertexInputState);
-  void
+  GraphicsPipelineCreateInfo &
   addInputAssemblyState(InputAssemblyStateCreateInfo const &inputAssemblyState);
-  void
+  GraphicsPipelineCreateInfo &
   addRasterizationState(RasterizationStateCreateInfo const &rasterizationState);
+  GraphicsPipelineCreateInfo &
+  addBlendState(VkPipelineColorBlendAttachmentState state, uint32_t attachment);
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 

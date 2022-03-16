@@ -908,5 +908,21 @@ public:
         AllocatedImage(allocator, allocCreateInfo) {}
 };
 
+class DepthStencilImage2DArray : public DepthStencilImage2DArrayInterface,
+                                 public ImageRestInterface,
+                                 public AllocatedImage {
+public:
+  DepthStencilImage2DArray(VmaAllocator allocator,
+                           VmaAllocationCreateInfo allocCreateInfo,
+                           VkFormat format, uint32_t width, uint32_t height,
+                           uint32_t layerCount, uint32_t mipLevels,
+                           VkImageUsageFlags usage,
+                           VkImageCreateFlags flags = 0)
+      : DepthStencilImage2DArrayInterface(format, width, height, layerCount),
+        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
+                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
+                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+        AllocatedImage(allocator, allocCreateInfo) {}
+};
 } // namespace vkw
 #endif // VKRENDERER_IMAGE_HPP

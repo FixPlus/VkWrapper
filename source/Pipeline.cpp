@@ -21,8 +21,9 @@ PipelineLayout::PipelineLayout(DeviceRef device,
 }
 PipelineLayout::PipelineLayout(
     DeviceRef device, DescriptorSetLayoutConstRefArray const &setLayouts,
+    std::vector<VkPushConstantRange> pushConstants,
     VkPipelineLayoutCreateFlags flags)
-    : m_device(device) {
+    : m_device(device), m_pushConstants(std::move(pushConstants)) {
   m_descriptorLayouts.reserve(setLayouts.size());
 
   for (auto const &layout : setLayouts) {
@@ -34,7 +35,9 @@ PipelineLayout::PipelineLayout(
   m_createInfo.flags = flags;
   m_createInfo.setLayoutCount = setLayouts.size();
   m_createInfo.pSetLayouts = setLayouts;
-  m_createInfo.pushConstantRangeCount = 0; // TODO
+  // TODO : verify push constant ranges against the device limits
+  m_createInfo.pushConstantRangeCount = m_pushConstants.size();
+  m_createInfo.pPushConstantRanges = m_pushConstants.data();
 
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
       m_device.get(), &m_createInfo, nullptr, &m_layout))
@@ -137,7 +140,7 @@ RasterizationStateCreateInfo::RasterizationStateCreateInfo(
       VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = 0;
-  m_createInfo.depthClampEnable = depthBiasEnable;
+  m_createInfo.depthClampEnable = depthClampEnable;
   m_createInfo.rasterizerDiscardEnable = rasterizerDiscardEnable;
   m_createInfo.polygonMode = polygonMode;
   m_createInfo.cullMode = cullMode;
@@ -222,23 +225,27 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.stageCount = m_shaderStages.size();
   m_createInfo.pStages = m_shaderStages.data();
 }
-void GraphicsPipelineCreateInfo::addVertexInputState(
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addVertexInputState(
     VertexInputStateCreateInfoBaseHandle vertexInputState) {
   m_vertexInputStateCreateInfo = std::move(vertexInputState);
   m_createInfo.pVertexInputState =
       &(m_vertexInputStateCreateInfo->
         operator const VkPipelineVertexInputStateCreateInfo &());
+
+  return *this;
 }
-void GraphicsPipelineCreateInfo::addInputAssemblyState(
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addInputAssemblyState(
     InputAssemblyStateCreateInfo const &inputAssemblyState) {
   m_inputAssemblyStateCreateInfo = inputAssemblyState;
+  return *this;
 }
-void GraphicsPipelineCreateInfo::addRasterizationState(
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addRasterizationState(
     const RasterizationStateCreateInfo &rasterizationState) {
   m_rasterizationStateCreateInfo = rasterizationState;
+  return *this;
 }
-void GraphicsPipelineCreateInfo::addFragmentShader(
-    const FragmentShader &shader) {
+GraphicsPipelineCreateInfo &
+GraphicsPipelineCreateInfo::addFragmentShader(const FragmentShader &shader) {
   if (m_fragmentShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
     std::erase_if(m_shaderStages,
@@ -259,8 +266,10 @@ void GraphicsPipelineCreateInfo::addFragmentShader(
   m_fragmentShader.emplace(shader);
   m_createInfo.pStages = m_shaderStages.data();
   m_createInfo.stageCount = m_shaderStages.size();
+  return *this;
 }
-void GraphicsPipelineCreateInfo::addVertexShader(const VertexShader &shader) {
+GraphicsPipelineCreateInfo &
+GraphicsPipelineCreateInfo::addVertexShader(const VertexShader &shader) {
   if (m_vertexShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
     std::erase_if(m_shaderStages,
@@ -281,8 +290,9 @@ void GraphicsPipelineCreateInfo::addVertexShader(const VertexShader &shader) {
   m_vertexShader.emplace(shader);
   m_createInfo.pStages = m_shaderStages.data();
   m_createInfo.stageCount = m_shaderStages.size();
+  return *this;
 }
-void GraphicsPipelineCreateInfo::addDepthTestState(
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addDepthTestState(
     DepthTestStateCreateInfo depthTest) {
   auto dTest =
       depthTest.operator const VkPipelineDepthStencilStateCreateInfo &();
@@ -291,6 +301,7 @@ void GraphicsPipelineCreateInfo::addDepthTestState(
   m_depthStencilState.depthCompareOp = dTest.depthCompareOp;
   m_depthStencilState.minDepthBounds = dTest.minDepthBounds;
   m_depthStencilState.maxDepthBounds = dTest.maxDepthBounds;
+  return *this;
 }
 GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
     GraphicsPipelineCreateInfo &&another) noexcept
@@ -352,6 +363,13 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_colorBlendState.pAttachments = m_blendStates.data();
   m_dynamicState.pDynamicStates = m_dynStates.data();
   m_createInfo.pStages = m_shaderStages.data();
+}
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addBlendState(
+    VkPipelineColorBlendAttachmentState state, uint32_t attachment) {
+
+  m_blendStates.at(attachment) = state;
+
+  return *this;
 };
 
 } // namespace vkw

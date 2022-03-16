@@ -210,4 +210,12 @@ void PrimaryCommandBuffer::executeCommands(
   m_device.core<1, 0>().vkCmdExecuteCommands(m_commandBuffer, commands.size(),
                                              commands);
 }
+
+void CommandBuffer::m_pushConstants(PipelineLayout const &layout,
+                                    VkShaderStageFlagBits shaderStage,
+                                    uint32_t offset, uint32_t size,
+                                    const void *data) {
+  m_device.core<1, 0>().vkCmdPushConstants(m_commandBuffer, layout, shaderStage,
+                                           offset, size, data);
+}
 } // namespace vkw

@@ -24,7 +24,7 @@ bool operator==(VkImageSubresourceRange const &lhs,
                 VkImageSubresourceRange const &rhs) {
   return lhs.levelCount == rhs.levelCount && lhs.layerCount == rhs.layerCount &&
          lhs.baseMipLevel == rhs.baseMipLevel &&
-         lhs.baseArrayLayer == rhs.baseMipLevel &&
+         lhs.baseArrayLayer == rhs.baseArrayLayer &&
          lhs.aspectMask == rhs.aspectMask;
 }
 

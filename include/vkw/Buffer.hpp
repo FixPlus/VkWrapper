@@ -74,7 +74,12 @@ public:
       : m_device(another.m_device), m_count(another.m_count),
         m_buffer(std::move(another.m_buffer)) {}
   Buffer const &operator=(Buffer const &another) = delete;
-  Buffer &operator=(Buffer &&another) = delete;
+  Buffer &operator=(Buffer &&another) noexcept {
+    m_device = std::move(another.m_device);
+    m_buffer = std::move(another.m_buffer);
+    m_count = another.m_count;
+    return *this;
+  }
 
   bool mappable() const { return m_buffer->mappable(); }
 
@@ -103,7 +108,7 @@ public:
   virtual ~Buffer() = default;
 
 protected:
-  Device &m_device;
+  std::reference_wrapper<Device> m_device;
 
 private:
   uint64_t m_count;

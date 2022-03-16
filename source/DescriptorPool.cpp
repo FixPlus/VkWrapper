@@ -8,7 +8,7 @@ namespace vkw {
 DescriptorPool::DescriptorPool(Device const &device, uint32_t maxSets,
                                std::vector<VkDescriptorPoolSize> poolSizes,
                                VkDescriptorPoolCreateFlags flags)
-    : m_device(device), m_poolSizes(std::move(poolSizes)) {
+    : m_device(device), m_poolSizes(std::move(poolSizes)), m_maxSets(maxSets) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = flags;
@@ -40,6 +40,8 @@ VkDescriptorSet DescriptorPool::allocateSet(const DescriptorSetLayout &layout) {
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkAllocateDescriptorSets(
       m_device.get(), &allocateInfo, &set))
 
+  m_setCount++;
+
   return set;
 }
 void DescriptorPool::freeSet(const DescriptorSet &set) {
@@ -56,6 +58,7 @@ void DescriptorPool::freeSet(const DescriptorSet &set) {
   } catch (VulkanError &e) {
     // do something
   }
+  m_setCount--;
 }
 
 } // namespace vkw
