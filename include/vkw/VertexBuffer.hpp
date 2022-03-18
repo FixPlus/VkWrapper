@@ -41,7 +41,7 @@ constexpr VkFormat format_of(VertexAttributeType attrType) {
   case VertexAttributeType::FLOAT:
     return VK_FORMAT_R32_SFLOAT;
   case VertexAttributeType::RGBA8_UNORM:
-    return VK_FORMAT_R8G8B8A8_UINT;
+    return VK_FORMAT_R8G8B8A8_UNORM;
   }
 
   return VK_FORMAT_MAX_ENUM;
