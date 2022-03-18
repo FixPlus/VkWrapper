@@ -159,7 +159,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_inputAssemblyStateCreateInfo = vkw::InputAssemblyStateCreateInfo{};
   m_rasterizationStateCreateInfo = vkw::RasterizationStateCreateInfo{};
 
-  // MultisampleStateCreateInfo
+  // Default MultisampleStateCreateInfo
   m_multisampleState.sampleShadingEnable = VK_FALSE;
   m_multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
   m_multisampleState.sType =
@@ -167,7 +167,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_multisampleState.pNext = nullptr;
   m_multisampleState.flags = 0;
 
-  // Depth/stencil state create info
+  // Default Depth/stencil state create info
   m_depthStencilState.sType =
       VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
   m_depthStencilState.pNext = nullptr;
@@ -176,7 +176,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_depthStencilState.stencilTestEnable = VK_FALSE;
   m_depthStencilState.depthBoundsTestEnable = VK_FALSE;
 
-  // Color blending state create info
+  // Default Color blending state create info
   m_colorBlendState.sType =
       VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
   m_colorBlendState.pNext = nullptr;
@@ -190,17 +190,15 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_colorBlendState.pAttachments = m_blendStates.data();
   m_colorBlendState.logicOpEnable = VK_FALSE;
 
-  // for now will assume viewport state to be dynamic
   m_viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
   m_viewportState.pNext = nullptr;
   m_viewportState.flags = 0;
   m_viewportState.viewportCount = m_viewportState.scissorCount = 1;
-  m_dynStates.push_back(VK_DYNAMIC_STATE_VIEWPORT);
-  m_dynStates.push_back(VK_DYNAMIC_STATE_SCISSOR);
+
   m_dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
   m_dynamicState.pNext = nullptr;
-  m_dynamicState.dynamicStateCount = m_dynStates.size();
-  m_dynamicState.pDynamicStates = m_dynStates.data();
+  m_dynamicState.dynamicStateCount = 0;
+  m_dynamicState.pDynamicStates = nullptr;
   m_dynamicState.flags = 0;
 
   m_createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
@@ -369,6 +367,14 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addBlendState(
 
   m_blendStates.at(attachment) = state;
 
+  return *this;
+}
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addDynamicState(VkDynamicState state) {
+  if(std::find(m_dynStates.begin(), m_dynStates.end(), state) == m_dynStates.end()){
+    m_dynStates.emplace_back(state);
+    m_dynamicState.dynamicStateCount++;
+    m_dynamicState.pDynamicStates = m_dynStates.data();
+  }
   return *this;
 };
 

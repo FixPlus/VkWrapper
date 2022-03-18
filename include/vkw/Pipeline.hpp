@@ -306,6 +306,8 @@ public:
   addRasterizationState(RasterizationStateCreateInfo const &rasterizationState);
   GraphicsPipelineCreateInfo &
   addBlendState(VkPipelineColorBlendAttachmentState state, uint32_t attachment);
+  GraphicsPipelineCreateInfo &
+  addDynamicState(VkDynamicState state);
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 
