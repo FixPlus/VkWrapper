@@ -54,7 +54,6 @@ public:
   DescriptorSetLayout const &
   operator=(DescriptorSetLayout const &another) = delete;
   DescriptorSetLayout &operator=(DescriptorSetLayout &&another) noexcept {
-    m_layout = another.m_layout;
     m_createInfo = another.m_createInfo;
     m_device = another.m_device;
     m_bindings = std::move(another.m_bindings);
