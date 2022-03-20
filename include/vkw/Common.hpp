@@ -159,6 +159,7 @@ class Semaphore;
 class ShaderBase;
 class VertexShader;
 class FragmentShader;
+class ComputeShader;
 class Sampler;
 class SubpassDependency;
 class SubpassDescription;
@@ -388,6 +389,8 @@ template <> struct TypeTraits<ShaderBase> { using VType = VkShaderModule; };
 
 template <> struct TypeTraits<FragmentShader> { using VType = VkShaderModule; };
 
+template <> struct TypeTraits<ComputeShader> { using VType = VkShaderModule; };
+
 template <> struct TypeTraits<VertexShader> { using VType = VkShaderModule; };
 
 template <> struct TypeTraits<Surface> { using VType = VkSurfaceKHR; };
@@ -599,6 +602,7 @@ VKR_DECLARE_ARRAY_TYPES(Semaphore)
 VKR_DECLARE_ARRAY_TYPES(ShaderBase)
 VKR_DECLARE_ARRAY_TYPES(VertexShader)
 VKR_DECLARE_ARRAY_TYPES(FragmentShader)
+VKR_DECLARE_ARRAY_TYPES(ComputeShader)
 VKR_DECLARE_ARRAY_TYPES(Surface)
 VKR_DECLARE_ARRAY_TYPES(SwapChain)
 
@@ -703,6 +707,7 @@ VKR_DECLARE_REF_TYPES(Semaphore)
 VKR_DECLARE_REF_TYPES(ShaderBase)
 VKR_DECLARE_REF_TYPES(VertexShader)
 VKR_DECLARE_REF_TYPES(FragmentShader)
+VKR_DECLARE_REF_TYPES(ComputeShader)
 VKR_DECLARE_REF_TYPES(SubpassDependency)
 VKR_DECLARE_REF_TYPES(SubpassDescription)
 VKR_DECLARE_REF_TYPES(Surface)

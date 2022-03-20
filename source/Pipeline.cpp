@@ -242,8 +242,8 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addRasterizationState(
   m_rasterizationStateCreateInfo = rasterizationState;
   return *this;
 }
-GraphicsPipelineCreateInfo &
-GraphicsPipelineCreateInfo::addFragmentShader(const FragmentShader &shader) {
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addFragmentShader(
+    const FragmentShader &shader, SpecializationConstants const &constants) {
   if (m_fragmentShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
     std::erase_if(m_shaderStages,
@@ -256,7 +256,9 @@ GraphicsPipelineCreateInfo::addFragmentShader(const FragmentShader &shader) {
   createInfo.pNext = nullptr;
   createInfo.module = shader;
   createInfo.pName = "main";
-  createInfo.pSpecializationInfo = nullptr;
+  if (!constants.empty())
+    createInfo.pSpecializationInfo =
+        &(constants.operator const VkSpecializationInfo &());
   createInfo.flags = 0;
   createInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
 
@@ -266,8 +268,8 @@ GraphicsPipelineCreateInfo::addFragmentShader(const FragmentShader &shader) {
   m_createInfo.stageCount = m_shaderStages.size();
   return *this;
 }
-GraphicsPipelineCreateInfo &
-GraphicsPipelineCreateInfo::addVertexShader(const VertexShader &shader) {
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addVertexShader(
+    const VertexShader &shader, SpecializationConstants const &constants) {
   if (m_vertexShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
     std::erase_if(m_shaderStages,
@@ -280,7 +282,9 @@ GraphicsPipelineCreateInfo::addVertexShader(const VertexShader &shader) {
   createInfo.pNext = nullptr;
   createInfo.module = shader;
   createInfo.pName = "main";
-  createInfo.pSpecializationInfo = nullptr;
+  if (!constants.empty())
+    createInfo.pSpecializationInfo =
+        &(constants.operator const VkSpecializationInfo &());
   createInfo.flags = 0;
   createInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
 
@@ -369,13 +373,59 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addBlendState(
 
   return *this;
 }
-GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addDynamicState(VkDynamicState state) {
-  if(std::find(m_dynStates.begin(), m_dynStates.end(), state) == m_dynStates.end()){
+GraphicsPipelineCreateInfo &
+GraphicsPipelineCreateInfo::addDynamicState(VkDynamicState state) {
+  if (std::find(m_dynStates.begin(), m_dynStates.end(), state) ==
+      m_dynStates.end()) {
     m_dynStates.emplace_back(state);
     m_dynamicState.dynamicStateCount++;
     m_dynamicState.pDynamicStates = m_dynStates.data();
   }
   return *this;
 };
+
+ComputePipelineCreateInfo::ComputePipelineCreateInfo(
+    const PipelineLayout &layout, const ComputeShader &shader,
+    SpecializationConstants const &constants)
+    : m_layout(layout) {
+  m_createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.layout = layout;
+  m_createInfo.flags = 0; // TODO
+  m_createInfo.stage.module = shader;
+  m_createInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+  m_createInfo.stage.sType =
+      VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  m_createInfo.stage.pNext = nullptr;
+  m_createInfo.stage.pName = "main"; // TODO
+  m_createInfo.stage.flags = 0;      // TODO
+  if (!constants.empty())
+    m_createInfo.stage.pSpecializationInfo =
+        &(constants.operator const VkSpecializationInfo &());
+}
+SpecializationConstants::SpecializationConstants() { m_info.mapEntryCount = 0; }
+void SpecializationConstants::m_addConstant(const void *constant, size_t size,
+                                            uint32_t id) {
+  if (std::find_if(m_entries.begin(), m_entries.end(),
+                   [id](VkSpecializationMapEntry const &entry) {
+                     return entry.constantID == id;
+                   }) != m_entries.end())
+    throw Error("Tying to assign duplicate specialization constants. id = " +
+                std::to_string(id));
+
+  auto offset = m_data.size();
+  m_data.resize(offset + size);
+  memcpy(m_data.data() + offset, constant, size);
+
+  VkSpecializationMapEntry newEntry{};
+  newEntry.constantID = id;
+  newEntry.size = size;
+  newEntry.offset = offset;
+  m_entries.push_back(newEntry);
+
+  m_info.mapEntryCount++;
+  m_info.pData = m_data.data();
+  m_info.pMapEntries = m_entries.data();
+}
 
 } // namespace vkw

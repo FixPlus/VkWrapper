@@ -45,5 +45,13 @@ public:
   }
 };
 
+class ComputeShader : public ShaderBase {
+public:
+  ComputeShader(Device &device, size_t codeSize, uint32_t *pCode,
+                VkShaderModuleCreateFlags flags = 0)
+      : ShaderBase(device, codeSize, pCode, VK_SHADER_STAGE_COMPUTE_BIT,
+                   flags) {}
+};
+
 } // namespace vkw
 #endif // VKRENDERER_SHADER_HPP

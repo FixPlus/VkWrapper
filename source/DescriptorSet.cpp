@@ -143,5 +143,38 @@ void DescriptorSet::m_write_combined_image_sampler(
   writeSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   m_write(1, &writeSet);
 }
+void DescriptorSet::writeStorageImage(uint32_t binding, const ImageView &image,
+                                      VkImageLayout layout) {
+  VkDescriptorImageInfo info{};
+  info.imageView = image;
+  info.imageLayout = layout;
+  m_write_storage_image(binding, info);
+}
+void DescriptorSet::m_write_storage_image(uint32_t binding,
+                                          VkDescriptorImageInfo imageInfo) {
+  VkWriteDescriptorSet writeSet{};
+  writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeSet.pNext = nullptr;
+  writeSet.descriptorCount = 1;
+  writeSet.dstSet = m_set;
+  writeSet.dstArrayElement = 0;
+  writeSet.pImageInfo = &imageInfo;
+  writeSet.dstBinding = binding;
+  writeSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+  m_write(1, &writeSet);
+}
+void DescriptorSet::m_write_storageBuffer(uint32_t binding,
+                                          VkDescriptorBufferInfo bufferInfo) {
+  VkWriteDescriptorSet writeSet{};
+  writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeSet.pNext = nullptr;
+  writeSet.descriptorCount = 1;
+  writeSet.dstSet = m_set;
+  writeSet.dstArrayElement = 0;
+  writeSet.pBufferInfo = &bufferInfo;
+  writeSet.dstBinding = binding;
+  writeSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  m_write(1, &writeSet);
+}
 
 } // namespace vkw

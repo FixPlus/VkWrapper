@@ -98,6 +98,10 @@ public:
                    uint32_t firstIndex = 0, int32_t vertexOffset = 0,
                    uint32_t firstInstance = 0);
 
+  /** Dispatch commands */
+
+  void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+
   /** Pipeline dynamic state sets */
 
   void setScissors(std::vector<VkRect2D> const &scissors,

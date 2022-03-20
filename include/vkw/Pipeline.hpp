@@ -9,6 +9,64 @@
 
 namespace vkw {
 
+class SpecializationConstants {
+public:
+  SpecializationConstants();
+
+  SpecializationConstants(SpecializationConstants &&another) noexcept
+      : m_entries(std::move(another.m_entries)),
+        m_data(std::move(another.m_data)), m_info(another.m_info) {
+    m_info.pMapEntries = m_entries.data();
+    m_info.pData = m_data.data();
+  };
+  SpecializationConstants(SpecializationConstants const &another)
+      : m_entries(another.m_entries), m_data(another.m_data),
+        m_info(another.m_info) {
+    m_info.pMapEntries = m_entries.data();
+    m_info.pData = m_data.data();
+  };
+
+  SpecializationConstants &
+  operator=(SpecializationConstants &&another) noexcept {
+    m_entries = std::move(another.m_entries);
+    m_data = std::move(another.m_data);
+    m_info = another.m_info;
+    m_info.pMapEntries = m_entries.data();
+    m_info.pData = m_data.data();
+    return *this;
+  }
+
+  SpecializationConstants &operator=(SpecializationConstants const &another) {
+    m_entries = another.m_entries;
+    m_data = another.m_data;
+    m_info = another.m_info;
+    m_info.pMapEntries = m_entries.data();
+    m_info.pData = m_data.data();
+    return *this;
+  }
+
+  bool empty() const { return m_entries.empty(); }
+
+  template <typename T> void addConstant(T const &constant, uint32_t id) {
+    m_addConstant(&constant, sizeof(constant), id);
+  }
+
+  void clear() {
+    m_entries.clear();
+    m_data.clear();
+    m_info.mapEntryCount = 0;
+  }
+
+  operator VkSpecializationInfo const &() const { return m_info; }
+
+private:
+  void m_addConstant(const void *constant, size_t size, uint32_t id);
+
+  std::vector<VkSpecializationMapEntry> m_entries;
+  std::vector<unsigned char> m_data;
+  VkSpecializationInfo m_info{};
+};
+
 class PipelineLayout {
 public:
   PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
@@ -296,8 +354,12 @@ public:
 
   GraphicsPipelineCreateInfo &
   addDepthTestState(DepthTestStateCreateInfo depthTest);
-  GraphicsPipelineCreateInfo &addVertexShader(VertexShader const &shader);
-  GraphicsPipelineCreateInfo &addFragmentShader(FragmentShader const &shader);
+  GraphicsPipelineCreateInfo &
+  addVertexShader(VertexShader const &shader,
+                  SpecializationConstants const &constants = {});
+  GraphicsPipelineCreateInfo &
+  addFragmentShader(FragmentShader const &shader,
+                    SpecializationConstants const &constants = {});
   GraphicsPipelineCreateInfo &
   addVertexInputState(VertexInputStateCreateInfoBaseHandle vertexInputState);
   GraphicsPipelineCreateInfo &
@@ -306,8 +368,7 @@ public:
   addRasterizationState(RasterizationStateCreateInfo const &rasterizationState);
   GraphicsPipelineCreateInfo &
   addBlendState(VkPipelineColorBlendAttachmentState state, uint32_t attachment);
-  GraphicsPipelineCreateInfo &
-  addDynamicState(VkDynamicState state);
+  GraphicsPipelineCreateInfo &addDynamicState(VkDynamicState state);
 
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 
@@ -373,7 +434,9 @@ private:
 
 class ComputePipelineCreateInfo {
 public:
-  // TODO
+  ComputePipelineCreateInfo(PipelineLayout const &layout,
+                            ComputeShader const &shader,
+                            SpecializationConstants const &constants = {});
 
   operator VkComputePipelineCreateInfo() const { return m_createInfo; }
 

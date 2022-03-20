@@ -112,6 +112,12 @@ void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                          vertexOffset, firstInstance);
 }
 
+void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY,
+                             uint32_t groupCountZ) {
+  m_device.core<1, 0>().vkCmdDispatch(m_commandBuffer, groupCountX, groupCountY,
+                                      groupCountZ);
+}
+
 void CommandBuffer::bindGraphicsPipeline(GraphicsPipeline const &pipeline) {
   m_device.core<1, 0>().vkCmdBindPipeline(
       m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);

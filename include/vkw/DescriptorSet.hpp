@@ -126,12 +126,23 @@ public:
     m_write_uniformBuffer(binding, info);
   }
 
+  template <typename T>
+  void write(uint32_t binding, StorageBuffer<T> const &storageBuffer) {
+    VkDescriptorBufferInfo info{};
+    info.offset = 0;
+    info.range = sizeof(T);
+    info.buffer = storageBuffer.operator const vkw::BufferBase &();
+    m_write_storageBuffer(binding, info);
+  }
+
   void write(uint32_t binding, ColorImageView const &image,
              VkImageLayout layout, Sampler const &sampler);
   void write(uint32_t binding, DepthImageView const &image,
              VkImageLayout layout, Sampler const &sampler);
   void write(uint32_t binding, StencilImageView const &image,
              VkImageLayout layout, Sampler const &sampler);
+  void writeStorageImage(uint32_t binding, ImageView const &image,
+                         VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL);
 
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
 
@@ -156,9 +167,11 @@ protected:
 private:
   void m_write_combined_image_sampler(uint32_t binding,
                                       VkDescriptorImageInfo imageInfo);
+  void m_write_storage_image(uint32_t binding, VkDescriptorImageInfo imageInfo);
   void m_write_uniformBuffer(uint32_t binding,
                              VkDescriptorBufferInfo bufferInfo);
-
+  void m_write_storageBuffer(uint32_t binding,
+                             VkDescriptorBufferInfo bufferInfo);
   struct M_DynamicOffset {
     uint32_t binding;
     uint32_t offset{0};
