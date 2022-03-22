@@ -451,6 +451,11 @@ public:
   Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo);
   Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo);
 
+  Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
+           PipelineCache const &cache);
+  Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
+           PipelineCache const &cache);
+
   Pipeline(Pipeline &&another) noexcept
       : m_device(another.m_device), m_pipeline(another.m_pipeline),
         m_pipelineLayout(another.m_pipelineLayout) {
@@ -474,6 +479,11 @@ public:
   GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo createInfo)
       : Pipeline(device, createInfo), m_createInfo(std::move(createInfo)) {}
 
+  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo createInfo,
+                   PipelineCache const &cache)
+      : Pipeline(device, createInfo, cache),
+        m_createInfo(std::move(createInfo)) {}
+
   GraphicsPipelineCreateInfo const &info() const { return m_createInfo; }
 
 private:
@@ -483,10 +493,11 @@ private:
 class ComputePipeline : public Pipeline {
 public:
   ComputePipeline(Device &device, ComputePipelineCreateInfo createInfo)
-      : Pipeline(device, createInfo), m_createInfo(createInfo){
+      : Pipeline(device, createInfo), m_createInfo(createInfo){};
 
-                                      };
-
+  ComputePipeline(Device &device, ComputePipelineCreateInfo createInfo,
+                  PipelineCache const &cache)
+      : Pipeline(device, createInfo, cache), m_createInfo(createInfo){};
   ComputePipelineCreateInfo const &info() const { return m_createInfo; }
 
 private:

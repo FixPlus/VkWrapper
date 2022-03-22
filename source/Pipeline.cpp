@@ -2,6 +2,7 @@
 #include "Utils.hpp"
 #include "vkw/DescriptorSet.hpp"
 #include "vkw/Device.hpp"
+#include "vkw/PipelineCache.hpp"
 #include "vkw/RenderPass.hpp"
 #include "vkw/Shader.hpp"
 
@@ -73,6 +74,22 @@ Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
   VkComputePipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
   VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateComputePipelines(
       device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
+}
+
+Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
+                   PipelineCache const &cache)
+    : m_device(device), m_pipelineLayout(createInfo.layout()) {
+  VkGraphicsPipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
+  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateGraphicsPipelines(
+      device, cache, 1, &CI, nullptr, &m_pipeline))
+}
+
+Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
+                   PipelineCache const &cache)
+    : m_device(device), m_pipelineLayout(createInfo.layout()) {
+  VkComputePipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
+  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateComputePipelines(
+      device, cache, 1, &CI, nullptr, &m_pipeline))
 }
 
 Pipeline::~Pipeline() {
