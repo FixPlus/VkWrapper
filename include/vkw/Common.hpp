@@ -470,6 +470,15 @@ public:
     m_raw.template emplace_back(single.get());
   }
 
+  template<typename U>
+  requires std::derived_from<U, T> && std::same_as<
+      VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
+  RefArray(std::vector<U> const& array): m_container(m_convert<>(array.begin(), array.end())){
+    m_raw.reserve(m_container.size());
+    for (auto &elem : m_container)
+      m_raw.template emplace_back(elem.get());
+  }
+
   // Range-based for operators
 
   IterT begin() const { return m_container.cbegin(); }
