@@ -5,6 +5,7 @@
 #include "vkw/PipelineCache.hpp"
 #include "vkw/RenderPass.hpp"
 #include "vkw/Shader.hpp"
+#include <cstring>
 
 namespace vkw {
 
