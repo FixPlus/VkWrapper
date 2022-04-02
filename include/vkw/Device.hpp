@@ -27,7 +27,7 @@ public:
   Device(Device const &another) = delete;
   Device const &operator=(Device const &another) = delete;
   Device(Device &&another);
-  Device &operator=(Device &&another) = delete;
+  Device &operator=(Device &&another) noexcept;
 
   Device(Instance &parent, PhysicalDevice phDevice);
   virtual ~Device();
@@ -77,7 +77,7 @@ public:
   void waitIdle();
 
 private:
-  Instance &m_parent;
+  InstanceRef m_parent;
   VkDevice m_device;
 
   VmaAllocator m_allocator;

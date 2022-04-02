@@ -21,7 +21,8 @@ SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo)
 
 SwapChain::~SwapChain() {
   if (m_swapchain != VK_NULL_HANDLE)
-    m_swapchain_ext->vkDestroySwapchainKHR(m_device, m_swapchain, nullptr);
+    m_swapchain_ext->vkDestroySwapchainKHR(m_device.get(), m_swapchain,
+                                           nullptr);
 }
 
 uint32_t SwapChain::currentImage() const {
@@ -50,7 +51,7 @@ bool SwapChain::acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
                                      uint64_t timeout) {
   uint32_t imageIndex;
   auto result = m_swapchain_ext->vkAcquireNextImageKHR(
-      m_device, m_swapchain, timeout, semaphore, fence, &imageIndex);
+      m_device.get(), m_swapchain, timeout, semaphore, fence, &imageIndex);
 
   switch (result) {
   case VK_SUBOPTIMAL_KHR:
@@ -69,7 +70,7 @@ std::vector<SwapChainImage> SwapChain::retrieveImages() {
 
   std::vector<VkImage> images(m_imageCount);
   VK_CHECK_RESULT(m_swapchain_ext->vkGetSwapchainImagesKHR(
-      m_device, m_swapchain, &m_imageCount, images.data()))
+      m_device.get(), m_swapchain, &m_imageCount, images.data()))
 
   std::vector<SwapChainImage> ret{};
 

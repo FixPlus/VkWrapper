@@ -415,6 +415,12 @@ public:
   // default constructor for empty arrays
   RefArray() : m_container({}), m_raw({}){};
 
+  RefArray &operator=(RefArray &&another) noexcept {
+    m_container = std::move(another.m_container);
+    m_raw = std::move(another.m_raw);
+    return *this;
+  }
+
   template <typename U>
   requires std::derived_from<U, T> && std::same_as<
       VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
@@ -470,10 +476,11 @@ public:
     m_raw.template emplace_back(single.get());
   }
 
-  template<typename U>
+  template <typename U>
   requires std::derived_from<U, T> && std::same_as<
       VType, typename TypeTraits<typename std::remove_const<U>::type>::VType>
-  RefArray(std::vector<U> const& array): m_container(m_convert<>(array.begin(), array.end())){
+  RefArray(std::vector<U> const &array)
+      : m_container(m_convert<>(array.begin(), array.end())) {
     m_raw.reserve(m_container.size());
     for (auto &elem : m_container)
       m_raw.template emplace_back(elem.get());
@@ -510,7 +517,7 @@ private:
     }
     return ret;
   }
-  std::vector<TRef> const m_container;
+  std::vector<TRef> m_container;
   std::vector<VType> m_raw;
 };
 

@@ -39,7 +39,7 @@ public:
     createInfo.hwnd = hwnd;
 
     VK_CHECK_RESULT_(win32SurfaceExt->vkCreateWin32SurfaceKHR(
-        m_parent, &createInfo, nullptr, &m_surface))
+        m_parent.get(), &createInfo, nullptr, &m_surface))
   }
 #elif defined __linux__
 #ifdef VK_USE_PLATFORM_XLIB_KHR
@@ -115,7 +115,12 @@ public:
     another.m_surface = VK_NULL_HANDLE;
   }
   Surface const &operator=(Surface const &another) = delete;
-  Surface &operator=(Surface &&another) = delete;
+  Surface &operator=(Surface &&another) noexcept {
+    m_parent = another.m_parent;
+    m_surface_ext = another.m_surface_ext;
+    std::swap(m_surface, another.m_surface);
+    return *this;
+  };
 
   Instance &getParent() const { return m_parent; };
 
@@ -135,7 +140,7 @@ public:
 private:
   VkSurfaceKHR m_surface;
   VkKhrSurface const *m_surface_ext{};
-  Instance &m_parent;
+  InstanceRef m_parent;
 };
 } // namespace vkw
 

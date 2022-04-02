@@ -1,11 +1,11 @@
 #ifndef VKRENDERER_COMMANDPOOL_HPP
 #define VKRENDERER_COMMANDPOOL_HPP
 
+#include "Common.hpp"
 #include <vulkan/vulkan.h>
 
 namespace vkw {
 
-class Device;
 class CommandPool {
 public:
   CommandPool(Device &device, VkCommandPoolCreateFlags flags,
@@ -15,6 +15,14 @@ public:
         m_queueFamily(another.m_queueFamily),
         m_createFlags(another.m_createFlags) {
     another.m_commandPool = VK_NULL_HANDLE;
+  }
+
+  CommandPool &operator=(CommandPool &&another) noexcept {
+    m_device = another.m_device;
+    m_createFlags = another.m_createFlags;
+    m_queueFamily = another.m_queueFamily;
+    std::swap(m_commandPool, another.m_commandPool);
+    return *this;
   }
 
   bool canResetCommandBuffer() const {
@@ -34,7 +42,7 @@ public:
   operator VkCommandPool() const { return m_commandPool; }
 
 private:
-  Device &m_device;
+  DeviceRef m_device;
   VkCommandPool m_commandPool;
   VkCommandPoolCreateFlags m_createFlags;
   uint32_t m_queueFamily;

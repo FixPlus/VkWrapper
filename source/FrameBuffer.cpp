@@ -10,7 +10,8 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
                          VkExtent2D extents,
                          Image2DArrayViewConstRefArray const &views,
                          uint32_t layers)
-    : m_device(device), m_parent(renderPass), m_views(views) {
+    : m_device(device), m_parent(renderPass) {
+  std::copy(views.begin(), views.end(), std::back_inserter(m_views));
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -80,17 +81,18 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
                 ") than Framebuffer(" + std::to_string(layers) + ")"));
   }
 
-  m_createInfo.attachmentCount = m_views.size();
-  m_createInfo.pAttachments = m_views;
+  m_createInfo.attachmentCount = views.size();
+  m_createInfo.pAttachments = views;
 
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateFramebuffer(
-      m_device, &m_createInfo, nullptr, &m_framebuffer))
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateFramebuffer(
+      m_device.get(), &m_createInfo, nullptr, &m_framebuffer))
 }
 
 FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
                          VkExtent2D extents,
                          Image2DViewConstRefArray const &views)
-    : m_device(device), m_parent(renderPass), m_views(views) {
+    : m_device(device), m_parent(renderPass) {
+  std::copy(views.begin(), views.end(), std::back_inserter(m_views));
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -148,17 +150,18 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   counter = 0;
 
-  m_createInfo.attachmentCount = m_views.size();
-  m_createInfo.pAttachments = m_views;
+  m_createInfo.attachmentCount = views.size();
+  m_createInfo.pAttachments = views;
 
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateFramebuffer(
-      m_device, &m_createInfo, nullptr, &m_framebuffer))
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateFramebuffer(
+      m_device.get(), &m_createInfo, nullptr, &m_framebuffer))
 }
 
 FrameBuffer::~FrameBuffer() {
   if (m_framebuffer == VK_NULL_HANDLE)
     return;
 
-  m_device.core<1, 0>().vkDestroyFramebuffer(m_device, m_framebuffer, nullptr);
+  m_device.get().core<1, 0>().vkDestroyFramebuffer(m_device.get(),
+                                                   m_framebuffer, nullptr);
 }
 } // namespace vkw

@@ -154,11 +154,11 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   deviceCreateInfo.enabledExtensionCount = extensionsRaw.size();
   deviceCreateInfo.ppEnabledExtensionNames = extensionsRaw.data();
 
-  VK_CHECK_RESULT(m_parent.core<1, 0>().vkCreateDevice(
+  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkCreateDevice(
       m_ph_device, &deviceCreateInfo, nullptr, &m_device))
 
   m_coreDeviceSymbols = std::make_unique<DeviceCore<1, 0>>(
-      m_parent.core<1, 0>().vkGetDeviceProcAddr, m_device);
+      m_parent.get().core<1, 0>().vkGetDeviceProcAddr, m_device);
 
   for (auto &extName : extensionsRaw) {
     std::unique_ptr<DeviceExtensionBase> ext;
@@ -168,7 +168,7 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
     m_extensions.emplace(
         extName,
         std::unique_ptr<DeviceExtensionBase>(initializer->second->initialize(
-            m_parent.core<1, 0>().vkGetDeviceProcAddr, m_device)));
+            m_parent.get().core<1, 0>().vkGetDeviceProcAddr, m_device)));
   }
 
   m_apiVer = {1, 0, 0};
@@ -196,9 +196,9 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   vmaVulkanFunctions.vkGetImageMemoryRequirements =
       core<1, 0>().vkGetImageMemoryRequirements;
   vmaVulkanFunctions.vkGetPhysicalDeviceMemoryProperties =
-      m_parent.core<1, 0>().vkGetPhysicalDeviceMemoryProperties;
+      m_parent.get().core<1, 0>().vkGetPhysicalDeviceMemoryProperties;
   vmaVulkanFunctions.vkGetPhysicalDeviceProperties =
-      m_parent.core<1, 0>().vkGetPhysicalDeviceProperties;
+      m_parent.get().core<1, 0>().vkGetPhysicalDeviceProperties;
   vmaVulkanFunctions.vkInvalidateMappedMemoryRanges =
       core<1, 0>().vkInvalidateMappedMemoryRanges;
   vmaVulkanFunctions.vkMapMemory = core<1, 0>().vkMapMemory;
@@ -247,7 +247,27 @@ Device::createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
       BufferBase(m_allocator, createInfo, allocCreateInfo));
 }
 
-void Device::waitIdle() {
-  VK_CHECK_RESULT(core<1, 0>().vkDeviceWaitIdle(m_device))
+void Device::waitIdle(){
+    VK_CHECK_RESULT(core<1, 0>().vkDeviceWaitIdle(m_device))}
+
+Device &Device::operator=(Device &&another) noexcept {
+
+  m_ph_device = std::move(another.m_ph_device);
+
+  m_parent = another.m_parent;
+
+  queueFamilyIndices = another.queueFamilyIndices;
+
+  m_allocator = another.m_allocator;
+
+  m_available_queues = another.m_available_queues;
+
+  m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
+
+  m_extensions = std::move(another.m_extensions);
+
+  std::swap(m_device, another.m_device);
+
+  return *this;
 }
 } // namespace vkw

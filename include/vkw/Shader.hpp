@@ -1,6 +1,7 @@
 #ifndef VKRENDERER_SHADER_HPP
 #define VKRENDERER_SHADER_HPP
 
+#include <functional>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -17,6 +18,14 @@ public:
     another.m_shader = VK_NULL_HANDLE;
   }
 
+  ShaderBase &operator=(ShaderBase &&another) noexcept {
+    m_device = another.m_device;
+    m_stage = another.m_stage;
+    std::swap(m_shader, another.m_shader);
+
+    return *this;
+  }
+
   VkShaderStageFlagBits stage() const { return m_stage; }
 
   virtual ~ShaderBase();
@@ -24,7 +33,7 @@ public:
   operator VkShaderModule() const { return m_shader; }
 
 private:
-  Device &m_device;
+  std::reference_wrapper<Device> m_device;
   VkShaderStageFlagBits m_stage;
   VkShaderModule m_shader = VK_NULL_HANDLE;
 };

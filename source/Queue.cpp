@@ -13,10 +13,11 @@ namespace vkw {
 
 Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
     : m_parent(parent), m_familyIndex(queueFamilyIndex) {
-  m_parent.core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex, queueIndex,
-                                         &m_queue);
+  m_parent.get().core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex,
+                                               queueIndex, &m_queue);
 
-  auto &queueFamilyProperties = m_parent.physicalDevice().queueProperties();
+  auto &queueFamilyProperties =
+      m_parent.get().physicalDevice().queueProperties();
 
   queueFamilyProperties.at(queueFamilyIndex).queueFlags;
 }
@@ -24,19 +25,19 @@ Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
 bool Queue::supportsPresenting(Surface const &surface) const {
 
   auto *surfaceExt = static_cast<VkKhrSurface const *>(
-      m_parent.getParent().extension(VK_KHR_SURFACE_EXTENSION_NAME));
+      m_parent.get().getParent().extension(VK_KHR_SURFACE_EXTENSION_NAME));
 
   if (!surfaceExt)
     return false;
 
   VkBool32 ret;
   VK_CHECK_RESULT(surfaceExt->vkGetPhysicalDeviceSurfaceSupportKHR(
-      m_parent.physicalDevice(), m_familyIndex, surface, &ret))
+      m_parent.get().physicalDevice(), m_familyIndex, surface, &ret))
   return ret;
 }
 
 void Queue::waitIdle() {
-  VK_CHECK_RESULT(m_parent.core<1, 0>().vkQueueWaitIdle(m_queue))
+  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueWaitIdle(m_queue))
 }
 
 void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
@@ -58,7 +59,7 @@ void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
   submitInfo.pWaitSemaphores = waitFor;
   submitInfo.pWaitDstStageMask = waitTill.data();
 
-  VK_CHECK_RESULT(m_parent.core<1, 0>().vkQueueSubmit(
+  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
       m_queue, 1, &submitInfo,
       fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
 }

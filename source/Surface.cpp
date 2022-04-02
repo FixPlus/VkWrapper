@@ -6,7 +6,7 @@ namespace vkw {
 
 Surface::~Surface() {
   if (m_surface != VK_NULL_HANDLE)
-    m_surface_ext->vkDestroySurfaceKHR(m_parent, m_surface, nullptr);
+    m_surface_ext->vkDestroySurfaceKHR(m_parent.get(), m_surface, nullptr);
 }
 std::vector<VkPresentModeKHR>
 Surface::getAvailablePresentModes(VkPhysicalDevice device) const {
@@ -55,7 +55,7 @@ Surface::getSurfaceCapabilities(VkPhysicalDevice device) const {
 std::vector<uint32_t> Surface::getQueueFamilyIndicesThatSupportPresenting(
     VkPhysicalDevice device) const {
   uint32_t queueFamilyCount;
-  m_parent.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
+  m_parent.get().core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
       device, &queueFamilyCount, nullptr);
 
   std::vector<uint32_t> ret;

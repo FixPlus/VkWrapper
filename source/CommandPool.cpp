@@ -13,14 +13,15 @@ CommandPool::CommandPool(Device &device, VkCommandPoolCreateFlags flags,
   createInfo.queueFamilyIndex = queueFamily;
   createInfo.flags = flags;
 
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateCommandPool(
-      m_device, &createInfo, nullptr, &m_commandPool))
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateCommandPool(
+      m_device.get(), &createInfo, nullptr, &m_commandPool))
 }
 
 CommandPool::~CommandPool() {
   if (m_commandPool == VK_NULL_HANDLE)
     return;
 
-  m_device.core<1, 0>().vkDestroyCommandPool(m_device, m_commandPool, nullptr);
+  m_device.get().core<1, 0>().vkDestroyCommandPool(m_device.get(),
+                                                   m_commandPool, nullptr);
 }
 } // namespace vkw

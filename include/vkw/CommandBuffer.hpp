@@ -10,7 +10,20 @@ namespace vkw {
 
 class CommandBuffer {
 public:
-  CommandBuffer(CommandBuffer &&another) = default;
+  CommandBuffer(CommandBuffer &&another) noexcept
+      : m_device(another.m_device), m_pool(another.m_pool),
+        m_executable(another.m_executable), m_recording(another.m_recording) {
+    another.m_commandBuffer = VK_NULL_HANDLE;
+  };
+
+  CommandBuffer &operator=(CommandBuffer &&another) noexcept {
+    m_device = another.m_device;
+    m_pool = another.m_pool;
+    m_executable = another.m_executable;
+    m_recording = another.m_recording;
+    std::swap(m_commandBuffer, another.m_commandBuffer);
+    return *this;
+  }
 
   uint32_t queueFamily() const;
 
@@ -100,7 +113,8 @@ public:
 
   /** Dispatch commands */
 
-  void dispatch(uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ);
+  void dispatch(uint32_t groupCountX, uint32_t groupCountY,
+                uint32_t groupCountZ);
 
   /** Pipeline dynamic state sets */
 
@@ -115,8 +129,8 @@ public:
 
 protected:
   CommandBuffer(CommandPool &pool, VkCommandBufferLevel bufferLevel);
-  Device &m_device;
-  CommandPool &m_pool;
+  DeviceRef m_device;
+  std::reference_wrapper<CommandPool> m_pool;
   VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
   void m_begin(VkCommandBufferUsageFlags flags,
                VkCommandBufferInheritanceInfo const *inheritanceInfo);

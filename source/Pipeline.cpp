@@ -66,14 +66,14 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkGraphicsPipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateGraphicsPipelines(
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateGraphicsPipelines(
       device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
 }
 
 Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkComputePipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateComputePipelines(
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateComputePipelines(
       device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
 }
 
@@ -81,7 +81,7 @@ Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
                    PipelineCache const &cache)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkGraphicsPipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateGraphicsPipelines(
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateGraphicsPipelines(
       device, cache, 1, &CI, nullptr, &m_pipeline))
 }
 
@@ -89,7 +89,7 @@ Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
                    PipelineCache const &cache)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkComputePipelineCreateInfo CI = createInfo; // TODO: remove this extra copy
-  VK_CHECK_RESULT(m_device.core<1, 0>().vkCreateComputePipelines(
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateComputePipelines(
       device, cache, 1, &CI, nullptr, &m_pipeline))
 }
 
@@ -97,7 +97,8 @@ Pipeline::~Pipeline() {
   if (m_pipeline == VK_NULL_HANDLE)
     return;
 
-  m_device.core<1, 0>().vkDestroyPipeline(m_device, m_pipeline, nullptr);
+  m_device.get().core<1, 0>().vkDestroyPipeline(m_device.get(), m_pipeline,
+                                                nullptr);
 }
 
 VertexInputStateCreateInfoBase::VertexInputStateCreateInfoBase(

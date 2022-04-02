@@ -35,7 +35,7 @@ private:
 
   friend class Device;
 
-  Device &m_parent;
+  DeviceRef m_parent;
   VkQueue m_queue;
   VkQueueFlags m_flags;
   uint32_t m_familyIndex;

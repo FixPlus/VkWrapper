@@ -63,25 +63,28 @@ void SubpassDescription::addPreserveAttachment(
 RenderPass::RenderPass(Device &device, RenderPassCreateInfo createInfo)
     : m_parent(device),
       m_createInfo(std::move(createInfo)){
-          VK_CHECK_RESULT(m_parent.core<1, 0>().vkCreateRenderPass(
-              m_parent, &m_createInfo.operator const VkRenderPassCreateInfo &(),
-              nullptr, &m_renderPass))}
+          VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkCreateRenderPass(
+              m_parent.get(),
+              &m_createInfo.operator const VkRenderPassCreateInfo &(), nullptr,
+              &m_renderPass))}
 
       RenderPass::~RenderPass() {
   if (m_renderPass == VK_NULL_HANDLE)
     return;
 
-  m_parent.core<1, 0>().vkDestroyRenderPass(m_parent, m_renderPass, nullptr);
+  m_parent.get().core<1, 0>().vkDestroyRenderPass(m_parent.get(), m_renderPass,
+                                                  nullptr);
 }
 
 RenderPassCreateInfo::RenderPassCreateInfo(RenderPassCreateInfo &&another)
     : m_createInfo(another.m_createInfo),
       m_attachments(std::move(another.m_attachments)),
+      m_attachments_raw(std::move(another.m_attachments_raw)),
       m_subpasses(another.m_subpasses),
       m_subpassesDescs(another.m_subpassesDescs),
       m_dependencies(another.m_dependencies) {
   m_createInfo.pSubpasses = m_subpasses.data();
-  m_createInfo.pAttachments = m_attachments;
+  m_createInfo.pAttachments = m_attachments_raw.data();
   m_createInfo.pDependencies = m_dependencies.data();
   auto descIter = m_subpassesDescs.begin();
   for (auto &subpass : m_subpasses) {
@@ -98,8 +101,13 @@ RenderPassCreateInfo::RenderPassCreateInfo(
     AttachmentDescriptionConstRefArray attachments,
     const std::vector<SubpassDescriptionCRef> &subpasses,
     const std::vector<SubpassDependency> &dependencies,
-    VkRenderPassCreateFlags flags)
-    : m_attachments(std::move(attachments)) {
+    VkRenderPassCreateFlags flags) {
+  std::copy(attachments.begin(), attachments.end(),
+            std::back_inserter(m_attachments));
+  std::copy(attachments.operator VkAttachmentDescription *(),
+            attachments.operator VkAttachmentDescription *() +
+                attachments.size(),
+            std::back_inserter(m_attachments_raw));
 
   for (auto &subpass : subpasses) {
     M_subpassDesc subpassDesc{};
@@ -234,8 +242,8 @@ RenderPassCreateInfo::RenderPassCreateInfo(
 
   m_createInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
   m_createInfo.pNext = nullptr;
-  m_createInfo.attachmentCount = m_attachments.size();
-  m_createInfo.pAttachments = m_attachments;
+  m_createInfo.attachmentCount = m_attachments_raw.size();
+  m_createInfo.pAttachments = m_attachments_raw.data();
   m_createInfo.subpassCount = m_subpasses.size();
   m_createInfo.pSubpasses = m_subpasses.data();
   m_createInfo.dependencyCount = m_dependencies.size();

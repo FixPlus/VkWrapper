@@ -22,6 +22,17 @@ public:
     another.m_swapchain = VK_NULL_HANDLE;
   }
 
+  SwapChain &operator=(SwapChain &&another) noexcept {
+    m_device = another.m_device;
+    m_createInfo = another.m_createInfo;
+    m_imageCount = another.m_imageCount;
+    m_currentImage = another.m_currentImage;
+    m_swapchain_ext = another.m_swapchain_ext;
+    std::swap(m_swapchain, another.m_swapchain);
+
+    return *this;
+  }
+
   bool acquireNextImage(Semaphore const &signalSemaphore,
                         Fence const &signalFence,
                         uint64_t timeout = UINT64_MAX);
@@ -46,7 +57,7 @@ private:
   bool acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
                             uint64_t timeout);
   std::optional<uint32_t> m_currentImage{};
-  Device &m_device;
+  DeviceRef m_device;
   VkKhrSwapchain const *m_swapchain_ext{};
   VkSwapchainCreateInfoKHR m_createInfo;
   VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;

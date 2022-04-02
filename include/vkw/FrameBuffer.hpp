@@ -22,6 +22,15 @@ public:
     another.m_framebuffer = VK_NULL_HANDLE;
   }
 
+  FrameBuffer &operator=(FrameBuffer &&another) noexcept {
+    m_device = another.m_device;
+    m_parent = another.m_parent;
+    m_createInfo = another.m_createInfo;
+    m_views = std::move(another.m_views);
+    std::swap(m_framebuffer, another.m_framebuffer);
+    return *this;
+  }
+
   virtual ~FrameBuffer();
 
   VkExtent2D extents() const {
@@ -32,17 +41,17 @@ public:
 
   uint32_t layers() const { return m_createInfo.layers; }
 
-  ImageViewConstRefArray &attachments() { return {m_views}; }
+  std::vector<ImageViewCRef> &attachments() { return m_views; }
 
-  ImageViewConstRefArray const &attachments() const { return m_views; }
+  std::vector<ImageViewCRef> const &attachments() const { return m_views; }
 
   operator VkFramebuffer() const { return m_framebuffer; }
 
 private:
-  Device &m_device;
-  RenderPass &m_parent;
+  DeviceRef m_device;
+  RenderPassRef m_parent;
   VkFramebufferCreateInfo m_createInfo{};
-  ImageViewConstRefArray m_views;
+  std::vector<ImageViewCRef> m_views;
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
 };
 } // namespace vkw

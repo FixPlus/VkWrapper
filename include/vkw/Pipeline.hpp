@@ -462,6 +462,14 @@ public:
     another.m_pipeline = VK_NULL_HANDLE;
   }
 
+  Pipeline &operator=(Pipeline &&another) noexcept {
+    m_device = another.m_device;
+    m_pipelineLayout = another.m_pipelineLayout;
+    std::swap(m_pipeline, another.m_pipeline);
+
+    return *this;
+  }
+
   PipelineLayout const &layout() const { return m_pipelineLayout; }
 
   virtual ~Pipeline();
@@ -469,8 +477,8 @@ public:
   operator VkPipeline() const { return m_pipeline; }
 
 private:
-  Device &m_device;
-  PipelineLayout const &m_pipelineLayout;
+  DeviceRef m_device;
+  PipelineLayoutCRef m_pipelineLayout;
   VkPipeline m_pipeline = VK_NULL_HANDLE;
 };
 

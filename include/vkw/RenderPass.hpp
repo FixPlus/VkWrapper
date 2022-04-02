@@ -118,6 +118,9 @@ public:
                        std::vector<SubpassDependency> const &dependencies,
                        VkRenderPassCreateFlags flags = 0);
 
+  RenderPassCreateInfo &
+  operator=(RenderPassCreateInfo &&another) noexcept = default;
+
   operator VkRenderPassCreateInfo const &() const { return m_createInfo; }
 
   uint32_t subpassCount() const { return m_subpasses.size(); }
@@ -133,17 +136,18 @@ public:
     return m_subpassesDescs.at(subpass);
   }
 
-  AttachmentDescriptionConstRefArray const &attachmentDescriptions() const {
+  std::vector<AttachmentDescriptionCRef> const &attachmentDescriptions() const {
     return m_attachments;
   }
 
 private:
-  AttachmentDescriptionConstRefArray m_attachments;
+  std::vector<AttachmentDescriptionCRef> m_attachments;
+  std::vector<VkAttachmentDescription> m_attachments_raw;
   std::vector<M_subpassDesc> m_subpassesDescs;
   std::vector<VkSubpassDescription> m_subpasses;
   std::vector<VkSubpassDependency> m_dependencies;
 
-  VkRenderPassCreateInfo m_createInfo;
+  VkRenderPassCreateInfo m_createInfo{};
 };
 
 class RenderPass {
@@ -157,6 +161,13 @@ public:
     another.m_renderPass = VK_NULL_HANDLE;
   }
 
+  RenderPass &operator=(RenderPass &&another) noexcept {
+    m_parent = another.m_parent;
+    m_createInfo = std::move(another.m_createInfo);
+    std::swap(m_renderPass, another.m_renderPass);
+    return *this;
+  }
+
   virtual ~RenderPass();
 
   RenderPassCreateInfo const &info() const { return m_createInfo; }
@@ -164,7 +175,7 @@ public:
   operator VkRenderPass() const { return m_renderPass; }
 
 private:
-  Device &m_parent;
+  DeviceRef m_parent;
   RenderPassCreateInfo m_createInfo;
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
 };

@@ -20,6 +20,12 @@ public:
     another.m_fence = VK_NULL_HANDLE;
   }
 
+  Fence &operator=(Fence &&another) noexcept {
+    m_device = another.m_device;
+    std::swap(another.m_fence, m_fence);
+    return *this;
+  }
+
   virtual ~Fence();
 
   void reset();
@@ -55,7 +61,7 @@ public:
   operator VkFence() const { return m_fence; }
 
 private:
-  Device &m_device;
+  DeviceRef m_device;
   VkFence m_fence = VK_NULL_HANDLE;
 
   static bool wait_impl(Device &device, VkFence *pFences, uint32_t fenceCount,
