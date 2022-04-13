@@ -23,10 +23,9 @@ public:
   BufferBase &operator=(BufferBase &&another) noexcept {
     m_allocator = another.m_allocator;
     m_allocInfo = another.m_allocInfo;
-    m_buffer = another.m_buffer;
     m_createInfo = another.m_createInfo;
     m_allocation = another.m_allocation;
-    another.m_buffer = VK_NULL_HANDLE;
+    std::swap(m_buffer, another.m_buffer);
     return *this;
   }
 
