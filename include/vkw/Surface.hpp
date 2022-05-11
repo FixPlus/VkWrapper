@@ -61,7 +61,7 @@ public:
     createInfo.window = window;
 
     VK_CHECK_RESULT_(xlibSurfaceExt->vkCreateXlibSurfaceKHR(
-        m_parent, &createInfo, nullptr, &m_surface))
+        m_parent.get(), &createInfo, nullptr, &m_surface))
   };
 #elif defined VK_USE_PLATFORM_XCB_KHR
   Surface(Instance &parent, xcb_connection_t *connection, xcb_window_t window)
