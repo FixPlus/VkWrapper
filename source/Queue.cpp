@@ -123,4 +123,27 @@ bool Queue::present(const SwapChain &swapChain,
   return queuePresent(swapChain.ext()->vkQueuePresentKHR, m_queue,
                       &presentInfo);
 }
+
+void Queue::submit(const SemaphoreConstRefArray &waitFor,
+                   const std::vector<VkPipelineStageFlags> &waitTill,
+                   const SemaphoreConstRefArray &signalTo, const Fence *fence) {
+
+    assert(waitTill.size() == waitFor.size() &&
+           "Count of dst stage masks must be equal to count of wait semaphores");
+
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.pNext = nullptr;
+    submitInfo.commandBufferCount = 0;
+    submitInfo.signalSemaphoreCount = signalTo.size();
+    submitInfo.pSignalSemaphores = signalTo;
+    submitInfo.waitSemaphoreCount = waitFor.size();
+    submitInfo.pWaitSemaphores = waitFor;
+    submitInfo.pWaitDstStageMask = waitTill.data();
+
+    VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
+        m_queue, 1, &submitInfo,
+        fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
+
+}
 } // namespace vkw

@@ -20,6 +20,10 @@ public:
               SemaphoreConstRefArray const &signalTo = {},
               Fence const *fence = nullptr);
 
+  void submit(SemaphoreConstRefArray const &waitFor = {},
+              std::vector<VkPipelineStageFlags> const &waitTill = {},
+              SemaphoreConstRefArray const &signalTo = {},
+              Fence const *fence = nullptr);
   uint32_t familyIndex() const { return m_familyIndex; }
 
   bool supportsGraphics() const { return m_flags & VK_QUEUE_GRAPHICS_BIT; }

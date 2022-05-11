@@ -436,7 +436,7 @@ class ComputePipelineCreateInfo {
 public:
   ComputePipelineCreateInfo(PipelineLayout const &layout,
                             ComputeShader const &shader,
-                            SpecializationConstants const &constants = {});
+                            SpecializationConstants constants = {});
 
   operator VkComputePipelineCreateInfo() const { return m_createInfo; }
 
@@ -444,6 +444,7 @@ public:
 
 private:
   PipelineLayoutCRef m_layout;
+  SpecializationConstants m_constants;
   VkComputePipelineCreateInfo m_createInfo;
 };
 class Pipeline {

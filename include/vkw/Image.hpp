@@ -746,7 +746,7 @@ public:
                  uint32_t mipLevelCount = 1, VkImageViewCreateFlags flags = 0) {
     return *dynamic_cast<T_Image2DView<U> *>(
         m_cacheView(std::unique_ptr<ImageView>{new T_Image2DView<U>{
-            device, this, format, baseLayer, componentMapping, baseMipLevel,
+            device, this, format, componentMapping, baseLayer, baseMipLevel,
             mipLevelCount, flags}}));
   }
   template <ImageViewAspectInterface U>
@@ -887,6 +887,22 @@ public:
                uint32_t mipLevels, VkImageUsageFlags usage,
                VkImageCreateFlags flags = 0)
       : ColorImage2DInterface(format, width, height),
+        ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
+                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
+                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+        AllocatedImage(allocator, allocCreateInfo) {}
+};
+
+template<uint32_t layers>
+class ColorImage2DArray : public ColorImage2DArrayInterface,
+                     public ImageRestInterface,
+                     public AllocatedImage {
+public:
+  ColorImage2DArray(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo,
+               VkFormat format, uint32_t width, uint32_t height,
+               uint32_t mipLevels, VkImageUsageFlags usage,
+               VkImageCreateFlags flags = 0)
+      : ColorImage2DArrayInterface(format, width, height, layers),
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
                            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),

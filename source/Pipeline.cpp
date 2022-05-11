@@ -405,8 +405,8 @@ GraphicsPipelineCreateInfo::addDynamicState(VkDynamicState state) {
 
 ComputePipelineCreateInfo::ComputePipelineCreateInfo(
     const PipelineLayout &layout, const ComputeShader &shader,
-    SpecializationConstants const &constants)
-    : m_layout(layout) {
+    SpecializationConstants constants)
+    : m_layout(layout), m_constants(std::move(constants)) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.layout = layout;
@@ -420,7 +420,9 @@ ComputePipelineCreateInfo::ComputePipelineCreateInfo(
   m_createInfo.stage.flags = 0;      // TODO
   if (!constants.empty())
     m_createInfo.stage.pSpecializationInfo =
-        &(constants.operator const VkSpecializationInfo &());
+        &(m_constants.operator const VkSpecializationInfo &());
+  else
+    m_createInfo.stage.pSpecializationInfo = nullptr;
 }
 SpecializationConstants::SpecializationConstants() { m_info.mapEntryCount = 0; }
 void SpecializationConstants::m_addConstant(const void *constant, size_t size,
