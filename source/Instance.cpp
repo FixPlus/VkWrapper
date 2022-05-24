@@ -39,20 +39,7 @@ Instance::Instance(Library const &library,
 
   if (m_validation) {
     const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
-    uint32_t instanceLayerCount;
-    m_vulkanLib.get().vkEnumerateInstanceLayerProperties(&instanceLayerCount,
-                                                         nullptr);
-    std::vector<VkLayerProperties> instanceLayerProperties(instanceLayerCount);
-    m_vulkanLib.get().vkEnumerateInstanceLayerProperties(
-        &instanceLayerCount, instanceLayerProperties.data());
-    bool validationLayerPresent = false;
-    for (VkLayerProperties layer : instanceLayerProperties) {
-      if (strcmp(layer.layerName, validationLayerName) == 0) {
-        validationLayerPresent = true;
-        break;
-      }
-    }
-    if (validationLayerPresent) {
+    if (library.hasLayer(validationLayerName)) {
       createInfo.ppEnabledLayerNames = &validationLayerName;
       createInfo.enabledLayerCount = 1;
     } else {

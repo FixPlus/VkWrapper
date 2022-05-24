@@ -3,6 +3,7 @@
 
 #include "SymbolTable.hpp"
 #include <memory>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -47,6 +48,14 @@ public:
 
   ~Library();
 
+  bool hasLayer(std::string_view const& layerName) const;
+
+  VkLayerProperties layerProperties(std::string_view const& layerName) const;
+
+  bool hasInstanceExtension(std::string_view const& extensionName) const;
+
+  VkExtensionProperties instanceExtensionProperties(std::string_view const& extensionName) const;
+
   PFN_vkCreateInstance vkCreateInstance;
   PFN_vkEnumerateInstanceExtensionProperties
       vkEnumerateInstanceExtensionProperties;
@@ -72,6 +81,9 @@ private:
 #undef VKW_INSTANCE_MAP_ENTRY
 #undef VKW_DUMP_EXTENSION_INITIALIZERS_MAP_DEFINITION
   }
+
+  std::vector<VkLayerProperties> m_layer_properties;
+  std::vector<VkExtensionProperties> m_instance_extension_properties;
   std::unique_ptr<DynamicLoader> m_loader;
 };
 } // namespace vkw
