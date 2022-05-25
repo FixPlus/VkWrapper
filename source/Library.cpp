@@ -2,6 +2,7 @@
 #include "loader/DynamicLoader.hpp"
 #include "vkw/Exception.hpp"
 #include <cassert>
+#include <cstring>
 
 namespace vkw {
 
