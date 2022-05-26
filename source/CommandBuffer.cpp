@@ -225,4 +225,16 @@ void CommandBuffer::m_pushConstants(PipelineLayout const &layout,
   m_device.get().core<1, 0>().vkCmdPushConstants(
       m_commandBuffer, layout, shaderStage, offset, size, data);
 }
+void CommandBuffer::blitImage(const AllocatedImage &targetImage,
+                              VkImageBlit blit, bool usingGeneralLayout,
+                              VkFilter filter) {
+  auto srcLayout = usingGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL
+                                      : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+  auto dstLayout = usingGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL
+                                      : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+  m_device.get().core<1, 0>().vkCmdBlitImage(m_commandBuffer, targetImage,
+                                             srcLayout, targetImage, dstLayout,
+                                             1, &blit, filter);
+}
 } // namespace vkw

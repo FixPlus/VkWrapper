@@ -50,6 +50,8 @@ public:
                         AllocatedImage const &dst, VkImageLayout dstLayout,
                         std::vector<VkImageCopy> const &regions);
 
+  void blitImage(AllocatedImage const& targetImage, VkImageBlit blit, bool usingGeneralLayout = false, VkFilter filter = VK_FILTER_LINEAR);
+
   /** Synchronization */
   void
   pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,

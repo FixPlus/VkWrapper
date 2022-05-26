@@ -229,6 +229,8 @@ public:
 
   VkImageType type() const { return m_createInfo.imageType; }
 
+  uint32_t mipLevels() const { return m_createInfo.mipLevels;}
+
   operator VkImage() const { return m_image; }
 
 protected:
