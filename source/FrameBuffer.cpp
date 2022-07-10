@@ -119,7 +119,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   std::for_each(
       renderPassAttachments.begin(), renderPassAttachments.end(),
       [&viewIter, &counter](AttachmentDescription const &desc) {
-        if (desc.format() == viewIter->get().format()) {
+        if (desc.format() != viewIter->get().format()) {
           throw Error("Attachment format mismatch on (" +
                       std::to_string(counter) + ") index: FrameBuffer(" +
                       std::to_string(viewIter->get().format()) +

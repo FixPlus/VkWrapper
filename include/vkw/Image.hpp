@@ -231,6 +231,8 @@ public:
 
   uint32_t mipLevels() const { return m_createInfo.mipLevels;}
 
+  VkImageSubresourceRange completeSubresourceRange() const;
+
   operator VkImage() const { return m_image; }
 
 protected:

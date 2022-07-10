@@ -67,6 +67,30 @@ ImageView *ImageInterface::m_cacheView(std::unique_ptr<ImageView> view) {
   return m_viewsCache.emplace_back(std::move(view)).get();
 }
 
+static bool isDepthFormat(VkFormat format){
+  switch(format){
+  case VK_FORMAT_D16_UNORM:
+  case VK_FORMAT_D16_UNORM_S8_UINT:
+  case VK_FORMAT_X8_D24_UNORM_PACK32:
+  case VK_FORMAT_D24_UNORM_S8_UINT:
+  case VK_FORMAT_D32_SFLOAT_S8_UINT:
+  case VK_FORMAT_D32_SFLOAT:
+  case VK_FORMAT_S8_UINT:
+    return true;
+  default:
+    return false;
+  }
+}
+VkImageSubresourceRange ImageInterface::completeSubresourceRange() const {
+  VkImageSubresourceRange ret{};
+  ret.baseMipLevel = 0;
+  ret.levelCount = m_createInfo.mipLevels;
+  ret.aspectMask = isDepthFormat(format()) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+  ret.baseArrayLayer = 0;
+  ret.layerCount = m_createInfo.arrayLayers;
+  return ret;
+}
+
 ImageViewCreator::~ImageViewCreator() {
   if (m_imageView == VK_NULL_HANDLE)
     return;
