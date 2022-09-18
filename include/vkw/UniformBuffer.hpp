@@ -4,7 +4,7 @@
 
 namespace vkw {
 
-template <typename T> class UniformBuffer : virtual public Buffer<T> {
+template <typename T> class UniformBuffer : public Buffer<T> {
 public:
   UniformBuffer(Device &device, VmaAllocationCreateInfo const &createInfo,
                 VkBufferUsageFlags usage = 0)
@@ -14,7 +14,7 @@ public:
 private:
 };
 
-template <typename T> class StorageBuffer : virtual public Buffer<T> {
+template <typename T> class StorageBuffer : public Buffer<T> {
 public:
   StorageBuffer(Device &device, VmaAllocationCreateInfo const &createInfo,
                 VkBufferUsageFlags usage = 0)

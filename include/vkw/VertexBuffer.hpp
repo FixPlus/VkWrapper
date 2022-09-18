@@ -124,7 +124,7 @@ private:
       attrs...};
 };
 
-template <AttributeArray T> class VertexBuffer : virtual public Buffer<T> {
+template <AttributeArray T> class VertexBuffer : public Buffer<T> {
 public:
   VertexBuffer(Device &device, uint64_t count,
                VmaAllocationCreateInfo const &createInfo,
