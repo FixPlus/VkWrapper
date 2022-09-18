@@ -10,21 +10,6 @@ namespace vkw {
 
 class ImageViewBase {
 public:
-  ImageViewBase(ImageViewBase const &another) = delete;
-  ImageViewBase(ImageViewBase &&another)
-      : m_createInfo(another.m_createInfo), m_imageView(another.m_imageView),
-        m_parent(another.m_parent) {
-    another.m_imageView = VK_NULL_HANDLE;
-  }
-
-  ImageViewBase const &operator=(ImageViewBase const &another) = delete;
-  ImageViewBase &operator=(ImageViewBase &&another) noexcept {
-    m_imageView = another.m_imageView;
-    m_createInfo = another.m_createInfo;
-    m_parent = another.m_parent;
-    another.m_imageView = VK_NULL_HANDLE;
-    return *this;
-  }
 
   bool operator==(ImageViewBase const &another) const;
 
@@ -42,6 +27,9 @@ protected:
                          uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
                          VkComponentMapping componentMapping = {},
                          VkImageViewCreateFlags flags = 0);
+
+  ImageViewBase(ImageViewBase const &another) = default;
+  ImageViewBase(ImageViewBase &&another) = default;
   VkImageViewCreateInfo m_createInfo{};
   VkImageView m_imageView{};
 
@@ -55,6 +43,21 @@ public:
 
 protected:
   explicit ImageViewCreator(Device const &device);
+
+public:
+  ImageViewCreator(ImageViewCreator const &another) = delete;
+  ImageViewCreator(ImageViewCreator &&another) noexcept
+      : ImageViewBase(std::move(another)), m_device(another.m_device) {
+    another.m_imageView = VK_NULL_HANDLE;
+  };
+
+  ImageViewCreator &operator=(ImageViewCreator const &another) = delete;
+  ImageViewCreator &operator=(ImageViewCreator &&another) noexcept {
+    m_createInfo = another.m_createInfo;
+    std::swap(m_device, another.m_device);
+    std::swap(m_imageView, another.m_imageView);
+    return *this;
+  }
 
 private:
   DeviceCRef m_device;
@@ -71,13 +74,6 @@ public:
     m_createInfo.arrayLayers =
         1; // default parameter, maybe overridden by child classes
   };
-
-  ImageInterface(ImageInterface const &another) = delete;
-  ImageInterface(ImageInterface &&another)
-      : m_image(another.m_image), m_createInfo(another.m_createInfo) {}
-
-  ImageInterface const &operator=(ImageInterface const &another) = delete;
-  ImageInterface &operator=(ImageInterface &&another) = delete;
 
   virtual ~ImageInterface() = default;
 
@@ -313,21 +309,10 @@ public:
   ImageIT() { m_createInfo.imageType = ImageTypeVal<itype>::value; }
 };
 
-template <ImagePixelType ptype, ImageType itype>
-class ImageTypeInterface : public ImageIPT<ptype>,
-                           public ImageIT<itype>,
-                           virtual public ImageInterface {
+template <> class ImageIT<I1D> : virtual public ImageInterface {
 public:
-};
-
-template <ImagePixelType ptype>
-class ImageTypeInterface<ptype, I1D> : public ImageIPT<ptype>,
-                                       public ImageIT<I1D>,
-                                       virtual public ImageInterface {
-public:
-  ImageTypeInterface(VkFormat format, unsigned width, unsigned height = 1,
-                     unsigned depth = 1)
-      : ImageIPT<ptype>(format), ImageIT<I1D>() {
+  ImageIT(unsigned width, unsigned = 0, unsigned = 0) {
+    m_createInfo.imageType = ImageTypeVal<I1D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = 1;
     m_createInfo.extent.depth = 1;
@@ -336,14 +321,10 @@ public:
   unsigned width() const { return m_createInfo.extent.width; }
 };
 
-template <ImagePixelType ptype>
-class ImageTypeInterface<ptype, I2D> : public ImageIPT<ptype>,
-                                       public ImageIT<I1D>,
-                                       virtual public ImageInterface {
+template <> class ImageIT<I2D> : virtual public ImageInterface {
 public:
-  ImageTypeInterface(VkFormat format, unsigned width, unsigned height,
-                     unsigned depth = 1)
-      : ImageIPT<ptype>(format), ImageIT<I1D>() {
+  ImageIT(unsigned width, unsigned height, unsigned = 0) {
+    m_createInfo.imageType = ImageTypeVal<I2D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = height;
     m_createInfo.extent.depth = 1;
@@ -351,17 +332,13 @@ public:
 
   unsigned width() const { return m_createInfo.extent.width; }
 
-  unsigned height() const { return m_createInfo.extent.width; }
+  unsigned height() const { return m_createInfo.extent.height; }
 };
 
-template <ImagePixelType ptype>
-class ImageTypeInterface<ptype, I3D> : public ImageIPT<ptype>,
-                                       public ImageIT<I1D>,
-                                       virtual public ImageInterface {
+template <> class ImageIT<I3D> : virtual public ImageInterface {
 public:
-  ImageTypeInterface(VkFormat format, unsigned width, unsigned height,
-                     unsigned depth)
-      : ImageIPT<ptype>(format), ImageIT<I1D>() {
+  ImageIT(unsigned width, unsigned height, unsigned depth) {
+    m_createInfo.imageType = ImageTypeVal<I3D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = height;
     m_createInfo.extent.depth = depth;
@@ -369,10 +346,19 @@ public:
 
   unsigned width() const { return m_createInfo.extent.width; }
 
-  unsigned height() const { return m_createInfo.extent.width; }
+  unsigned height() const { return m_createInfo.extent.height; }
 
   unsigned depth() const { return m_createInfo.extent.depth; }
 };
+
+template <ImagePixelType ptype, ImageType itype>
+class ImageTypeInterface : public ImageIPT<ptype>, public ImageIT<itype> {
+public:
+  ImageTypeInterface(VkFormat format, unsigned width, unsigned height,
+                     unsigned depth)
+      : ImageIPT<ptype>(format), ImageIT<itype>(width, height, depth) {}
+};
+
 template <ImagePixelType ptype, ImageType itype, ImageArrayness iarr>
 class BasicImage : public ImageTypeInterface<ptype, itype>,
                    public ImageArraynessT<iarr>::Type {
@@ -391,7 +377,7 @@ class ImageView : public ImageViewIPT<ptype>,
 public:
   template <ImageType itype>
   requires CompatibleViewTypeC<itype, vtype>
-  ImageView(Device const &device, BasicImage<ptype, itype, ARRAY> &image,
+  ImageView(Device const &device, BasicImage<ptype, itype, ARRAY> const &image,
             VkFormat format, unsigned baseLayer = 0, unsigned layerCount = 1,
             unsigned baseMipLevel = 0, unsigned mipLevels = 1,
             VkComponentMapping mapping =
@@ -409,7 +395,7 @@ public:
 
   template <ImageType itype>
   requires CompatibleViewTypeC<itype, vtype>
-  ImageView(Device const &device, BasicImage<ptype, itype, SINGLE> &image,
+  ImageView(Device const &device, BasicImage<ptype, itype, SINGLE> const &image,
             VkFormat format, unsigned baseMipLevel = 0, unsigned mipLevels = 1,
             VkComponentMapping mapping =
                 {
@@ -423,6 +409,9 @@ public:
         ImageViewIPT<ptype>(format),
         ImageViewSubRange(0, 1, baseMipLevel, mipLevels), ImageViewVT<vtype>(),
         ImageViewCreator(device) {}
+
+  ImageView(ImageView const &another) = delete;
+  ImageView(ImageView &&another) noexcept = default;
 };
 
 class ImageRestInterface : virtual public ImageInterface {
@@ -506,7 +495,7 @@ public:
   void invalidate() { AllocatedImage::invalidate(0, VK_WHOLE_SIZE); }
 };
 
-template <ImagePixelType ptype, ImageType itype, ImageArrayness iarr>
+template <ImagePixelType ptype, ImageType itype, ImageArrayness iarr = SINGLE>
 class Image : public BasicImage<ptype, itype, iarr>,
               public ImageRestInterface,
               public AllocatedImage {

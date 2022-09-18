@@ -13,10 +13,10 @@ class ImageViewBase;
 class FrameBuffer {
 public:
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
-              std::span<ImageView<COLOR, V2DA> const> views, uint32_t layers = 1);
+              std::span<ImageViewVT<V2DA> const *> views, uint32_t layers = 1);
 
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
-              std::span<ImageView<COLOR, V2D> const>views);
+              std::span<ImageViewVT<V2D> const *> views);
 
   FrameBuffer(FrameBuffer &&another) noexcept
       : m_device(another.m_device), m_parent(another.m_parent),

@@ -9,10 +9,12 @@ namespace vkw {
 
 FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
                          VkExtent2D extents,
-                         std::span<ImageView<COLOR, V2DA> const> views,
+                         std::span<ImageViewVT<V2DA> const *> views,
                          uint32_t layers)
     : m_device(device), m_parent(renderPass) {
-  std::copy(views.begin(), views.end(), std::back_inserter(m_views));
+  std::transform(
+      views.begin(), views.end(), std::back_inserter(m_views),
+      [](ImageViewVT<V2DA> const *view) -> ImageViewBaseCRef { return *view; });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -39,12 +41,11 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   if (std::any_of(renderPassAttachments.begin(), renderPassAttachments.end(),
                   [&viewIter, &counter](AttachmentDescription const &desc) {
                     return counter++,
-                           desc.format() != (viewIter++)->format();
+                           desc.format() != (*(viewIter++))->format();
                   })) {
     throw Error("Attachment format mismatch on (" + std::to_string(counter) +
                 ") index: FrameBuffer(" +
-                std::to_string((--viewIter)->format()) +
-                ")<->RenderPass(" +
+                std::to_string((*(--viewIter))->format()) + ")<->RenderPass(" +
                 std::to_string(
                     (renderPassAttachments.begin() + counter)->get().format()) +
                 ")");
@@ -54,13 +55,13 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   // extents check
   if (std::any_of(views.begin(), views.end(),
-                  [extents, &counter](ImageView<COLOR, V2DA> const &view) {
-                    auto viewExtent = view.image()->rawExtents();
+                  [extents, &counter](ImageViewVT<V2DA> const *view) {
+                    auto viewExtent = view->image()->rawExtents();
                     counter++;
                     return extents.width > viewExtent.width ||
                            extents.height > viewExtent.height;
                   })) {
-    auto viewExtent = (views.begin() + counter)->image()->rawExtents();
+    auto viewExtent = (*(views.begin() + counter))->image()->rawExtents();
     throw Error("Attachment #" + std::to_string(counter) + " extents(" +
                 std::to_string(viewExtent.width) + "x" +
                 std::to_string(viewExtent.height) +
@@ -73,18 +74,20 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   // layer check
   if (std::any_of(views.begin(), views.end(),
-                  [layers, &counter](ImageView<COLOR, V2DA> const &view) {
-                    return counter++, view.layers() < layers;
+                  [layers, &counter](ImageViewVT<V2DA> const *view) {
+                    return counter++, view->layers() < layers;
                   })) {
     throw(Error("Attachment #" + std::to_string(counter) +
                 " has fewer layers(" +
-                std::to_string((views.begin() + counter)->layers()) +
+                std::to_string((*(views.begin() + counter))->layers()) +
                 ") than Framebuffer(" + std::to_string(layers) + ")"));
   }
 
   m_createInfo.attachmentCount = views.size();
   std::vector<VkImageView> rawViews;
-  std::transform(views.begin(), views.end(), std::back_inserter(rawViews), [](ImageView<COLOR, V2DA> const &view)->VkImageView{ return view;});
+  std::transform(
+      views.begin(), views.end(), std::back_inserter(rawViews),
+      [](ImageViewVT<V2DA> const *view) -> VkImageView { return *view; });
 
   m_createInfo.pAttachments = rawViews.data();
 
@@ -94,9 +97,11 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
 FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
                          VkExtent2D extents,
-                         std::span<ImageView<COLOR, V2D> const> views)
+                         std::span<ImageViewVT<V2D> const *> views)
     : m_device(device), m_parent(renderPass) {
-  std::copy(views.begin(), views.end(), std::back_inserter(m_views));
+  std::transform(
+      views.begin(), views.end(), std::back_inserter(m_views),
+      [](ImageViewVT<V2D> const *view) -> ImageViewBaseCRef { return *view; });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -123,10 +128,10 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   std::for_each(
       renderPassAttachments.begin(), renderPassAttachments.end(),
       [&viewIter, &counter](AttachmentDescription const &desc) {
-        if (desc.format() != viewIter->format()) {
+        if (desc.format() != (*viewIter)->format()) {
           throw Error("Attachment format mismatch on (" +
                       std::to_string(counter) + ") index: FrameBuffer(" +
-                      std::to_string(viewIter->format()) +
+                      std::to_string((*viewIter)->format()) +
                       ")<->RenderPass(" + std::to_string(desc.format()) + ")");
         }
         ++counter;
@@ -137,13 +142,13 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   // extents check
   if (std::any_of(views.begin(), views.end(),
-                  [extents, &counter](ImageViewBaseCRef const &view) {
-                    auto viewExtent = view.get().image()->rawExtents();
+                  [extents, &counter](ImageViewVT<V2D> const *view) {
+                    auto viewExtent = view->image()->rawExtents();
                     counter++;
                     return extents.width > viewExtent.width ||
                            extents.height > viewExtent.height;
                   })) {
-    auto viewExtent = (views.begin() + counter)->image()->rawExtents();
+    auto viewExtent = (*(views.begin() + counter))->image()->rawExtents();
     throw Error("Attachment #" + std::to_string(counter) + " extents(" +
                 std::to_string(viewExtent.width) + "x" +
                 std::to_string(viewExtent.height) +
@@ -156,7 +161,9 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   m_createInfo.attachmentCount = views.size();
   std::vector<VkImageView> rawViews;
-  std::transform(views.begin(), views.end(), std::back_inserter(rawViews), [](ImageView<COLOR, V2D> const &view)->VkImageView{ return view;});
+  std::transform(
+      views.begin(), views.end(), std::back_inserter(rawViews),
+      [](ImageViewVT<V2D> const *view) -> VkImageView { return *view; });
 
   m_createInfo.pAttachments = rawViews.data();
 
@@ -171,4 +178,5 @@ FrameBuffer::~FrameBuffer() {
   m_device.get().core<1, 0>().vkDestroyFramebuffer(m_device.get(),
                                                    m_framebuffer, nullptr);
 }
+
 } // namespace vkw
