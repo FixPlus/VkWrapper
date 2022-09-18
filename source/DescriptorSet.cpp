@@ -117,19 +117,6 @@ void DescriptorSet::m_write_uniformBuffer(uint32_t binding,
   m_write(1, &writeSet);
 }
 
-void DescriptorSet::write(uint32_t binding, ColorImageView const &image,
-                          VkImageLayout layout, Sampler const &sampler) {
-  m_write_combined_image_sampler(binding, {sampler, image, layout});
-}
-void DescriptorSet::write(uint32_t binding, DepthImageView const &image,
-                          VkImageLayout layout, Sampler const &sampler) {
-  m_write_combined_image_sampler(binding, {sampler, image, layout});
-}
-void DescriptorSet::write(uint32_t binding, StencilImageView const &image,
-                          VkImageLayout layout, Sampler const &sampler) {
-  m_write_combined_image_sampler(binding, {sampler, image, layout});
-}
-
 void DescriptorSet::m_write_combined_image_sampler(
     uint32_t binding, VkDescriptorImageInfo imageInfo) {
   VkWriteDescriptorSet writeSet{};
@@ -143,7 +130,8 @@ void DescriptorSet::m_write_combined_image_sampler(
   writeSet.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   m_write(1, &writeSet);
 }
-void DescriptorSet::writeStorageImage(uint32_t binding, const ImageView &image,
+void DescriptorSet::writeStorageImage(uint32_t binding,
+                                      const ImageViewBase &image,
                                       VkImageLayout layout) {
   VkDescriptorImageInfo info{};
   info.imageView = image;

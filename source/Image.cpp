@@ -5,10 +5,10 @@
 
 namespace vkw {
 
-ImageView::ImageView(ImageInterface const *image, VkFormat format,
-                     uint32_t baseMipLevel, uint32_t levelCount,
-                     VkComponentMapping componentMapping,
-                     VkImageViewCreateFlags flags)
+ImageViewBase::ImageViewBase(ImageInterface const *image, VkFormat format,
+                             uint32_t baseMipLevel, uint32_t levelCount,
+                             VkComponentMapping componentMapping,
+                             VkImageViewCreateFlags flags)
     : m_parent(image) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   m_createInfo.pNext = nullptr;
@@ -40,7 +40,7 @@ bool operator==(VkImageViewCreateInfo const &lhs,
          lhs.viewType == rhs.viewType && lhs.components == rhs.components;
 }
 
-bool ImageView::operator==(ImageView const &another) const {
+bool ImageViewBase::operator==(ImageViewBase const &another) const {
   return m_createInfo == another.m_createInfo;
 }
 
@@ -56,19 +56,8 @@ AllocatedImage::AllocatedImage(VmaAllocator allocator,
   vmaDestroyImage(m_allocator, m_image, m_allocation);
 }
 
-ImageView *ImageInterface::m_cacheView(std::unique_ptr<ImageView> view) {
-  auto found = std::find_if(m_viewsCache.begin(), m_viewsCache.end(),
-                            [&view](std::unique_ptr<ImageView> const &elem) {
-                              return *elem == *view;
-                            });
-  if (found != m_viewsCache.end())
-    return (*found).get();
-
-  return m_viewsCache.emplace_back(std::move(view)).get();
-}
-
-static bool isDepthFormat(VkFormat format){
-  switch(format){
+static bool isDepthFormat(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_D16_UNORM:
   case VK_FORMAT_D16_UNORM_S8_UINT:
   case VK_FORMAT_X8_D24_UNORM_PACK32:
@@ -85,7 +74,8 @@ VkImageSubresourceRange ImageInterface::completeSubresourceRange() const {
   VkImageSubresourceRange ret{};
   ret.baseMipLevel = 0;
   ret.levelCount = m_createInfo.mipLevels;
-  ret.aspectMask = isDepthFormat(format()) ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_COLOR_BIT;
+  ret.aspectMask = isDepthFormat(format()) ? VK_IMAGE_ASPECT_DEPTH_BIT
+                                           : VK_IMAGE_ASPECT_COLOR_BIT;
   ret.baseArrayLayer = 0;
   ret.layerCount = m_createInfo.arrayLayers;
   return ret;
@@ -99,12 +89,13 @@ ImageViewCreator::~ImageViewCreator() {
                                                  nullptr);
 }
 
-ImageViewCreator::ImageViewCreator(Device const &device)
-    : m_device(device){VK_CHECK_RESULT(device.core<1, 0>().vkCreateImageView(
-          m_device.get(), &m_createInfo, nullptr, &m_imageView))}
+ImageViewCreator::ImageViewCreator(Device const &device) : m_device(device) {
+  VK_CHECK_RESULT(device.core<1, 0>().vkCreateImageView(
+      m_device.get(), &m_createInfo, nullptr, &m_imageView))
+}
 
-      uint32_t ColorImageInterface::redBits() const {
-  switch (format()) {
+unsigned m_FormatRedBits(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
   case VK_FORMAT_R8G8B8A8_SSCALED:
@@ -166,8 +157,8 @@ ImageViewCreator::ImageViewCreator(Device const &device)
   }
   return 0;
 }
-uint32_t ColorImageInterface::greenBits() const {
-  switch (format()) {
+unsigned m_FormatGreenBits(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
   case VK_FORMAT_R8G8B8A8_SSCALED:
@@ -231,8 +222,8 @@ uint32_t ColorImageInterface::greenBits() const {
   }
   return 0;
 }
-uint32_t ColorImageInterface::blueBits() const {
-  switch (format()) {
+unsigned m_FormatBlueBits(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
   case VK_FORMAT_R8G8B8A8_SSCALED:
@@ -296,8 +287,8 @@ uint32_t ColorImageInterface::blueBits() const {
   }
   return 0;
 }
-uint32_t ColorImageInterface::alphaBits() const {
-  switch (format()) {
+unsigned m_FormatAlphaBits(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
   case VK_FORMAT_R8G8B8A8_SSCALED:
@@ -360,8 +351,8 @@ uint32_t ColorImageInterface::alphaBits() const {
   return 0;
 }
 
-uint32_t DepthStencilImageInterface::depthBits() const {
-  switch (format()) {
+unsigned m_FormatDepthBits(VkFormat format) {
+  switch (format) {
   case VK_FORMAT_D16_UNORM:
   case VK_FORMAT_D16_UNORM_S8_UINT:
     return 16;
@@ -378,8 +369,8 @@ uint32_t DepthStencilImageInterface::depthBits() const {
   }
   return 0;
 }
-uint32_t DepthStencilImageInterface::stencilBits() const {
-  switch (format()) {
+unsigned m_FormatStencilBits(VkFormat format) {
+  switch (format) {
 
   case VK_FORMAT_D16_UNORM_S8_UINT:
   case VK_FORMAT_S8_UINT:

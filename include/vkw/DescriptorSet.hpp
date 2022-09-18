@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "UniformBuffer.hpp"
+#include "Image.hpp"
 
 namespace vkw {
 
@@ -135,13 +136,13 @@ public:
     m_write_storageBuffer(binding, info);
   }
 
-  void write(uint32_t binding, ColorImageView const &image,
-             VkImageLayout layout, Sampler const &sampler);
-  void write(uint32_t binding, DepthImageView const &image,
-             VkImageLayout layout, Sampler const &sampler);
-  void write(uint32_t binding, StencilImageView const &image,
-             VkImageLayout layout, Sampler const &sampler);
-  void writeStorageImage(uint32_t binding, ImageView const &image,
+  template<ImagePixelType ptype, ImageViewType vtype>
+  void write(uint32_t binding, ImageView<ptype, vtype> const &image,
+             VkImageLayout layout, Sampler const &sampler){
+    m_write_combined_image_sampler(binding, {sampler, image, layout});
+  }
+
+  void writeStorageImage(uint32_t binding, ImageViewBase const &image,
                          VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL);
 
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
