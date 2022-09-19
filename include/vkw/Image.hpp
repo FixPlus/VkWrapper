@@ -15,7 +15,7 @@ public:
 
   ImageInterface const *image() const { return m_parent; }
 
-  operator VkImageView() const { return m_imageView; };
+  virtual operator VkImageView() const = 0;
 
   VkFormat format() const { return m_createInfo.format; };
 
@@ -27,11 +27,7 @@ protected:
                          uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
                          VkComponentMapping componentMapping = {},
                          VkImageViewCreateFlags flags = 0);
-
-  ImageViewBase(ImageViewBase const &another) = default;
-  ImageViewBase(ImageViewBase &&another) = default;
   VkImageViewCreateInfo m_createInfo{};
-  VkImageView m_imageView{};
 
 private:
   ImageInterface const *m_parent{};
@@ -47,7 +43,8 @@ protected:
 public:
   ImageViewCreator(ImageViewCreator const &another) = delete;
   ImageViewCreator(ImageViewCreator &&another) noexcept
-      : ImageViewBase(std::move(another)), m_device(another.m_device) {
+      : ImageViewBase(std::move(another)), m_device(another.m_device),
+        m_imageView(another.m_imageView) {
     another.m_imageView = VK_NULL_HANDLE;
   };
 
@@ -59,15 +56,16 @@ public:
     return *this;
   }
 
+  operator VkImageView() const override { return m_imageView; };
+
 private:
+  VkImageView m_imageView{};
   DeviceCRef m_device;
 };
 
 class ImageInterface {
 public:
-  explicit ImageInterface(VkImage image = VK_NULL_HANDLE,
-                          VkImageUsageFlags usage = 0)
-      : m_image(image) {
+  explicit ImageInterface(VkImageUsageFlags usage = 0) {
     m_createInfo.usage = usage;
     m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     m_createInfo.pNext = nullptr;
@@ -89,10 +87,9 @@ public:
 
   VkImageSubresourceRange completeSubresourceRange() const;
 
-  operator VkImage() const { return m_image; }
+  virtual operator VkImage() const = 0;
 
 protected:
-  VkImage m_image;
   VkImageCreateInfo m_createInfo{};
 };
 
@@ -101,17 +98,34 @@ public:
   AllocatedImage(VmaAllocator allocator,
                  VmaAllocationCreateInfo allocCreateInfo);
   AllocatedImage(AllocatedImage &&another) noexcept
-      : Allocation(another.m_allocator), ImageInterface(std::move(another)) {
+      : Allocation(another), ImageInterface(another), m_image(another.m_image) {
     another.m_image = VK_NULL_HANDLE;
   }
 
   AllocatedImage(AllocatedImage const &another) = delete;
   AllocatedImage const &operator=(AllocatedImage const &another) = delete;
-  AllocatedImage &operator=(AllocatedImage &&another) = delete;
+  AllocatedImage &operator=(AllocatedImage &&another) noexcept {
+    std::swap(m_image, another.m_image);
+    return *this;
+  }
+
+  operator VkImage() const override { return m_image; }
 
   ~AllocatedImage() override;
 
+private:
+  VkImage m_image;
+};
+
+class NonOwingImage : virtual public ImageInterface {
+public:
+  operator VkImage() const override { return m_image; }
+
 protected:
+  explicit NonOwingImage(VkImage image) : m_image(image) {}
+
+private:
+  VkImage m_image;
 };
 
 class ImageArray : virtual public ImageInterface {
@@ -248,6 +262,9 @@ template <ImageViewType vtype>
 class ImageViewVT : virtual public ImageViewBase {
 public:
   unsigned layers() const { return m_createInfo.subresourceRange.layerCount; }
+  unsigned baseLayer() const {
+    return m_createInfo.subresourceRange.baseArrayLayer;
+  }
 
 protected:
   ImageViewVT() { m_createInfo.viewType = ImageViewTypeVal<vtype>::value; }
@@ -409,9 +426,6 @@ public:
         ImageViewIPT<ptype>(format),
         ImageViewSubRange(0, 1, baseMipLevel, mipLevels), ImageViewVT<vtype>(),
         ImageViewCreator(device) {}
-
-  ImageView(ImageView const &another) = delete;
-  ImageView(ImageView &&another) noexcept = default;
 };
 
 class ImageRestInterface : virtual public ImageInterface {
@@ -441,15 +455,16 @@ protected:
  *
  */
 
-class SwapChainImage : public BasicImage<COLOR, I2D, ARRAY> {
+class SwapChainImage : public BasicImage<COLOR, I2D, ARRAY>,
+                       public NonOwingImage {
 public:
 private:
   friend class SwapChain;
   SwapChainImage(VkImage swapChainImage, VkFormat surfaceFormat, uint32_t width,
                  uint32_t height, uint32_t layers, VkImageUsageFlags usage)
-      : ImageInterface(swapChainImage), BasicImage<COLOR, I2D, ARRAY>(
-                                            surfaceFormat, width, height, 1,
-                                            layers) {
+      : ImageInterface(), BasicImage<COLOR, I2D, ARRAY>(surfaceFormat, width,
+                                                        height, 1, layers),
+        NonOwingImage(swapChainImage) {
     m_createInfo.samples = VK_SAMPLE_COUNT_1_BIT;
     m_createInfo.mipLevels = 1;
     m_createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
