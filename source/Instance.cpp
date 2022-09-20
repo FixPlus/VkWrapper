@@ -49,6 +49,17 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   if (m_validation)
     reqExtensions.push_back(ext::EXT_debug_utils);
 
+  // Check presence of all required extensions
+
+  auto firstUnsupported = std::find_if(
+      reqExtensions.begin(), reqExtensions.end(),
+      [&library](ext id) { return !library.hasInstanceExtension(id); });
+
+  if (firstUnsupported != reqExtensions.end()) {
+    auto extId = *firstUnsupported;
+    throw ExtensionUnsupported{extId, library.extensionName(extId)};
+  }
+
   std::vector<const char *> reqExtensionsNames{};
   reqExtensionsNames.reserve(reqExtensions.size());
 

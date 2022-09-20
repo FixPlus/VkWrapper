@@ -45,7 +45,7 @@ public:
       : SymbolTableBase<typename NativeHandlerOf<T>::Handle>(
             internal::getProcAddrOf(handle), internal::handleOf(handle)) {
     if (!internal::isExtensionEnabled(handle, ExtensionName<id>::value))
-      throw ExtensionMissing(ExtensionName<id>::value);
+      throw ExtensionMissing(id, ExtensionName<id>::value);
   }
 
   constexpr static const char *name = ExtensionName<id>::value;

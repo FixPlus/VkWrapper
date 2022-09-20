@@ -91,7 +91,7 @@ VkLayerProperties Library::layerProperties(std::string_view layerName) const {
   auto found =
       std::find_if(m_layer_properties.begin(), m_layer_properties.end(),
                    [&layerName](VkLayerProperties const &layer) {
-                     return !strcmp(layer.layerName, layerName.data());
+                     return !layerName.compare(layer.layerName);
                    });
 
   if (found == m_layer_properties.end())
@@ -103,30 +103,8 @@ VkLayerProperties Library::layerProperties(std::string_view layerName) const {
 bool Library::hasLayer(std::string_view layerName) const {
   return std::any_of(m_layer_properties.begin(), m_layer_properties.end(),
                      [&layerName](VkLayerProperties const &layer) {
-                       return !strcmp(layer.layerName, layerName.data());
+                       return !layerName.compare(layer.layerName);
                      });
-}
-bool Library::hasInstanceExtension(std::string_view extensionName) const {
-  return std::any_of(m_instance_extension_properties.begin(),
-                     m_instance_extension_properties.end(),
-                     [&extensionName](VkExtensionProperties const &layer) {
-                       return !strcmp(layer.extensionName,
-                                      extensionName.data());
-                     });
-}
-VkExtensionProperties
-Library::instanceExtensionProperties(std::string_view extensionName) const {
-  auto found =
-      std::find_if(m_instance_extension_properties.begin(),
-                   m_instance_extension_properties.end(),
-                   [&extensionName](VkExtensionProperties const &layer) {
-                     return !strcmp(layer.extensionName, extensionName.data());
-                   });
-
-  if (found == m_instance_extension_properties.end())
-    throw vkw::ExtensionMissing(std::string(extensionName));
-
-  return *found;
 }
 ext Library::getExtensionId(std::string_view extensionName) const {
   ext result;
@@ -142,6 +120,40 @@ ext Library::getExtensionId(std::string_view extensionName) const {
     throw Error(ss.str());
   }
   return found->first;
+}
+bool Library::hasInstanceExtension(ext extensionId) const {
+
+  std::string_view name = extensionName(extensionId);
+
+  return std::any_of(m_instance_extension_properties.begin(),
+                     m_instance_extension_properties.end(),
+                     [&name](VkExtensionProperties const &layer) {
+                       return !name.compare(layer.extensionName);
+                     });
+}
+VkExtensionProperties
+Library::instanceExtensionProperties(ext extensionId) const {
+  std::string_view name = extensionName(extensionId);
+
+  auto found = std::find_if(m_instance_extension_properties.begin(),
+                            m_instance_extension_properties.end(),
+                            [&name](VkExtensionProperties const &layer) {
+                              return !name.compare(layer.extensionName);
+                            });
+
+  if (found == m_instance_extension_properties.end())
+    throw vkw::ExtensionMissing(extensionId, name);
+
+  return *found;
+}
+
+const char *Library::extensionName(ext id) const {
+  if (!m_extensions_name_map.contains(id)) {
+    std::stringstream ss;
+    ss << "Unhandled extension ID: vkw::ext::" << static_cast<unsigned>(id);
+    throw vkw::Error(ss.str());
+  }
+  return m_extensions_name_map.at(id);
 }
 
 } // namespace vkw

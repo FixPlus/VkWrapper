@@ -107,15 +107,9 @@ bool PhysicalDevice::extensionSupported(ext extension) const {
 }
 
 void PhysicalDevice::enableExtension(ext extension) {
-  if (!extensionSupported(extension)) {
-    std::stringstream ss;
-    ss << "Asked to enable extension \""
-       << m_instance.get().parent().extensionName(extension)
-       << "\", which is not supported by physicalDevice "
-       << (unsigned long long)m_physicalDevice;
-
-    throw Error(ss.str(), ErrorCode::EXTENSION_MISSING);
-  }
+  if (!extensionSupported(extension))
+    throw ExtensionUnsupported(
+        extension, m_instance.get().parent().extensionName(extension));
 
   if (std::find(m_enabledExtensions.begin(), m_enabledExtensions.end(),
                 extension) != m_enabledExtensions.end())

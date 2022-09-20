@@ -9,7 +9,8 @@ namespace vkw {
 
 class Exception : public std::runtime_error {
 public:
-  Exception(std::string const &what) : std::runtime_error(what) {}
+  explicit Exception(std::string_view what)
+      : std::runtime_error(std::string(what)) {}
 
 private:
 };
@@ -21,13 +22,15 @@ enum class ErrorCode {
 
   VULKAN_ERROR,
   EXTENSION_MISSING,
+  EXTENSION_UNSUPPORTED,
   SURFACE_OUTDATED,
   UNKNOWN,
 };
 
 class Error : public Exception {
 public:
-  Error(std::string const &what, ErrorCode errorCode = ErrorCode::UNKNOWN)
+  explicit Error(std::string_view what,
+                 ErrorCode errorCode = ErrorCode::UNKNOWN)
       : Exception(what), m_errCode(errorCode) {}
 
   ErrorCode code() const { return m_errCode; }
@@ -74,18 +77,39 @@ inline std::string errorString(VkResult errorCode) {
     return "UNKNOWN_ERROR";
   }
 }
-
-class ExtensionMissing : public Error {
+enum class ext;
+class ExtensionError : public Error {
 public:
-  explicit ExtensionMissing(std::string const &extName)
-      : Error("Extension " + extName + " is missing",
-              ErrorCode::EXTENSION_MISSING),
-        m_extName(extName) {}
+  const char *extName() const { return m_extName.c_str(); }
 
-  std::string const &extName() const { return m_extName; }
+  ext id() const { return m_id; }
+
+protected:
+  explicit ExtensionError(ext id, std::string_view extName, ErrorCode code,
+                          std::string_view postfix)
+      : Error(std::string("Extension ")
+                  .append(extName)
+                  .append(" is ")
+                  .append(postfix),
+              code),
+        m_extName(extName), m_id(id) {}
 
 private:
   std::string m_extName;
+  ext m_id;
+};
+
+class ExtensionMissing : public ExtensionError {
+public:
+  ExtensionMissing(ext id, std::string_view extName)
+      : ExtensionError(id, extName, ErrorCode::EXTENSION_MISSING, "missing") {}
+};
+
+class ExtensionUnsupported : public ExtensionError {
+public:
+  ExtensionUnsupported(ext id, std::string_view extName)
+      : ExtensionError(id, extName, ErrorCode::EXTENSION_UNSUPPORTED,
+                       "unsupported") {}
 };
 
 class PositionalError : public Error {

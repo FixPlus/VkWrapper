@@ -39,14 +39,11 @@ public:
 
   VkLayerProperties layerProperties(std::string_view layerName) const;
 
-  bool hasInstanceExtension(std::string_view extensionName) const;
+  bool hasInstanceExtension(ext extensionId) const;
 
-  VkExtensionProperties
-  instanceExtensionProperties(std::string_view extensionName) const;
+  VkExtensionProperties instanceExtensionProperties(ext extensionId) const;
 
-  const char *extensionName(ext id) const {
-    return m_extensions_name_map.at(id);
-  }
+  const char *extensionName(ext id) const;
 
   ext getExtensionId(std::string_view extensionName) const;
 
