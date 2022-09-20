@@ -6,19 +6,13 @@
 
 namespace vkw {
 
-namespace feature {
+namespace device {
 
-class FeatureBase {
-public:
-  virtual VkBool32 const *
-  feature_location(VkPhysicalDeviceFeatures const *featureList) const = 0;
-  virtual VkBool32 *
-  feature_location(VkPhysicalDeviceFeatures *featureList) const = 0;
-  virtual const char *name() const = 0;
-};
-
+enum class feature {
+#define VKW_FEATURE_ENTRY(X) X,
 #include "DeviceFeatures.inc"
-
+#undef VKW_FEATURE_ENTRY
+};
 } // namespace feature
 
 enum class ext;
@@ -57,9 +51,9 @@ public:
     return m_enabledExtensions;
   }
 
-  bool isFeatureSupported(feature::FeatureBase const &feature) const;
+  bool isFeatureSupported(device::feature feature) const;
 
-  void enableFeature(feature::FeatureBase const &feature);
+  void enableFeature(device::feature feature);
 
   bool extensionSupported(ext extension) const;
 

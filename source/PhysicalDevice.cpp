@@ -87,18 +87,54 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
   }
 }
 
-bool PhysicalDevice::isFeatureSupported(
-    feature::FeatureBase const &feature) const {
-  return *feature.feature_location(&m_features);
+namespace {
+
+void unhandledFeatureEntry(device::feature feature) {
+  std::stringstream ss;
+  ss << "Unhandled feature entry: " << static_cast<unsigned>(feature);
+  throw Error(ss.view());
+}
+const char *featureNameMap(device::feature feature) {
+  switch (feature) {
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case device::feature::X:                                                     \
+    return #X;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+  default:
+    unhandledFeatureEntry(feature);
+    return nullptr;
+  }
+}
+} // namespace
+
+bool PhysicalDevice::isFeatureSupported(device::feature feature) const {
+  switch (feature) {
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case device::feature::X:                                                     \
+    return m_features.X;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+  default:
+    unhandledFeatureEntry(feature);
+    return false;
+  }
 }
 
-void PhysicalDevice::enableFeature(feature::FeatureBase const &feature) {
+void PhysicalDevice::enableFeature(device::feature feature) {
   if (!isFeatureSupported(feature))
-    throw Error("Asked to enable feature " + std::string(feature.name()) +
-                " which is not supported by physicalDevice " +
-                std::to_string((unsigned long long)m_physicalDevice));
+    throw FeatureUnsupported(feature, featureNameMap(feature));
 
-  *feature.feature_location(&m_enabledFeatures) = VK_TRUE;
+  switch (feature) {
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case device::feature::X:                                                     \
+    m_enabledFeatures.X = true;                                                \
+    break;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+  default:
+    unhandledFeatureEntry(feature);
+  };
 }
 
 bool PhysicalDevice::extensionSupported(ext extension) const {
