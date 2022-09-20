@@ -106,24 +106,9 @@ bool Library::hasLayer(std::string_view layerName) const {
                        return !layerName.compare(layer.layerName);
                      });
 }
-ext Library::getExtensionId(std::string_view extensionName) const {
-  ext result;
-  auto found = std::find_if(
-      m_extensions_name_map.begin(), m_extensions_name_map.end(),
-      [extensionName](
-          std::unordered_map<ext, const char *>::value_type const &entry) {
-        return !extensionName.compare(entry.second);
-      });
-  if (found == m_extensions_name_map.end()) {
-    std::stringstream ss;
-    ss << "Bad extension name: " << extensionName;
-    throw Error(ss.str());
-  }
-  return found->first;
-}
 bool Library::hasInstanceExtension(ext extensionId) const {
 
-  std::string_view name = extensionName(extensionId);
+  std::string_view name = ExtensionName(extensionId);
 
   return std::any_of(m_instance_extension_properties.begin(),
                      m_instance_extension_properties.end(),
@@ -133,7 +118,7 @@ bool Library::hasInstanceExtension(ext extensionId) const {
 }
 VkExtensionProperties
 Library::instanceExtensionProperties(ext extensionId) const {
-  std::string_view name = extensionName(extensionId);
+  std::string_view name = ExtensionName(extensionId);
 
   auto found = std::find_if(m_instance_extension_properties.begin(),
                             m_instance_extension_properties.end(),
@@ -147,13 +132,44 @@ Library::instanceExtensionProperties(ext extensionId) const {
   return *found;
 }
 
-const char *Library::extensionName(ext id) const {
-  if (!m_extensions_name_map.contains(id)) {
+namespace {
+constexpr const char *ExtensionNames[] = {
+#define STRINGIFY(X) #X
+#define VKW_DUMP_EXTENSION_MAP
+#define VKW_EXTENSION_ENTRY(X) STRINGIFY(VK_##X),
+#include "SymbolTable.inc"
+#undef VKW_EXTENSION_ENTRY
+#undef VKW_DUMP_EXTENSION_MAP
+};
+} // namespace
+
+const char *Library::ExtensionName(ext id) {
+  auto index = static_cast<unsigned>(id);
+  if (index >= sizeof(ExtensionNames) / sizeof(const char *)) {
     std::stringstream ss;
-    ss << "Unhandled extension ID: vkw::ext::" << static_cast<unsigned>(id);
+    ss << "Unhandled extension ID: vkw::ext::" << index;
     throw vkw::Error(ss.str());
   }
-  return m_extensions_name_map.at(id);
+  return ExtensionNames[static_cast<unsigned>(id)];
 }
+
+ext Library::ExtensionId(std::string_view extensionName) {
+  auto *begin = ExtensionNames;
+  auto *end = ExtensionNames + (sizeof(ExtensionNames) / sizeof(const char *));
+  auto *found = std::find_if(begin, end, [extensionName](const char *entry) {
+    return !extensionName.compare(entry);
+  });
+  if (found == end) {
+    std::stringstream ss;
+    ss << "Bad extension name: " << extensionName;
+    throw Error(ss.str());
+  }
+
+  return static_cast<ext>(found - begin);
+}
+
+namespace internal {
+const char *ext_name(ext id) { return Library::ExtensionName(id); }
+} // namespace internal
 
 } // namespace vkw

@@ -16,11 +16,11 @@ template <> struct NativeHandlerOf<Device> { using Handle = VkDevice; };
 
 enum class ext;
 
-template <ext name> struct ExtensionName {};
-
 namespace internal {
 bool isExtensionEnabled(Instance const &instance, const char *extName);
 bool isExtensionEnabled(Device const &device, const char *extName);
+
+const char *ext_name(ext id);
 
 template <typename T>
 using PFN_getProcAddr =
@@ -44,15 +44,20 @@ public:
   ExtensionBase(T const &handle)
       : SymbolTableBase<typename NativeHandlerOf<T>::Handle>(
             internal::getProcAddrOf(handle), internal::handleOf(handle)) {
-    if (!internal::isExtensionEnabled(handle, ExtensionName<id>::value))
-      throw ExtensionMissing(id, ExtensionName<id>::value);
+    if (!internal::isExtensionEnabled(handle, internal::ext_name(id)))
+      throw ExtensionMissing(id, internal::ext_name(id));
   }
-
-  constexpr static const char *name = ExtensionName<id>::value;
 };
 
 template <ext name> class Extension {};
 
+enum class ext {
+#define VKW_DUMP_EXTENSION_MAP
+#define VKW_EXTENSION_ENTRY(X) X,
+#include "SymbolTable.inc"
+#undef VKW_EXTENSION_ENTRY
+#undef VKW_DUMP_EXTENSION_MAP
+};
 #define VKW_DUMP_EXTENSION_CLASSES
 #include "SymbolTable.inc"
 #undef VKW_DUMP_EXTENSION_CLASSES

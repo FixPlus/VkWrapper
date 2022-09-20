@@ -43,10 +43,6 @@ public:
 
   VkExtensionProperties instanceExtensionProperties(ext extensionId) const;
 
-  const char *extensionName(ext id) const;
-
-  ext getExtensionId(std::string_view extensionName) const;
-
   PFN_vkCreateInstance vkCreateInstance;
   PFN_vkEnumerateInstanceExtensionProperties
       vkEnumerateInstanceExtensionProperties;
@@ -56,12 +52,14 @@ public:
 
   ApiVersion instanceAPIVersion() const;
 
-private:
+  static const char *ExtensionName(ext id);
 
+  static ext ExtensionId(std::string_view extensionName);
+
+private:
   std::vector<VkLayerProperties> m_layer_properties;
   std::vector<VkExtensionProperties> m_instance_extension_properties;
   std::unique_ptr<DynamicLoader> m_loader;
-  std::unordered_map<ext, const char *> m_extensions_name_map;
 };
 } // namespace vkw
 #endif // VKWRAPPER_LIBRARY_HPP

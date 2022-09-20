@@ -57,16 +57,15 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
 
   if (firstUnsupported != reqExtensions.end()) {
     auto extId = *firstUnsupported;
-    throw ExtensionUnsupported{extId, library.extensionName(extId)};
+    throw ExtensionUnsupported{extId, Library::ExtensionName(extId)};
   }
 
   std::vector<const char *> reqExtensionsNames{};
   reqExtensionsNames.reserve(reqExtensions.size());
 
   std::transform(reqExtensions.begin(), reqExtensions.end(),
-                 std::back_inserter(reqExtensionsNames), [this](ext id) {
-                   return m_vulkanLib.get().extensionName(id);
-                 });
+                 std::back_inserter(reqExtensionsNames),
+                 [](ext id) { return Library::ExtensionName(id); });
 
   createInfo.enabledExtensionCount = reqExtensionsNames.size();
   createInfo.ppEnabledExtensionNames = reqExtensionsNames.data();

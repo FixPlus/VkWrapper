@@ -74,8 +74,7 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
                          [this](VkExtensionProperties const &props) {
                            try {
                              m_supportedExtensions.emplace_back(
-                                 m_instance.get().parent().getExtensionId(
-                                     props.extensionName));
+                                 Library::ExtensionId(props.extensionName));
                              return false;
                            } catch (Error &e) {
                              return true;
@@ -145,7 +144,7 @@ bool PhysicalDevice::extensionSupported(ext extension) const {
 void PhysicalDevice::enableExtension(ext extension) {
   if (!extensionSupported(extension))
     throw ExtensionUnsupported(
-        extension, m_instance.get().parent().extensionName(extension));
+        extension, m_instance.get().parent().ExtensionName(extension));
 
   if (std::find(m_enabledExtensions.begin(), m_enabledExtensions.end(),
                 extension) != m_enabledExtensions.end())

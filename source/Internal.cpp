@@ -19,10 +19,10 @@ using PFN_getProcAddr =
 namespace vkw::internal {
 
 bool isExtensionEnabled(Instance const &instance, const char *extName) {
-  return instance.isExtensionEnabled(instance.parent().getExtensionId(extName));
+  return instance.isExtensionEnabled(instance.parent().ExtensionId(extName));
 }
 bool isExtensionEnabled(Device const &device, const char *extName) {
-  auto extId = device.getParent().parent().getExtensionId(extName);
+  auto extId = device.getParent().parent().ExtensionId(extName);
   auto &enabledExtensions = device.physicalDevice().enabledExtensions();
   return std::any_of(enabledExtensions.begin(), enabledExtensions.end(),
                      [extId](ext entry) { return entry == extId; });

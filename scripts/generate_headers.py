@@ -100,27 +100,6 @@ def generateExtensionDefinitions():
 
     print("#ifdef VKW_DUMP_EXTENSION_CLASSES")
 
-    # dump 'ext' enum definition
-    print('enum class ext{')
-    for ext_platform in instance_ext_list.keys():
-        for ext in instance_ext_list[ext_platform]:
-            print(ext.string_name + ",")
-
-    for ext_platform in device_ext_list.keys():
-        for ext in device_ext_list[ext_platform]:
-            print(ext.string_name + ",")
-
-    print('};\n')
-
-    # dump all 'ExtensionName<>' template specializations
-    for ext_platform in instance_ext_list.keys():
-        for ext in instance_ext_list[ext_platform]:
-            dumpExtensionNameTemplateSpecialization(ext.string_name)
-
-    for ext_platform in device_ext_list.keys():
-        for ext in device_ext_list[ext_platform]:
-            dumpExtensionNameTemplateSpecialization(ext.string_name)
-
     # dump all extension classes
 
     for ext_platform in instance_ext_list.keys():
@@ -147,26 +126,26 @@ def generateExtensionDefinitions():
 
     print("#endif") # #ifdef VKW_DUMP_EXTENSION_CLASSES
 
-    print("#ifdef VKW_DUMP_EXTENSION_NAME_MAP_DEFINITION")
+    print("#ifdef VKW_DUMP_EXTENSION_MAP")
     for ext_platform in instance_ext_list.keys():
         if len(instance_ext_list[ext_platform]) == 0:
             continue
-        insert_protect = ext_platform != 'base'
+        insert_protect = False  # ext_platform != 'base'
         if insert_protect:
             print("#ifdef " + platform_macro_map[ext_platform])
         for ext in instance_ext_list[ext_platform]:
-            print("VKW_MAP_ENTRY(ext::" + ext.string_name + ", \"VK_" + ext.string_name + "\")")
+            print("VKW_EXTENSION_ENTRY(" + ext.string_name + ")")
         if insert_protect:
             print("#endif")
 
     for ext_platform in device_ext_list.keys():
         if len(device_ext_list[ext_platform]) == 0:
             continue
-        insert_protect = ext_platform != 'base'
+        insert_protect = False  # ext_platform != 'base'
         if insert_protect:
             print("#ifdef " + platform_macro_map[ext_platform])
         for ext in device_ext_list[ext_platform]:
-            print("VKW_MAP_ENTRY(ext::" + ext.string_name + ", \"VK_" + ext.string_name + "\")")
+            print("VKW_EXTENSION_ENTRY(" + ext.string_name + ")")
         if insert_protect:
             print("#endif")
     print("#endif")

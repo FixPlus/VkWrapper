@@ -150,7 +150,7 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   std::transform(
       m_ph_device.enabledExtensions().begin(),
       m_ph_device.enabledExtensions().end(), std::back_inserter(extensionsRaw),
-      [&libRef](ext extension) { return libRef.extensionName(extension); });
+      [](ext extension) { return Library::ExtensionName(extension); });
 
   deviceCreateInfo.enabledExtensionCount = extensionsRaw.size();
   deviceCreateInfo.ppEnabledExtensionNames = extensionsRaw.data();
