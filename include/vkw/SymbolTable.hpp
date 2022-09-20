@@ -8,6 +8,9 @@
 
 namespace vkw {
 
+class Instance;
+class Device;
+
 template <typename Level>
 requires std::same_as<Level, VkInstance> || std::same_as<Level, VkDevice>
 class SymbolTableBase {
@@ -34,77 +37,9 @@ class InstanceCore : public SymbolTableBase<VkInstance> {};
 template <uint32_t major, uint32_t minor>
 class DeviceCore : public SymbolTableBase<VkInstance> {};
 
-class InstanceExtensionBase : public SymbolTableBase<VkInstance> {
-public:
-  InstanceExtensionBase(PFN_getProcAddr getProcAddr, VkInstance instance,
-                        std::string extName)
-      : SymbolTableBase<VkInstance>(getProcAddr, instance),
-        m_name(std::move(extName)) {}
-
-  std::string const &name() const { return m_name; }
-
-private:
-  std::string m_name;
-};
-
-class InstanceExtensionInitializerBase {
-public:
-  InstanceExtensionInitializerBase() = default;
-
-  virtual InstanceExtensionBase *
-  initialize(PFN_vkGetInstanceProcAddr getProcAddr,
-             VkInstance instance) const = 0;
-};
-
-template <typename T>
-class InstanceExtensionInitializerImpl
-    : public InstanceExtensionInitializerBase {
-public:
-  InstanceExtensionBase *initialize(PFN_vkGetInstanceProcAddr getProcAddr,
-                                    VkInstance instance) const override {
-    return new T(getProcAddr, instance);
-  };
-};
-
-class DeviceExtensionBase : public SymbolTableBase<VkDevice> {
-public:
-  DeviceExtensionBase(PFN_getProcAddr getProcAddr, VkDevice instance,
-                      std::string extName)
-      : SymbolTableBase<VkDevice>(getProcAddr, instance),
-        m_name(std::move(extName)) {}
-
-  std::string const &name() const { return m_name; }
-
-private:
-  std::string m_name;
-};
-
-class DeviceExtensionInitializerBase {
-public:
-  DeviceExtensionInitializerBase() = default;
-
-  virtual DeviceExtensionBase *initialize(PFN_vkGetDeviceProcAddr getProcAddr,
-                                          VkDevice instance) const = 0;
-};
-
-template <typename T>
-class DeviceExtensionInitializerImpl : public DeviceExtensionInitializerBase {
-public:
-  DeviceExtensionBase *initialize(PFN_vkGetDeviceProcAddr getProcAddr,
-                                  VkDevice device) const override {
-    return new T(getProcAddr, device);
-  };
-};
-#define VKW_DUMP_EXTENSION_CLASSES
 #define VKW_DUMP_CORE_CLASSES
 #include "SymbolTable.inc"
-#undef VKW_DUMP_EXTENSION_CLASSES
 #undef VKW_DUMP_CORE_CLASSES
-
-extern std::unordered_map<std::string, InstanceExtensionInitializerBase const *>
-    m_instanceExtInitializers;
-extern std::unordered_map<std::string, DeviceExtensionInitializerBase const *>
-    m_deviceExtInitializers;
 
 } // namespace vkw
 #endif // VKWRAPPER_SYMBOLTABLE_HPP

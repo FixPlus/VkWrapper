@@ -4,13 +4,13 @@
 #include "loader/DynamicLoader.hpp"
 #include "vkw/Device.hpp"
 #include "vkw/Exception.hpp"
+#include "vkw/Extensions.hpp"
 #include <cassert>
 #include <cstring>
 
 namespace vkw {
 
-Instance::Instance(Library const &library,
-                   std::vector<std::string> reqExtensions,
+Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
                    bool enableValidation)
     : m_validation(enableValidation), m_vulkanLib(library) {
   VkApplicationInfo appInfo{};
@@ -27,18 +27,14 @@ Instance::Instance(Library const &library,
 
   m_apiVer = {1, 0, 0};
 
-  std::vector<const char *> reqExtensionsNames{};
-  reqExtensionsNames.reserve(reqExtensions.size());
-
-  for (auto &ext : reqExtensions)
-    reqExtensionsNames.emplace_back(ext.c_str());
-
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
 
+  const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
+
   if (m_validation) {
-    const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
+
     if (library.hasLayer(validationLayerName)) {
       createInfo.ppEnabledLayerNames = &validationLayerName;
       createInfo.enabledLayerCount = 1;
@@ -51,7 +47,15 @@ Instance::Instance(Library const &library,
 
   // validation layer requires VK_EXT_debug_utils extension
   if (m_validation)
-    reqExtensionsNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+    reqExtensions.push_back(ext::EXT_debug_utils);
+
+  std::vector<const char *> reqExtensionsNames{};
+  reqExtensionsNames.reserve(reqExtensions.size());
+
+  std::transform(reqExtensions.begin(), reqExtensions.end(),
+                 std::back_inserter(reqExtensionsNames), [this](ext id) {
+                   return m_vulkanLib.get().extensionName(id);
+                 });
 
   createInfo.enabledExtensionCount = reqExtensionsNames.size();
   createInfo.ppEnabledExtensionNames = reqExtensionsNames.data();
@@ -59,19 +63,14 @@ Instance::Instance(Library const &library,
   VK_CHECK_RESULT(
       m_vulkanLib.get().vkCreateInstance(&createInfo, nullptr, &m_instance))
 
+  // TODO: add option to load specific Vulkan version symbols
   m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
       m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
 
-  for (auto &extName : reqExtensionsNames) {
-    std::unique_ptr<InstanceExtensionBase> ext;
-    auto initializer = m_instanceExtInitializers.find(extName);
-    assert(initializer != m_instanceExtInitializers.end() &&
-           "Bad extension name");
-    m_extensions.emplace(
-        extName,
-        std::unique_ptr<InstanceExtensionBase>(initializer->second->initialize(
-            m_vulkanLib.get().vkGetInstanceProcAddr, m_instance)));
+  for (auto &extension : reqExtensions) {
+    m_enabledExtensions.emplace(extension);
   }
+
   if (m_validation)
     debug::setupDebugging(*this, 0, nullptr);
 }
@@ -101,7 +100,7 @@ std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
 
 Instance::Instance(Instance &&another) noexcept
     : m_instance(another.m_instance), m_validation(another.m_validation),
-      m_extensions(std::move(another.m_extensions)),
+      m_enabledExtensions(std::move(another.m_enabledExtensions)),
       m_vulkanLib(another.m_vulkanLib),
       m_coreInstanceSymbols(std::move(another.m_coreInstanceSymbols)) {
   another.m_instance = VK_NULL_HANDLE;
@@ -110,7 +109,7 @@ Instance::Instance(Instance &&another) noexcept
 Instance &Instance::operator=(Instance &&another) noexcept {
   m_instance = another.m_instance;
   m_validation = another.m_validation;
-  m_extensions = std::move(another.m_extensions);
+  m_enabledExtensions = std::move(another.m_enabledExtensions);
   m_vulkanLib = another.m_vulkanLib;
   m_coreInstanceSymbols = std::move(another.m_coreInstanceSymbols);
   another.m_instance = VK_NULL_HANDLE;

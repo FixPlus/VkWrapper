@@ -1,6 +1,7 @@
 #ifndef VKRENDERER_SURFACE_HPP
 #define VKRENDERER_SURFACE_HPP
 
+#include "Extensions.hpp"
 #include "vkw/Instance.hpp"
 #include <vector>
 #include <vulkan/vulkan.h>
@@ -8,7 +9,6 @@
 namespace vkw {
 
 class Instance;
-class VkKhrSurface;
 
 #define VK_CHECK_RESULT_(...)                                                  \
   {                                                                            \
@@ -20,15 +20,9 @@ class VkKhrSurface;
 class Surface final {
 public:
 #ifdef _WIN32
-  Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd) : m_parent(parent) {
-    m_surface_ext = static_cast<VkKhrSurface const *>(
-        parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
-    if (!m_surface_ext)
-      throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
-    auto *win32SurfaceExt = static_cast<VkKhrWin32Surface const *>(
-        parent.extension(VK_KHR_WIN32_SURFACE_EXTENSION_NAME));
-    if (!win32SurfaceExt)
-      throw ExtensionMissing(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
+  Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd)
+      : m_parent(parent), m_surface_ext(parent) {
+    Extension<ext::KHR_win32_surface> win32SurfaceExt{parent};
 
     VkWin32SurfaceCreateInfoKHR createInfo{};
 
@@ -38,21 +32,14 @@ public:
     createInfo.hinstance = hinstance;
     createInfo.hwnd = hwnd;
 
-    VK_CHECK_RESULT_(win32SurfaceExt->vkCreateWin32SurfaceKHR(
+    VK_CHECK_RESULT_(win32SurfaceExt.vkCreateWin32SurfaceKHR(
         m_parent.get(), &createInfo, nullptr, &m_surface))
   }
 #elif defined __linux__
 #ifdef VK_USE_PLATFORM_XLIB_KHR
   Surface(Instance &parent, Display *display, Window window)
-      : m_parent(parent) {
-    m_surface_ext = static_cast<VkKhrSurface const *>(
-        parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
-    if (!m_surface_ext)
-      throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
-    auto *xlibSurfaceExt = static_cast<VkKhrXlibSurface const *>(
-        parent.extension(VK_KHR_XLIB_SURFACE_EXTENSION_NAME));
-    if (!xlibSurfaceExt)
-      throw ExtensionMissing(VK_KHR_XLIB_SURFACE_EXTENSION_NAME);
+      : m_parent(parent), m_surface_ext(parent) {
+    Extension<ext::KHR_xlib_surface> xlibSurfaceExt{parent};
 
     VkXlibSurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_XLIB_SURFACE_CREATE_INFO_KHR;
@@ -60,20 +47,13 @@ public:
     createInfo.dpy = display;
     createInfo.window = window;
 
-    VK_CHECK_RESULT_(xlibSurfaceExt->vkCreateXlibSurfaceKHR(
+    VK_CHECK_RESULT_(xlibSurfaceExt.vkCreateXlibSurfaceKHR(
         m_parent.get(), &createInfo, nullptr, &m_surface))
   };
 #elif defined VK_USE_PLATFORM_XCB_KHR
   Surface(Instance &parent, xcb_connection_t *connection, xcb_window_t window)
-      : m_parent(parent) {
-    m_surface_ext = static_cast<VkKhrSurface const *>(
-        parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
-    if (!m_surface_ext)
-      throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
-    auto *xcbSurfaceExt = static_cast<VkKhrXcbSurface const *>(
-        parent.extension(VK_KHR_XCB_SURFACE_EXTENSION_NAME));
-    if (!xlibSurfaceExt)
-      throw ExtensionMissing(VK_KHR_XCB_SURFACE_EXTENSION_NAME);
+      : m_parent(parent), m_surface_ext(parent) {
+    Extension<ext::KHR_xcb_surface> xcbSurfaceExt{parent};
 
     VkXcbSurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_XCB_SURFACE_CREATE_INFO_KHR;
@@ -81,20 +61,13 @@ public:
     createInfo.connection = connection;
     createInfo.window = window;
 
-    VK_CHECK_RESULT_(xcbSurfaceExt->vkCreateXCBSurfaceKHR(m_parent, &createInfo,
-                                                          nullptr, &m_surface))
+    VK_CHECK_RESULT_(xcbSurfaceExt.vkCreateXCBSurfaceKHR(m_parent, &createInfo,
+                                                         nullptr, &m_surface))
   };
 #elif defined VK_USE_PLATFORM_WAYLAND_KHR
   Surface(Instance &parent, wl_display *display, wl_surface *surface)
-      : m_parent(parent) {
-    m_surface_ext = static_cast<VkKhrSurface const *>(
-        parent.extension(VK_KHR_SURFACE_EXTENSION_NAME));
-    if (!m_surface_ext)
-      throw ExtensionMissing(VK_KHR_SURFACE_EXTENSION_NAME);
-    auto *waylandSurfaceExt = static_cast<VkKhrWaylandSurface const *>(
-        parent.extension(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME));
-    if (!waylandSurfaceExt)
-      throw ExtensionMissing(VK_KHR_WAYLAND_SURFACE_EXTENSION_NAME);
+      : m_parent(parent), m_surface_ext(parent) {
+    Extension<ext::KHR_wayland_surface> waylandSurfaceExt{parent};
 
     VkWaylandSurfaceCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_WAYLAND_SURFACE_CREATE_INFO_KHR;
@@ -102,7 +75,7 @@ public:
     createInfo.display = display;
     createInfo.surface = surface;
 
-    VK_CHECK_RESULT_(waylandSurfaceExt->vkCreateWaylandSurfaceKHR(
+    VK_CHECK_RESULT_(waylandSurfaceExt.vkCreateWaylandSurfaceKHR(
         m_parent, &createInfo, nullptr, &m_surface))
   };
 #endif
@@ -124,6 +97,8 @@ public:
 
   Instance &getParent() const { return m_parent; };
 
+  auto const &ext() const { return m_surface_ext; }
+
   std::vector<VkPresentModeKHR>
   getAvailablePresentModes(VkPhysicalDevice device) const;
   std::vector<VkSurfaceFormatKHR>
@@ -139,7 +114,7 @@ public:
 
 private:
   VkSurfaceKHR m_surface;
-  VkKhrSurface const *m_surface_ext{};
+  Extension<ext::KHR_surface> m_surface_ext;
   InstanceRef m_parent;
 };
 } // namespace vkw

@@ -22,7 +22,7 @@ Device::Device(Device &&another)
 
   m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
 
-  m_extensions = std::move(another.m_extensions);
+  m_enabledExtensions = std::move(another.m_enabledExtensions);
 
   another.m_device = VK_NULL_HANDLE;
 }
@@ -146,10 +146,11 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
 
   std::vector<const char *> extensionsRaw{};
   extensionsRaw.reserve(m_ph_device.enabledExtensions().size());
-  std::transform(m_ph_device.enabledExtensions().begin(),
-                 m_ph_device.enabledExtensions().end(),
-                 std::back_inserter(extensionsRaw),
-                 [](std::string const &ext) { return ext.c_str(); });
+  auto &libRef = parent.parent();
+  std::transform(
+      m_ph_device.enabledExtensions().begin(),
+      m_ph_device.enabledExtensions().end(), std::back_inserter(extensionsRaw),
+      [&libRef](ext extension) { return libRef.extensionName(extension); });
 
   deviceCreateInfo.enabledExtensionCount = extensionsRaw.size();
   deviceCreateInfo.ppEnabledExtensionNames = extensionsRaw.data();
@@ -157,18 +158,12 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkCreateDevice(
       m_ph_device, &deviceCreateInfo, nullptr, &m_device))
 
+  // TODO: add option to load specific Vulkan version symbols
   m_coreDeviceSymbols = std::make_unique<DeviceCore<1, 0>>(
       m_parent.get().core<1, 0>().vkGetDeviceProcAddr, m_device);
 
-  for (auto &extName : extensionsRaw) {
-    std::unique_ptr<DeviceExtensionBase> ext;
-    auto initializer = m_deviceExtInitializers.find(extName);
-    assert(initializer != m_deviceExtInitializers.end() &&
-           "Bad extension name");
-    m_extensions.emplace(
-        extName,
-        std::unique_ptr<DeviceExtensionBase>(initializer->second->initialize(
-            m_parent.get().core<1, 0>().vkGetDeviceProcAddr, m_device)));
+  for (auto &ext : m_ph_device.enabledExtensions()) {
+    m_enabledExtensions.emplace(ext);
   }
 
   m_apiVer = {1, 0, 0};
@@ -264,7 +259,7 @@ Device &Device::operator=(Device &&another) noexcept {
 
   m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
 
-  m_extensions = std::move(another.m_extensions);
+  m_enabledExtensions = std::move(another.m_enabledExtensions);
 
   std::swap(m_device, another.m_device);
 

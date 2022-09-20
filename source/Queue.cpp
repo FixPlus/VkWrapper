@@ -2,6 +2,7 @@
 #include "Utils.hpp"
 #include "vkw/CommandBuffer.hpp"
 #include "vkw/Device.hpp"
+#include "vkw/Extensions.hpp"
 #include "vkw/Fence.hpp"
 #include "vkw/Instance.hpp"
 #include "vkw/Semaphore.hpp"
@@ -23,15 +24,8 @@ Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
 }
 
 bool Queue::supportsPresenting(Surface const &surface) const {
-
-  auto *surfaceExt = static_cast<VkKhrSurface const *>(
-      m_parent.get().getParent().extension(VK_KHR_SURFACE_EXTENSION_NAME));
-
-  if (!surfaceExt)
-    return false;
-
   VkBool32 ret;
-  VK_CHECK_RESULT(surfaceExt->vkGetPhysicalDeviceSurfaceSupportKHR(
+  VK_CHECK_RESULT(surface.ext().vkGetPhysicalDeviceSurfaceSupportKHR(
       m_parent.get().physicalDevice(), m_familyIndex, surface, &ret))
   return ret;
 }
@@ -101,7 +95,7 @@ bool Queue::present(const SwapChainConstRefArray &swapChains,
   presentInfo.pImageIndices = images.data();
   presentInfo.pResults = nullptr;
 
-  return queuePresent(swapChains.begin()->get().ext()->vkQueuePresentKHR,
+  return queuePresent(swapChains.begin()->get().ext().vkQueuePresentKHR,
                       m_queue, &presentInfo);
 }
 
@@ -120,8 +114,7 @@ bool Queue::present(const SwapChain &swapChain,
   presentInfo.pImageIndices = &image;
   presentInfo.pResults = nullptr;
 
-  return queuePresent(swapChain.ext()->vkQueuePresentKHR, m_queue,
-                      &presentInfo);
+  return queuePresent(swapChain.ext().vkQueuePresentKHR, m_queue, &presentInfo);
 }
 
 void Queue::submit(const SemaphoreConstRefArray &waitFor,

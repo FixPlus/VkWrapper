@@ -7,17 +7,19 @@
 #include "SymbolTable.hpp"
 #include <functional>
 #include <memory>
+#include <set>
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
-
 namespace vkw {
 
 class DynamicLoader;
 
+enum class ext;
+
 class Instance {
 public:
-  Instance(Library const &library, std::vector<std::string> reqExtensions = {},
+  Instance(Library const &library, std::vector<ext> reqExtensions = {},
            bool enableValidation = true);
   Instance(Instance const &another) = delete;
   Instance const &operator=(Instance const &another) = delete;
@@ -26,9 +28,9 @@ public:
 
   std::vector<PhysicalDevice> enumerateAvailableDevices() const;
 
-  bool isExtensionEnabled(std::string const &extension) {
-    return m_extensions.contains(extension);
-  };
+  bool isExtensionEnabled(ext extension) const {
+    return m_enabledExtensions.contains(extension);
+  }
 
   operator VkInstance() const { return m_instance; }
 
@@ -46,33 +48,13 @@ public:
     return *ptr;
   }
 
-  InstanceExtensionBase *extension(std::string const &name) const {
-    if (!m_extensions.contains(name))
-      return nullptr;
-    return m_extensions.at(name).get();
-  }
-
-  /** Iterators for extensions.*/
-
-  auto extensions_begin() { return m_extensions.begin(); }
-
-  auto extensions_end() { return m_extensions.end(); }
-
-  auto extensions_begin() const { return m_extensions.begin(); }
-
-  auto extensions_end() const { return m_extensions.end(); }
-
-  using extension_iterator =
-      std::unordered_map<std::string,
-                         std::unique_ptr<InstanceExtensionBase>>::iterator;
-  using extension_const_iterator = std::unordered_map<
-      std::string, std::unique_ptr<InstanceExtensionBase>>::const_iterator;
+  Library const &parent() const { return m_vulkanLib; }
 
 private:
   VkInstance m_instance{};
 
-  std::unordered_map<std::string, std::unique_ptr<InstanceExtensionBase>>
-      m_extensions;
+  std::set<ext> m_enabledExtensions;
+
   std::reference_wrapper<Library const> m_vulkanLib;
   std::unique_ptr<InstanceCore<1, 0>> m_coreInstanceSymbols{};
   ApiVersion m_apiVer;

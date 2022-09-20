@@ -9,6 +9,7 @@
 #include <cstdint>
 #include <map>
 #include <memory>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,8 @@ namespace vkw {
 class Instance;
 class BufferBase;
 class Queue;
+
+enum class ext;
 
 class Device {
 public:
@@ -31,10 +34,6 @@ public:
 
   Device(Instance &parent, PhysicalDevice phDevice);
   virtual ~Device();
-
-  bool supportsPresenting() const {
-    return m_ph_device.extensionSupported(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-  }
 
   std::unique_ptr<BufferBase>
   createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
@@ -68,12 +67,6 @@ public:
         m_coreDeviceSymbols.get());
   }
 
-  DeviceExtensionBase const *extension(std::string const &extName) const {
-    if (!m_extensions.contains(extName))
-      return nullptr;
-    return m_extensions.at(extName).get();
-  }
-
   void waitIdle();
 
 private:
@@ -95,8 +88,8 @@ private:
   std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
 
   std::unique_ptr<DeviceCore<1, 0>> m_coreDeviceSymbols;
-  std::unordered_map<std::string, std::unique_ptr<DeviceExtensionBase>>
-      m_extensions;
+  std::set<ext> m_enabledExtensions;
+
   ApiVersion m_apiVer;
 };
 } // namespace vkw

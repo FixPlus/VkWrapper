@@ -21,6 +21,8 @@ public:
 
 } // namespace feature
 
+enum class ext;
+
 class PhysicalDevice {
 public:
   PhysicalDevice(Instance const &instance, uint32_t id);
@@ -47,11 +49,11 @@ public:
     return m_enabledFeatures;
   }
 
-  std::vector<std::string> const &supportedExtensions() const {
+  std::vector<ext> const &supportedExtensions() const {
     return m_supportedExtensions;
   }
 
-  std::vector<std::string> const &enabledExtensions() const {
+  std::vector<ext> const &enabledExtensions() const {
     return m_enabledExtensions;
   }
 
@@ -59,9 +61,9 @@ public:
 
   void enableFeature(feature::FeatureBase const &feature);
 
-  bool extensionSupported(std::string const &extension) const;
+  bool extensionSupported(ext extension) const;
 
-  void enableExtension(std::string const &extension);
+  void enableExtension(ext extension);
 
   std::vector<VkQueueFamilyProperties> const &queueProperties() const {
     return m_queueFamilyProperties;
@@ -81,9 +83,9 @@ protected:
   /** @brief Queue family properties of the physical device */
   std::vector<VkQueueFamilyProperties> m_queueFamilyProperties{};
   /** @brief List of extensions supported by the device */
-  std::vector<std::string> m_supportedExtensions{};
+  std::vector<ext> m_supportedExtensions{};
 
-  std::vector<std::string> m_enabledExtensions{};
+  std::vector<ext> m_enabledExtensions{};
 
   VkPhysicalDevice m_physicalDevice{};
   InstanceCRef m_instance;

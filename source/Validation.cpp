@@ -1,5 +1,6 @@
 #include "Validation.hpp"
 
+#include "vkw/Extensions.hpp"
 #include "vkw/Instance.hpp"
 #include <assert.h>
 #include <iostream>
@@ -51,15 +52,11 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
 void setupDebugging(Instance const &instance, VkDebugReportFlagsEXT flags,
                     VkDebugReportCallbackEXT callBack) {
 
-  auto *debugUtilsExt = static_cast<VkExtDebugUtils const *>(
-      instance.extension(VK_EXT_DEBUG_UTILS_EXTENSION_NAME));
+  ::vkw::Extension<ext::EXT_debug_utils> debugUtilsExt{instance};
 
-  assert(debugUtilsExt && "VK_EXT_debug_utils must be present here");
-
-  vkCreateDebugUtilsMessengerEXT =
-      debugUtilsExt->vkCreateDebugUtilsMessengerEXT;
+  vkCreateDebugUtilsMessengerEXT = debugUtilsExt.vkCreateDebugUtilsMessengerEXT;
   vkDestroyDebugUtilsMessengerEXT =
-      debugUtilsExt->vkDestroyDebugUtilsMessengerEXT;
+      debugUtilsExt.vkDestroyDebugUtilsMessengerEXT;
 
   VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
   debugUtilsMessengerCI.sType =

@@ -1,6 +1,7 @@
 #include "vkw/PhysicalDevice.hpp"
 #include "Utils.hpp"
 #include "vkw/Instance.hpp"
+#include <sstream>
 namespace vkw {
 
 namespace {
@@ -60,9 +61,28 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
     if (instance.core<1, 0>().vkEnumerateDeviceExtensionProperties(
             m_physicalDevice, nullptr, &extCount, &extensions.front()) ==
         VK_SUCCESS) {
-      for (auto ext : extensions) {
-        m_supportedExtensions.emplace_back(ext.extensionName);
-      }
+
+      /*
+       *
+       * If there are no corresponding entry in extension map
+       * (which throws Error("Bad extension name")),
+       * do not list it as supported
+       *
+       */
+      auto newEnd =
+          std::remove_if(extensions.begin(), extensions.end(),
+                         [this](VkExtensionProperties const &props) {
+                           try {
+                             m_supportedExtensions.emplace_back(
+                                 m_instance.get().parent().getExtensionId(
+                                     props.extensionName));
+                             return false;
+                           } catch (Error &e) {
+                             return true;
+                           }
+                         });
+
+      extensions.erase(newEnd, extensions.end());
     }
   }
 }
@@ -81,22 +101,26 @@ void PhysicalDevice::enableFeature(feature::FeatureBase const &feature) {
   *feature.feature_location(&m_enabledFeatures) = VK_TRUE;
 }
 
-bool PhysicalDevice::extensionSupported(std::string const &extension) const {
+bool PhysicalDevice::extensionSupported(ext extension) const {
   return std::find(m_supportedExtensions.begin(), m_supportedExtensions.end(),
                    extension) != m_supportedExtensions.end();
 }
 
-void PhysicalDevice::enableExtension(std::string const &extension) {
-  if (!extensionSupported(extension))
-    throw Error("Asked to enable extension \"" + extension +
-                    "\", which is not supported by physicalDevice " +
-                    std::to_string((unsigned long long)m_physicalDevice),
-                ErrorCode::EXTENSION_MISSING);
+void PhysicalDevice::enableExtension(ext extension) {
+  if (!extensionSupported(extension)) {
+    std::stringstream ss;
+    ss << "Asked to enable extension \""
+       << m_instance.get().parent().extensionName(extension)
+       << "\", which is not supported by physicalDevice "
+       << (unsigned long long)m_physicalDevice;
+
+    throw Error(ss.str(), ErrorCode::EXTENSION_MISSING);
+  }
 
   if (std::find(m_enabledExtensions.begin(), m_enabledExtensions.end(),
                 extension) != m_enabledExtensions.end())
     return;
 
-  m_enabledExtensions.emplace_back(extension.c_str());
+  m_enabledExtensions.emplace_back(extension);
 }
 } // namespace vkw

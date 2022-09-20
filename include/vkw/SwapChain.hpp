@@ -2,14 +2,13 @@
 #define VKRENDERER_SWAPCHAIN_HPP
 
 #include "Common.hpp"
+#include "Extensions.hpp"
 #include <memory>
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
-
-class VkKhrSwapchain;
 
 class SwapChain {
 public:
@@ -48,7 +47,7 @@ public:
 
   virtual ~SwapChain();
 
-  VkKhrSwapchain const *ext() const { return m_swapchain_ext; }
+  Extension<ext::KHR_swapchain> const &ext() const { return m_swapchain_ext; }
 
   operator VkSwapchainKHR() const { return m_swapchain; }
 
@@ -58,7 +57,7 @@ private:
                             uint64_t timeout);
   std::optional<uint32_t> m_currentImage{};
   DeviceRef m_device;
-  VkKhrSwapchain const *m_swapchain_ext{};
+  Extension<ext::KHR_swapchain> m_swapchain_ext;
   VkSwapchainCreateInfoKHR m_createInfo;
   VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;
 };

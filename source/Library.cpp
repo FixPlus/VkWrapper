@@ -1,17 +1,13 @@
 #include "vkw/Library.hpp"
 #include "loader/DynamicLoader.hpp"
 #include "vkw/Exception.hpp"
+#include "vkw/Extensions.hpp"
 #include <cassert>
 #include <cstring>
-
+#include <sstream>
 namespace vkw {
 
-std::unordered_map<std::string, InstanceExtensionInitializerBase const *>
-    m_instanceExtInitializers{};
-std::unordered_map<std::string, DeviceExtensionInitializerBase const *>
-    m_deviceExtInitializers{};
-
-Library::Library(PFN_m_fill_extension_map p) {
+Library::Library() {
   static constexpr const char *libName =
 #ifdef _WIN32
       "vulkan-1.dll";
@@ -40,7 +36,6 @@ Library::Library(PFN_m_fill_extension_map p) {
     } else
       throw;
   }
-  p(); // fill extension table
 
   uint32_t layerCount;
 
@@ -71,6 +66,12 @@ Library::Library(PFN_m_fill_extension_map p) {
         m_instance_extension_properties.data() + extensionAccumulated);
     extensionAccumulated += extensionCount;
   }
+
+#define VKW_MAP_ENTRY(X, Y) m_extensions_name_map[X] = Y;
+#define VKW_DUMP_EXTENSION_NAME_MAP_DEFINITION
+#include "SymbolTable.inc"
+#undef VKW_DUMP_EXTENSION_NAME_MAP_DEFINITION
+#undef VKW_MAP_ENTRY
 }
 
 ApiVersion::ApiVersion(uint32_t encoded)
@@ -86,8 +87,7 @@ ApiVersion Library::instanceAPIVersion() const {
   return ApiVersion{encoded};
 }
 Library::~Library() {}
-VkLayerProperties
-Library::layerProperties(const std::string_view &layerName) const {
+VkLayerProperties Library::layerProperties(std::string_view layerName) const {
   auto found =
       std::find_if(m_layer_properties.begin(), m_layer_properties.end(),
                    [&layerName](VkLayerProperties const &layer) {
@@ -100,14 +100,13 @@ Library::layerProperties(const std::string_view &layerName) const {
   return *found;
 }
 
-bool Library::hasLayer(const std::string_view &layerName) const {
+bool Library::hasLayer(std::string_view layerName) const {
   return std::any_of(m_layer_properties.begin(), m_layer_properties.end(),
                      [&layerName](VkLayerProperties const &layer) {
                        return !strcmp(layer.layerName, layerName.data());
                      });
 }
-bool Library::hasInstanceExtension(
-    const std::string_view &extensionName) const {
+bool Library::hasInstanceExtension(std::string_view extensionName) const {
   return std::any_of(m_instance_extension_properties.begin(),
                      m_instance_extension_properties.end(),
                      [&extensionName](VkExtensionProperties const &layer) {
@@ -115,8 +114,8 @@ bool Library::hasInstanceExtension(
                                       extensionName.data());
                      });
 }
-VkExtensionProperties Library::instanceExtensionProperties(
-    std::string_view const &extensionName) const {
+VkExtensionProperties
+Library::instanceExtensionProperties(std::string_view extensionName) const {
   auto found =
       std::find_if(m_instance_extension_properties.begin(),
                    m_instance_extension_properties.end(),
@@ -128,6 +127,21 @@ VkExtensionProperties Library::instanceExtensionProperties(
     throw vkw::ExtensionMissing(std::string(extensionName));
 
   return *found;
+}
+ext Library::getExtensionId(std::string_view extensionName) const {
+  ext result;
+  auto found = std::find_if(
+      m_extensions_name_map.begin(), m_extensions_name_map.end(),
+      [extensionName](
+          std::unordered_map<ext, const char *>::value_type const &entry) {
+        return !extensionName.compare(entry.second);
+      });
+  if (found == m_extensions_name_map.end()) {
+    std::stringstream ss;
+    ss << "Bad extension name: " << extensionName;
+    throw Error(ss.str());
+  }
+  return found->first;
 }
 
 } // namespace vkw
