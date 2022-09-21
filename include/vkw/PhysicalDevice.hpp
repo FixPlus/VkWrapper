@@ -2,23 +2,23 @@
 #define VKWRAPPER_PHYSICALDEVICE_HPP
 
 #include "Common.hpp"
+#include "Exception.hpp"
 #include <string>
 
 namespace vkw {
 
-namespace device {
-
-enum class feature {
-#define VKW_FEATURE_ENTRY(X) X,
-#include "DeviceFeatures.inc"
-#undef VKW_FEATURE_ENTRY
-};
-} // namespace feature
+namespace device {} // namespace device
 
 enum class ext;
 
 class PhysicalDevice {
 public:
+  enum class feature {
+#define VKW_FEATURE_ENTRY(X) X,
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+  };
+
   PhysicalDevice(Instance const &instance, uint32_t id);
   PhysicalDevice(Instance const &instance, VkPhysicalDevice device);
   PhysicalDevice(PhysicalDevice const &another) = default;
@@ -51,9 +51,9 @@ public:
     return m_enabledExtensions;
   }
 
-  bool isFeatureSupported(device::feature feature) const;
+  bool isFeatureSupported(feature feature) const;
 
-  void enableFeature(device::feature feature);
+  void enableFeature(feature feature);
 
   bool extensionSupported(ext extension) const;
 
@@ -84,5 +84,21 @@ protected:
   VkPhysicalDevice m_physicalDevice{};
   InstanceCRef m_instance;
 };
+
+class FeatureUnsupported : public Error {
+public:
+  FeatureUnsupported(PhysicalDevice::feature feature,
+                     std::string_view featureName)
+      : Error(std::string("Feature ")
+                  .append(featureName)
+                  .append(" is unsupported"),
+              ErrorCode::FEATURE_UNSUPPORTED),
+        m_feature(feature) {}
+  PhysicalDevice::feature feature() const { return m_feature; }
+
+private:
+  PhysicalDevice::feature m_feature;
+};
+
 } // namespace vkw
 #endif // VKWRAPPER_PHYSICALDEVICE_HPP

@@ -88,15 +88,15 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
 
 namespace {
 
-void unhandledFeatureEntry(device::feature feature) {
+void unhandledFeatureEntry(PhysicalDevice::feature feature) {
   std::stringstream ss;
   ss << "Unhandled feature entry: " << static_cast<unsigned>(feature);
   throw Error(ss.view());
 }
-const char *featureNameMap(device::feature feature) {
+const char *featureNameMap(PhysicalDevice::feature feature) {
   switch (feature) {
 #define VKW_FEATURE_ENTRY(X)                                                   \
-  case device::feature::X:                                                     \
+  case PhysicalDevice::feature::X:                                             \
     return #X;
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
@@ -107,10 +107,10 @@ const char *featureNameMap(device::feature feature) {
 }
 } // namespace
 
-bool PhysicalDevice::isFeatureSupported(device::feature feature) const {
+bool PhysicalDevice::isFeatureSupported(feature feature) const {
   switch (feature) {
 #define VKW_FEATURE_ENTRY(X)                                                   \
-  case device::feature::X:                                                     \
+  case PhysicalDevice::feature::X:                                             \
     return m_features.X;
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
@@ -120,13 +120,13 @@ bool PhysicalDevice::isFeatureSupported(device::feature feature) const {
   }
 }
 
-void PhysicalDevice::enableFeature(device::feature feature) {
+void PhysicalDevice::enableFeature(feature feature) {
   if (!isFeatureSupported(feature))
     throw FeatureUnsupported(feature, featureNameMap(feature));
 
   switch (feature) {
 #define VKW_FEATURE_ENTRY(X)                                                   \
-  case device::feature::X:                                                     \
+  case PhysicalDevice::feature::X:                                             \
     m_enabledFeatures.X = true;                                                \
     break;
 #include "DeviceFeatures.inc"

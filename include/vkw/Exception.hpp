@@ -79,23 +79,6 @@ inline std::string errorString(VkResult errorCode) {
   }
 }
 enum class ext;
-namespace device {
-enum class feature;
-}
-
-class FeatureUnsupported : public Error {
-public:
-  FeatureUnsupported(device::feature feature, std::string_view featureName)
-      : Error(std::string("Feature ")
-                  .append(featureName)
-                  .append(" is unsupported"),
-              ErrorCode::FEATURE_UNSUPPORTED),
-        m_feature(feature) {}
-  device::feature feature() const { return m_feature; }
-
-private:
-  device::feature m_feature;
-};
 class ExtensionError : public Error {
 public:
   const char *extName() const { return m_extName.c_str(); }
