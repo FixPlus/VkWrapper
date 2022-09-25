@@ -37,9 +37,9 @@ Finnaly, make sure to link with VkWrapper:
 ### Use in code
 Include needed headers and you are done
 ```c++
-#include <Instance.hpp>
+#include <vkw/Library.hpp>
 
 int main(){
-    auto vulkanInstance = vkw::Instance();
+    auto vulkanLibary = vkw::Library();
 }
 ```
