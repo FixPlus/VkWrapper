@@ -16,19 +16,22 @@ public:
   template <forward_range_of<SwapChain> SWA, forward_range_of<Semaphore> SMA>
   bool present(SWA const &swapChains, SMA const &waitFor = {}) {
     VkPresentInfoKHR presentInfo{};
-    std::vector<VkSemaphore> sems;
+    auto swapChainsSubrange = ranges::make_subrange<SwapChain>(swapChains);
+    using swapChainsSubrangeT = decltype(swapChainsSubrange);
+    auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
+    using SMASubT = decltype(waitForSub);
+
+    std::vector<VkSemaphore> sems; // TODO: make this small vectors
     std::vector<VkSwapchainKHR> swps;
 
+    std::transform(swapChainsSubrange.begin(), swapChainsSubrange.end(),
+                   std::back_inserter(swps),
+                   [](auto const &swp) -> VkSwapchainKHR {
+                     return swapChainsSubrangeT::get(swp);
+                   });
     std::transform(
-        swapChains.begin(), swapChains.end(), std::back_inserter(swps),
-        [](std::ranges::range_value_t<SWA> const &swp) -> VkSwapchainKHR {
-          return swp;
-        });
-    std::transform(
-        waitFor.begin(), waitFor.end(), std::back_inserter(sems),
-        [](std::ranges::range_value_t<SMA> const &smr) -> VkSemaphore {
-          return smr;
-        });
+        waitForSub.begin(), waitForSub.end(), std::back_inserter(sems),
+        [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
 
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.pNext = nullptr;
@@ -57,7 +60,7 @@ public:
     using SMASubT = decltype(waitForSub);
 
     VkPresentInfoKHR presentInfo{};
-    std::vector<VkSemaphore> sems;
+    std::vector<VkSemaphore> sems; // TODO: make this small vectors
     VkSwapchainKHR swp = swapChain;
 
     std::transform(
