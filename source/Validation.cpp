@@ -1,23 +1,137 @@
-#include "Validation.hpp"
+#include "vkw/Validation.hpp"
 
+#include "Utils.hpp"
 #include "vkw/Extensions.hpp"
 #include "vkw/Instance.hpp"
-#include <assert.h>
+#include <cassert>
 #include <iostream>
+#include <memory>
+#include <mutex>
+#include <numeric>
 #include <sstream>
 #include <string>
+namespace vkw::debug {
 
-namespace vkw {
-namespace debug {
-PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessengerEXT;
-PFN_vkDestroyDebugUtilsMessengerEXT vkDestroyDebugUtilsMessengerEXT;
-VkDebugUtilsMessengerEXT debugUtilsMessenger;
+namespace {
 
-VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
+class ValidationImpl final : private Layer<layer::KHRONOS_validation>,
+                             private Extension<ext::EXT_debug_utils> {
+public:
+  ValidationImpl(Instance const &instance);
+
+  void register_validation(Validation const &validation) {
+    auto register_guard = std::lock_guard{m_mutex};
+    assert(!m_validations.contains(&validation) && "Double registration");
+
+    if (m_validations.empty())
+      m_setup();
+
+    m_validations.emplace(&validation);
+  }
+
+  void unregister_validation(Validation const &validation) {
+    auto register_guard = std::lock_guard{m_mutex};
+    assert(m_validations.contains(&validation) && "Unknown validation");
+
+    m_validations.erase(&validation);
+
+    if (m_validations.empty())
+      m_free();
+  }
+
+  static ValidationImpl *handle;
+
+private:
+  std::mutex m_mutex;
+  std::set<Validation const *> m_validations;
+
+  static VKAPI_ATTR VkBool32 VKAPI_CALL
+  m_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+             VkDebugUtilsMessageTypeFlagsEXT messageType,
+             const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+             void *pUserData) {
+    return handle->m_self_callback(messageSeverity, messageType, pCallbackData,
+                                   pUserData);
+  }
+
+  bool
+  m_self_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+                  VkDebugUtilsMessageTypeFlagsEXT messageType,
+                  const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
+                  void *pUserData) {
+    auto callbackGuard = std::lock_guard{m_mutex};
+    VkBool32 acc = false;
+    acc = std::accumulate(m_validations.begin(), m_validations.end(), acc,
+                          [&](VkBool32 a, Validation const *val) {
+                            auto result = val->messageCallback(
+                                messageSeverity, messageType, pCallbackData,
+                                pUserData);
+                            return a || result;
+                          });
+    return acc;
+  }
+
+  void m_setup() {
+    VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
+    debugUtilsMessengerCI.sType =
+        VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+    debugUtilsMessengerCI.messageSeverity =
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
+    debugUtilsMessengerCI.messageType =
+        VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+        VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+    debugUtilsMessengerCI.pfnUserCallback = m_callback;
+    VK_CHECK_RESULT(
+        vkCreateDebugUtilsMessengerEXT(m_instance.get(), &debugUtilsMessengerCI,
+                                       nullptr, &m_debugUtilsMessenger))
+  }
+
+  void m_free() {
+    if (m_debugUtilsMessenger != VK_NULL_HANDLE) {
+      vkDestroyDebugUtilsMessengerEXT(m_instance.get(), m_debugUtilsMessenger,
+                                      nullptr);
+    }
+
+    m_debugUtilsMessenger = VK_NULL_HANDLE;
+  }
+  VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
+  std::reference_wrapper<Instance const> m_instance;
+};
+
+ValidationImpl *ValidationImpl::handle = nullptr;
+
+ValidationImpl::ValidationImpl(const Instance &instance)
+    : Extension(instance), Layer(instance), m_instance(instance) {
+  handle = this;
+}
+
+void register_callback(Validation const &validation, Instance const &instance) {
+  static ValidationImpl impl{instance};
+  impl.register_validation(validation);
+}
+
+void register_callback_secondary(Validation const &validation) {
+  assert(ValidationImpl::handle && "handle must be valid here");
+  ValidationImpl::handle->register_validation(validation);
+}
+
+void unregister_callback(Validation const &validation) {
+  assert(ValidationImpl::handle && "handle must be valid here");
+  ValidationImpl::handle->unregister_validation(validation);
+}
+} // namespace
+
+Validation::Validation(const Instance &instance) {
+  register_callback(*this, instance);
+}
+Validation::~Validation() { unregister_callback(*this); }
+
+bool Validation::messageCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-    void *pUserData) {
+    void *pUserData) const {
   VkBool32 result = VK_FALSE;
   std::string prefix("");
 
@@ -48,36 +162,18 @@ VKAPI_ATTR VkBool32 VKAPI_CALL debugUtilsMessengerCallback(
 
   return result;
 }
-
-void setupDebugging(Instance const &instance, VkDebugReportFlagsEXT flags,
-                    VkDebugReportCallbackEXT callBack) {
-
-  ::vkw::Extension<ext::EXT_debug_utils> debugUtilsExt{instance};
-
-  vkCreateDebugUtilsMessengerEXT = debugUtilsExt.vkCreateDebugUtilsMessengerEXT;
-  vkDestroyDebugUtilsMessengerEXT =
-      debugUtilsExt.vkDestroyDebugUtilsMessengerEXT;
-
-  VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCI{};
-  debugUtilsMessengerCI.sType =
-      VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-  debugUtilsMessengerCI.messageSeverity =
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT;
-  debugUtilsMessengerCI.messageType =
-      VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
-      VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-  debugUtilsMessengerCI.pfnUserCallback = debugUtilsMessengerCallback;
-  VkResult result = vkCreateDebugUtilsMessengerEXT(
-      instance, &debugUtilsMessengerCI, nullptr, &debugUtilsMessenger);
-  assert(result == VK_SUCCESS);
+Validation::Validation(const Validation &another) {
+  register_callback_secondary(*this);
 }
-
-void freeDebugCallback(VkInstance instance) {
-  if (debugUtilsMessenger != VK_NULL_HANDLE) {
-    vkDestroyDebugUtilsMessengerEXT(instance, debugUtilsMessenger, nullptr);
-  }
+Validation::Validation(Validation &&another) noexcept {
+  register_callback_secondary(*this);
 }
-} // namespace debug
-
+Validation &Validation::operator=(const Validation &another) {
+  register_callback_secondary(*this);
+  return *this;
+}
+Validation &Validation::operator=(Validation &&another) {
+  register_callback_secondary(*this);
+  return *this;
+}
 } // namespace vkw

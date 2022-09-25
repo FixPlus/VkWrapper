@@ -16,11 +16,12 @@ namespace vkw {
 class DynamicLoader;
 
 enum class ext;
+enum class layer;
 
 class Instance {
 public:
   Instance(Library const &library, std::vector<ext> reqExtensions = {},
-           bool enableValidation = true);
+           std::vector<layer> reqLayers = {});
   Instance(Instance const &another) = delete;
   Instance const &operator=(Instance const &another) = delete;
   Instance(Instance &&another) noexcept;
@@ -30,6 +31,10 @@ public:
 
   bool isExtensionEnabled(ext extension) const {
     return m_enabledExtensions.contains(extension);
+  }
+
+  bool isLayerEnabled(layer layer) const {
+    return m_enabledLayers.contains(layer);
   }
 
   operator VkInstance() const { return m_instance; }
@@ -54,11 +59,11 @@ private:
   VkInstance m_instance{};
 
   std::set<ext> m_enabledExtensions;
+  std::set<layer> m_enabledLayers;
 
   std::reference_wrapper<Library const> m_vulkanLib;
   std::unique_ptr<InstanceCore<1, 0>> m_coreInstanceSymbols{};
   ApiVersion m_apiVer;
-  bool m_validation;
 };
 
 } // namespace vkw

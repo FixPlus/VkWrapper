@@ -23,6 +23,8 @@ enum class ErrorCode {
   VULKAN_ERROR,
   EXTENSION_MISSING,
   EXTENSION_UNSUPPORTED,
+  LAYER_MISSING,
+  LAYER_UNSUPPORTED,
   FEATURE_UNSUPPORTED,
   SURFACE_OUTDATED,
   UNKNOWN,
@@ -100,6 +102,26 @@ private:
   ext m_id;
 };
 
+enum class layer;
+class LayerError : public Error {
+public:
+  const char *layerName() const { return m_layerName.c_str(); }
+
+  layer id() const { return m_id; }
+
+protected:
+  explicit LayerError(layer id, std::string_view layerName, ErrorCode code,
+                      std::string_view postfix)
+      : Error(std::string("Layer ").append(layerName).append(" is ").append(
+                  postfix),
+              code),
+        m_layerName(layerName), m_id(id) {}
+
+private:
+  std::string m_layerName;
+  layer m_id;
+};
+
 class ExtensionMissing : public ExtensionError {
 public:
   ExtensionMissing(ext id, std::string_view extName)
@@ -111,6 +133,19 @@ public:
   ExtensionUnsupported(ext id, std::string_view extName)
       : ExtensionError(id, extName, ErrorCode::EXTENSION_UNSUPPORTED,
                        "unsupported") {}
+};
+
+class LayerMissing : public LayerError {
+public:
+  LayerMissing(layer id, std::string_view layerName)
+      : LayerError(id, layerName, ErrorCode::LAYER_MISSING, "missing") {}
+};
+
+class LayerUnsupported : public LayerError {
+public:
+  LayerUnsupported(layer id, std::string_view layerName)
+      : LayerError(id, layerName, ErrorCode::LAYER_UNSUPPORTED, "unsupported") {
+  }
 };
 
 class PositionalError : public Error {

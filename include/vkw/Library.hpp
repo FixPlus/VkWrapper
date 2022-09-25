@@ -28,6 +28,7 @@ struct ApiVersion {
 };
 
 enum class ext;
+enum class layer;
 
 class Library final {
 public:
@@ -35,9 +36,9 @@ public:
 
   ~Library();
 
-  bool hasLayer(std::string_view layerName) const;
+  bool hasLayer(layer layerName) const;
 
-  VkLayerProperties layerProperties(std::string_view layerName) const;
+  VkLayerProperties layerProperties(layer layerName) const;
 
   bool hasInstanceExtension(ext extensionId) const;
 
@@ -55,6 +56,10 @@ public:
   static const char *ExtensionName(ext id);
 
   static ext ExtensionId(std::string_view extensionName);
+
+  static const char *LayerName(layer id);
+
+  static layer LayerId(std::string_view extensionName);
 
 private:
   std::vector<VkLayerProperties> m_layer_properties;

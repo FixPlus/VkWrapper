@@ -1,18 +1,18 @@
 #include "vkw/Instance.hpp"
 #include "Utils.hpp"
-#include "Validation.hpp"
 #include "loader/DynamicLoader.hpp"
 #include "vkw/Device.hpp"
 #include "vkw/Exception.hpp"
 #include "vkw/Extensions.hpp"
+#include "vkw/Validation.hpp"
 #include <cassert>
 #include <cstring>
 
 namespace vkw {
 
 Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
-                   bool enableValidation)
-    : m_validation(enableValidation), m_vulkanLib(library) {
+                   std::vector<layer> reqLayers)
+    : m_vulkanLib(library) {
   VkApplicationInfo appInfo{};
 
   // TODO: all this information should be filled externally using wrapper
@@ -31,8 +31,8 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
 
+#if 0
   const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
-
   if (m_validation) {
 
     if (library.hasLayer(validationLayerName)) {
@@ -48,27 +48,35 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   // validation layer requires VK_EXT_debug_utils extension
   if (m_validation)
     reqExtensions.push_back(ext::EXT_debug_utils);
+#endif
+  // Check presence of all required layers and extensions
 
-  // Check presence of all required extensions
+  std::for_each(reqLayers.begin(), reqLayers.end(), [&library](layer id) {
+    if (!library.hasLayer(id))
+      throw LayerUnsupported{id, Library::LayerName(id)};
+  });
 
-  auto firstUnsupported = std::find_if(
-      reqExtensions.begin(), reqExtensions.end(),
-      [&library](ext id) { return !library.hasInstanceExtension(id); });
-
-  if (firstUnsupported != reqExtensions.end()) {
-    auto extId = *firstUnsupported;
-    throw ExtensionUnsupported{extId, Library::ExtensionName(extId)};
-  }
+  std::for_each(reqExtensions.begin(), reqExtensions.end(), [&library](ext id) {
+    if (!library.hasInstanceExtension(id))
+      throw ExtensionUnsupported{id, Library::ExtensionName(id)};
+  });
 
   std::vector<const char *> reqExtensionsNames{};
+  std::vector<const char *> reqLayerNames{};
   reqExtensionsNames.reserve(reqExtensions.size());
+  reqLayerNames.reserve(reqLayers.size());
 
   std::transform(reqExtensions.begin(), reqExtensions.end(),
                  std::back_inserter(reqExtensionsNames),
-                 [](ext id) { return Library::ExtensionName(id); });
+                 [](auto id) { return Library::ExtensionName(id); });
+  std::transform(reqLayers.begin(), reqLayers.end(),
+                 std::back_inserter(reqLayerNames),
+                 [](auto id) { return Library::LayerName(id); });
 
   createInfo.enabledExtensionCount = reqExtensionsNames.size();
   createInfo.ppEnabledExtensionNames = reqExtensionsNames.data();
+  createInfo.enabledLayerCount = reqLayerNames.size();
+  createInfo.ppEnabledLayerNames = reqLayerNames.data();
 
   VK_CHECK_RESULT(
       m_vulkanLib.get().vkCreateInstance(&createInfo, nullptr, &m_instance))
@@ -81,8 +89,14 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
     m_enabledExtensions.emplace(extension);
   }
 
+  for (auto &layer : reqLayers) {
+    m_enabledLayers.emplace(layer);
+  }
+
+#if 0
   if (m_validation)
     debug::setupDebugging(*this, 0, nullptr);
+#endif
 }
 
 std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
@@ -109,7 +123,7 @@ std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
 }
 
 Instance::Instance(Instance &&another) noexcept
-    : m_instance(another.m_instance), m_validation(another.m_validation),
+    : m_instance(another.m_instance),
       m_enabledExtensions(std::move(another.m_enabledExtensions)),
       m_vulkanLib(another.m_vulkanLib),
       m_coreInstanceSymbols(std::move(another.m_coreInstanceSymbols)) {
@@ -118,7 +132,6 @@ Instance::Instance(Instance &&another) noexcept
 
 Instance &Instance::operator=(Instance &&another) noexcept {
   m_instance = another.m_instance;
-  m_validation = another.m_validation;
   m_enabledExtensions = std::move(another.m_enabledExtensions);
   m_vulkanLib = another.m_vulkanLib;
   m_coreInstanceSymbols = std::move(another.m_coreInstanceSymbols);
@@ -130,10 +143,10 @@ Instance &Instance::operator=(Instance &&another) noexcept {
 Instance::~Instance() {
   if (m_instance == VK_NULL_HANDLE)
     return;
-
+#if 0
   if (m_validation)
     debug::freeDebugCallback(*this);
-
+#endif
   core<1, 0>().vkDestroyInstance(m_instance, nullptr);
 }
 

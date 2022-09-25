@@ -28,6 +28,10 @@ bool isExtensionEnabled(Device const &device, const char *extName) {
                      [extId](ext entry) { return entry == extId; });
 }
 
+bool isLayerEnabled(Instance const &instance, layer layer) {
+  return instance.isLayerEnabled(layer);
+}
+
 template <typename T> PFN_getProcAddr<T> getProcAddrOf(T const &instance);
 
 template <> PFN_getProcAddr<Device> getProcAddrOf(Device const &device) {
