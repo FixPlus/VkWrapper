@@ -42,9 +42,19 @@ private:
 
 class DescriptorSetLayout {
 public:
-  DescriptorSetLayout(Device const &device,
-                      DescriptorSetLayoutBindingConstRefArray bindings,
-                      VkDescriptorSetLayoutCreateFlags flags = 0);
+  template <forward_range_of<DescriptorSetLayoutBinding> T>
+  DescriptorSetLayout(Device const &device, T const &bindings,
+                      VkDescriptorSetLayoutCreateFlags flags = 0)
+      : m_device(device) {
+    auto bindingsSubrange =
+        ranges::make_subrange<DescriptorSetLayoutBinding>(bindings);
+    using bindingsSubrangeT = decltype(bindingsSubrange);
+    std::transform(bindingsSubrange.begin(), bindingsSubrange.end(),
+                   std::back_inserter(m_bindings), [](auto const &entry) {
+                     return bindingsSubrangeT::get(entry);
+                   });
+    m_init(flags);
+  }
   DescriptorSetLayout(DescriptorSetLayout const &another) = delete;
   DescriptorSetLayout(DescriptorSetLayout &&another) noexcept
       : m_device(another.m_device), m_bindings(std::move(another.m_bindings)),
@@ -94,6 +104,7 @@ public:
   operator VkDescriptorSetLayout() const { return m_layout; }
 
 private:
+  void m_init(VkDescriptorSetLayoutCreateFlags flags);
   DeviceCRef m_device;
   std::vector<DescriptorSetLayoutBinding> m_bindings;
   VkDescriptorSetLayoutCreateInfo m_createInfo{};

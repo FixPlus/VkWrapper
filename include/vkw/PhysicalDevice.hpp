@@ -4,6 +4,7 @@
 #include "Common.hpp"
 #include "Exception.hpp"
 #include <string>
+#include <vector>
 
 namespace vkw {
 

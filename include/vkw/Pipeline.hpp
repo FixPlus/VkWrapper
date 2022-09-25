@@ -70,10 +70,26 @@ private:
 class PipelineLayout {
 public:
   PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
-  PipelineLayout(DeviceRef device,
-                 DescriptorSetLayoutConstRefArray const &setLayouts,
+  template <forward_range_of<DescriptorSetLayout> T>
+  PipelineLayout(DeviceRef device, T const &setLayouts,
                  std::vector<VkPushConstantRange> pushConstants = {},
-                 VkPipelineLayoutCreateFlags flags = 0);
+                 VkPipelineLayoutCreateFlags flags = 0)
+      : m_device(device), m_pushConstants(std::move(pushConstants)) {
+    std::transform(
+        setLayouts.begin(), setLayouts.end(),
+        std::back_inserter(m_descriptorLayouts),
+        [](std::ranges::range_value_t<T> const &layout) { return layout; });
+    m_init(flags);
+  }
+
+  // overload for 1 element case
+  PipelineLayout(DeviceRef device, DescriptorSetLayout const &setLayout,
+                 std::vector<VkPushConstantRange> pushConstants = {},
+                 VkPipelineLayoutCreateFlags flags = 0)
+      : m_device(device), m_pushConstants(std::move(pushConstants)) {
+    m_descriptorLayouts.emplace_back(setLayout);
+    m_init(flags);
+  }
 
   PipelineLayout(PipelineLayout const &another) = delete;
   PipelineLayout const &operator=(PipelineLayout const &another) = delete;
@@ -112,6 +128,8 @@ public:
   virtual ~PipelineLayout();
 
 private:
+  void m_init(VkPipelineLayoutCreateFlags flags);
+
   DeviceRef m_device;
   std::vector<DescriptorSetLayoutCRef> m_descriptorLayouts{};
   std::vector<VkPushConstantRange> m_pushConstants{};

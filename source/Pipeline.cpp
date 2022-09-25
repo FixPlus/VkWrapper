@@ -21,29 +21,6 @@ PipelineLayout::PipelineLayout(DeviceRef device,
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
       m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
-PipelineLayout::PipelineLayout(
-    DeviceRef device, DescriptorSetLayoutConstRefArray const &setLayouts,
-    std::vector<VkPushConstantRange> pushConstants,
-    VkPipelineLayoutCreateFlags flags)
-    : m_device(device), m_pushConstants(std::move(pushConstants)) {
-  m_descriptorLayouts.reserve(setLayouts.size());
-
-  for (auto const &layout : setLayouts) {
-    m_descriptorLayouts.emplace_back(layout);
-  }
-
-  m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  m_createInfo.pNext = nullptr;
-  m_createInfo.flags = flags;
-  m_createInfo.setLayoutCount = setLayouts.size();
-  m_createInfo.pSetLayouts = setLayouts;
-  // TODO : verify push constant ranges against the device limits
-  m_createInfo.pushConstantRangeCount = m_pushConstants.size();
-  m_createInfo.pPushConstantRanges = m_pushConstants.data();
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
-      m_device.get(), &m_createInfo, nullptr, &m_layout))
-}
 
 PipelineLayout::~PipelineLayout() {
   if (m_layout == VK_NULL_HANDLE)
@@ -61,6 +38,27 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
                      [&rhsLayoutIter](DescriptorSetLayout const &layout) {
                        return layout == *(rhsLayoutIter++);
                      });
+}
+void PipelineLayout::m_init(VkPipelineLayoutCreateFlags flags) {
+
+  std::vector<VkDescriptorSetLayout> layouts;
+  std::transform(
+      m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
+      std::back_inserter(layouts),
+      [](DescriptorSetLayoutCRef const &layout) -> VkDescriptorSetLayout {
+        return layout.operator const vkw::DescriptorSetLayout &();
+      });
+  m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.flags = flags;
+  m_createInfo.setLayoutCount = layouts.size();
+  m_createInfo.pSetLayouts = layouts.data();
+  // TODO : verify push constant ranges against the device limits
+  m_createInfo.pushConstantRangeCount = m_pushConstants.size();
+  m_createInfo.pPushConstantRanges = m_pushConstants.data();
+
+  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
+      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)

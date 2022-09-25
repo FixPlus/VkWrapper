@@ -96,18 +96,17 @@ RenderPassCreateInfo::RenderPassCreateInfo(RenderPassCreateInfo &&another)
     subpass.pPreserveAttachments = descIter->preserveAttachments.data();
   }
 }
-
-RenderPassCreateInfo::RenderPassCreateInfo(
-    AttachmentDescriptionConstRefArray attachments,
+void RenderPassCreateInfo::m_init(
     const std::vector<SubpassDescriptionCRef> &subpasses,
     const std::vector<SubpassDependency> &dependencies,
     VkRenderPassCreateFlags flags) {
-  std::copy(attachments.begin(), attachments.end(),
-            std::back_inserter(m_attachments));
-  std::copy(attachments.operator VkAttachmentDescription *(),
-            attachments.operator VkAttachmentDescription *() +
-                attachments.size(),
-            std::back_inserter(m_attachments_raw));
+
+  std::transform(
+      m_attachments.begin(), m_attachments.end(),
+      std::back_inserter(m_attachments_raw),
+      [](AttachmentDescriptionCRef const &attachment) {
+        return attachment.operator const vkw::AttachmentDescription &();
+      });
 
   for (auto &subpass : subpasses) {
     M_subpassDesc subpassDesc{};
@@ -117,56 +116,56 @@ RenderPassCreateInfo::RenderPassCreateInfo(
 
     for (auto &inputAttachment : subpass.get().inputAttachments()) {
       auto found = std::find_if(
-          attachments.begin(), attachments.end(),
+          m_attachments.begin(), m_attachments.end(),
           [&inputAttachment](AttachmentDescriptionCRef const &attachment) {
             return &attachment.get() == &inputAttachment.first.get();
           });
-      if (found == attachments.end()) {
+      if (found == m_attachments.end()) {
         throw Error("Subpass referenced unknown input attachment");
       }
       subpassDesc.inputAttachments.emplace_back(VkAttachmentReference{
-          static_cast<uint32_t>(found - attachments.begin()),
+          static_cast<uint32_t>(found - m_attachments.begin()),
           inputAttachment.second});
     }
 
     for (auto &colorAttachment : subpass.get().colorAttachments()) {
       auto found = std::find_if(
-          attachments.begin(), attachments.end(),
+          m_attachments.begin(), m_attachments.end(),
           [&colorAttachment](AttachmentDescriptionCRef const &attachment) {
             return &attachment.get() == &colorAttachment.first.get();
           });
-      if (found == attachments.end()) {
+      if (found == m_attachments.end()) {
         throw Error("Subpass referenced unknown color attachment");
       }
       if (!found->get().isColor()) {
         throw Error("Subpass referenced color attachment with bad format");
       }
       subpassDesc.colorAttachments.emplace_back(VkAttachmentReference{
-          static_cast<uint32_t>(found - attachments.begin()),
+          static_cast<uint32_t>(found - m_attachments.begin()),
           colorAttachment.second});
     }
 
     for (auto &preserveAttachment : subpass.get().preserveAttachments()) {
       auto found = std::find_if(
-          attachments.begin(), attachments.end(),
+          m_attachments.begin(), m_attachments.end(),
           [&preserveAttachment](AttachmentDescriptionCRef const &attachment) {
             return &attachment.get() == &preserveAttachment.get();
           });
-      if (found == attachments.end()) {
+      if (found == m_attachments.end()) {
         throw Error("Subpass referenced unknown attachment to preserve");
       }
       subpassDesc.preserveAttachments.emplace_back(
-          static_cast<uint32_t>(found - attachments.begin()));
+          static_cast<uint32_t>(found - m_attachments.begin()));
     }
     if (subpass.get().depthAttachments().has_value()) {
       auto &depthAttachment = subpass.get().depthAttachments().value();
 
       auto found = std::find_if(
-          attachments.begin(), attachments.end(),
+          m_attachments.begin(), m_attachments.end(),
           [&depthAttachment](AttachmentDescriptionCRef const &attachment) {
             return &attachment.get() == &depthAttachment.first.get();
           });
-      if (found == attachments.end()) {
+      if (found == m_attachments.end()) {
         throw Error("Subpass referenced unknown depth/stencil attachment");
       }
       if (!found->get().isDepthStencil()) {
@@ -174,7 +173,7 @@ RenderPassCreateInfo::RenderPassCreateInfo(
             "Subpass referenced depth/stencil attachment with bad format");
       }
       subpassDesc.depthAttachment.emplace(VkAttachmentReference{
-          static_cast<uint32_t>(found - attachments.begin()),
+          static_cast<uint32_t>(found - m_attachments.begin()),
           depthAttachment.second});
     }
     desc.inputAttachmentCount = subpassDesc.inputAttachments.size();

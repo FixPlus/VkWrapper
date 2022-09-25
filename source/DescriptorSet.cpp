@@ -20,16 +20,13 @@ bool DescriptorSetLayoutBinding::hasDynamicOffset() const {
              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
          m_binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
-
-DescriptorSetLayout::DescriptorSetLayout(
-    Device const &device, DescriptorSetLayoutBindingConstRefArray bindings,
-    VkDescriptorSetLayoutCreateFlags flags)
-    : m_device(device) {
-  m_bindings.reserve(bindings.size());
-  for (auto const &binding : bindings) {
-    m_bindings.emplace_back(binding);
-  }
-
+DescriptorSetLayout::~DescriptorSetLayout() {
+  if (m_layout == VK_NULL_HANDLE)
+    return;
+  m_device.get().core<1, 0>().vkDestroyDescriptorSetLayout(m_device.get(),
+                                                           m_layout, nullptr);
+}
+void DescriptorSetLayout::m_init(VkDescriptorSetLayoutCreateFlags flags) {
   // sort bindings by binding index (this will be useful)
   std::sort(m_bindings.begin(), m_bindings.end(),
             [](DescriptorSetLayoutBinding const &lhs,
@@ -40,7 +37,7 @@ DescriptorSetLayout::DescriptorSetLayout(
   // validate bindings
 
   // 1. check for binding duplicates
-  if (bindings.size() > 1) {
+  if (m_bindings.size() > 1) {
     auto predIt = m_bindings.begin();
     if (std::any_of(m_bindings.begin() + 1, m_bindings.end(),
                     [&predIt](DescriptorSetLayoutBinding const &elem) {
@@ -52,20 +49,19 @@ DescriptorSetLayout::DescriptorSetLayout(
     }
   }
 
+  std::vector<VkDescriptorSetLayoutBinding> m_rawBindings;
+  std::transform(m_bindings.begin(), m_bindings.end(),
+                 std::back_inserter(m_rawBindings),
+                 [](DescriptorSetLayoutBinding const &entry) { return entry; });
+
   m_createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = flags;
-  m_createInfo.bindingCount = bindings.size();
-  m_createInfo.pBindings = bindings;
+  m_createInfo.bindingCount = m_rawBindings.size();
+  m_createInfo.pBindings = m_rawBindings.data();
 
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateDescriptorSetLayout(
       m_device.get(), &m_createInfo, nullptr, &m_layout))
-}
-DescriptorSetLayout::~DescriptorSetLayout() {
-  if (m_layout == VK_NULL_HANDLE)
-    return;
-  m_device.get().core<1, 0>().vkDestroyDescriptorSetLayout(m_device.get(),
-                                                           m_layout, nullptr);
 }
 
 DescriptorSet::DescriptorSet(DescriptorPool &pool,

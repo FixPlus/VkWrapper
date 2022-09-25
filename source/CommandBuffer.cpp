@@ -144,23 +144,6 @@ void CommandBuffer::setViewports(std::vector<VkViewport> const &viewports,
   m_device.get().core<1, 0>().vkCmdSetViewport(
       m_commandBuffer, firstViewport, viewports.size(), viewports.data());
 }
-void CommandBuffer::bindDescriptorSets(const PipelineLayout &layout,
-                                       VkPipelineBindPoint bindPoint,
-                                       DescriptorSetConstRefArray sets,
-                                       uint32_t firstSet) {
-  std::vector<uint32_t> dynamicOffsets{};
-  for (auto const &set : sets) {
-    auto offsetCount = set.get().dynamicOffsetsCount();
-    if (offsetCount == 0)
-      continue;
-    auto cachedSize = dynamicOffsets.size();
-    dynamicOffsets.resize(cachedSize + offsetCount);
-    set.get().copyOffsets(dynamicOffsets.data() + cachedSize);
-  }
-  m_device.get().core<1, 0>().vkCmdBindDescriptorSets(
-      m_commandBuffer, bindPoint, layout, firstSet, sets.size(), sets,
-      dynamicOffsets.size(), dynamicOffsets.data());
-}
 
 void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
                                            const FrameBuffer &frameBuffer,
@@ -212,10 +195,10 @@ void PrimaryCommandBuffer::endRenderPass() {
   m_currentPass.reset();
 }
 
-void PrimaryCommandBuffer::executeCommands(
-    SecondaryCommandBufferConstRefArray const &commands) {
-  m_device.get().core<1, 0>().vkCmdExecuteCommands(m_commandBuffer,
-                                                   commands.size(), commands);
+void PrimaryCommandBuffer::m_executeCommands(size_t nbufs,
+                                             const VkCommandBuffer *buffers) {
+  m_device.get().core<1, 0>().vkCmdExecuteCommands(m_commandBuffer, nbufs,
+                                                   buffers);
 }
 
 void CommandBuffer::m_pushConstants(PipelineLayout const &layout,
@@ -236,5 +219,15 @@ void CommandBuffer::blitImage(const AllocatedImage &targetImage,
   m_device.get().core<1, 0>().vkCmdBlitImage(m_commandBuffer, targetImage,
                                              srcLayout, targetImage, dstLayout,
                                              1, &blit, filter);
+}
+void CommandBuffer::m_bindDescriptorSets(const PipelineLayout &layout,
+                                         VkPipelineBindPoint bindPoint,
+                                         size_t firstSet,
+                                         VkDescriptorSet const *sets,
+                                         size_t nsets, uint32_t *dynOffsets,
+                                         size_t ndynOffsets) {
+  m_device.get().core<1, 0>().vkCmdBindDescriptorSets(
+      m_commandBuffer, bindPoint, layout, firstSet, nsets, sets, ndynOffsets,
+      dynOffsets);
 }
 } // namespace vkw

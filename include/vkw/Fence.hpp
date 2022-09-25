@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include <concepts>
+#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {

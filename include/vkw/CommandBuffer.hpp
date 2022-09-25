@@ -2,9 +2,10 @@
 #define VKRENDERER_COMMANDBUFFER_HPP
 
 #include "Common.hpp"
+#include "DescriptorSet.hpp"
 #include "VertexBuffer.hpp"
 #include <optional>
-#include <vulkan/vulkan.h>
+#include <vector>
 
 namespace vkw {
 
@@ -95,9 +96,53 @@ public:
   void bindGraphicsPipeline(GraphicsPipeline const &pipeline);
   void bindComputePipeline(ComputePipeline const &pipeline);
 
+  template <forward_range_of<DescriptorSet> T>
+  void bindDescriptorSets(PipelineLayout const &layout,
+                          VkPipelineBindPoint bindPoint, T const &sets,
+                          uint32_t firstSet) {
+    auto setsSubrange = ranges::make_subrange<DescriptorSet>(sets);
+    using setsSubrangeT = decltype(setsSubrange);
+
+    std::vector<uint32_t>
+        dynamicOffsets{}; // TODO: better use something like SmallVector
+    std::vector<VkDescriptorSet> rawSets{}; // here too
+    std::transform(setsSubrange.begin(), setsSubrange.end(),
+                   std::back_inserter(rawSets),
+                   [](auto const &set) -> VkDescriptorSet {
+                     return setsSubrangeT::get(set);
+                   });
+
+    for (auto const &seth : setsSubrange) {
+      auto &set = setsSubrangeT::get(seth);
+      auto offsetCount = set.dynamicOffsetsCount();
+      if (offsetCount == 0)
+        continue;
+      auto cachedSize = dynamicOffsets.size();
+      dynamicOffsets.resize(cachedSize + offsetCount);
+      set.copyOffsets(dynamicOffsets.data() + cachedSize);
+    }
+    m_bindDescriptorSets(layout, bindPoint, firstSet, rawSets.data(),
+                         rawSets.size(), dynamicOffsets.data(),
+                         dynamicOffsets.size());
+  }
+
   void bindDescriptorSets(PipelineLayout const &layout,
                           VkPipelineBindPoint bindPoint,
-                          DescriptorSetConstRefArray sets, uint32_t firstSet);
+                          DescriptorSet const &set, uint32_t firstSet) {
+    std::vector<uint32_t>
+        dynamicOffsets{}; // TODO: better use something like SmallVector
+
+    auto offsetCount = set.dynamicOffsetsCount();
+    if (offsetCount != 0) {
+      auto cachedSize = dynamicOffsets.size();
+      dynamicOffsets.resize(cachedSize + offsetCount);
+      set.copyOffsets(dynamicOffsets.data() + cachedSize);
+    }
+
+    VkDescriptorSet rawSet = set;
+    m_bindDescriptorSets(layout, bindPoint, firstSet, &rawSet, 1,
+                         dynamicOffsets.data(), dynamicOffsets.size());
+  }
 
   template <typename T>
   void pushConstants(PipelineLayout const &layout,
@@ -145,6 +190,11 @@ private:
                           VkDeviceSize offset);
   void m_bindIndexBuffer(VkBuffer buffer, VkIndexType type,
                          VkDeviceSize offset);
+
+  void m_bindDescriptorSets(const PipelineLayout &layout,
+                            VkPipelineBindPoint bindPoint, size_t firstSet,
+                            VkDescriptorSet const *sets, size_t nsets,
+                            uint32_t *dynOffsets, size_t ndynOffsets);
   bool m_recording = false;
   bool m_executable = false;
 };
@@ -172,7 +222,16 @@ public:
 
   void nextSubpass(bool useSecondary = false);
 
-  void executeCommands(SecondaryCommandBufferConstRefArray const &commands);
+  template <forward_range_of<SecondaryCommandBuffer> T>
+  void executeCommands(T const &commands) {
+    std::vector<VkCommandBuffer>
+        rawBufs; // TODO: better use something like SmallVector
+
+    std::transform(
+        commands.begin(), commands.end(),
+        [](std::ranges::range_value_t<T> const &command) { return command; });
+    m_executeCommands(rawBufs.size(), rawBufs.data());
+  }
 
   void endRenderPass();
 
@@ -185,6 +244,8 @@ public:
   }
 
 private:
+  void m_executeCommands(size_t nbufs, VkCommandBuffer const *buffers);
+
   std::optional<RenderPassCRef> m_currentPass;
   uint32_t m_currentSubpass;
 };

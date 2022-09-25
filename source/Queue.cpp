@@ -34,32 +34,8 @@ void Queue::waitIdle() {
   VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueWaitIdle(m_queue))
 }
 
-void Queue::submit(const PrimaryCommandBufferConstRefArray &commandBuffer,
-                   const SemaphoreConstRefArray &waitFor,
-                   const std::vector<VkPipelineStageFlags> &waitTill,
-                   const SemaphoreConstRefArray &signalTo, const Fence *fence) {
-
-  assert(waitTill.size() == waitFor.size() &&
-         "Count of dst stage masks must be equal to count of wait semaphores");
-
-  VkSubmitInfo submitInfo{};
-  submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-  submitInfo.pNext = nullptr;
-  submitInfo.commandBufferCount = commandBuffer.size();
-  submitInfo.pCommandBuffers = commandBuffer;
-  submitInfo.signalSemaphoreCount = signalTo.size();
-  submitInfo.pSignalSemaphores = signalTo;
-  submitInfo.waitSemaphoreCount = waitFor.size();
-  submitInfo.pWaitSemaphores = waitFor;
-  submitInfo.pWaitDstStageMask = waitTill.data();
-
-  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
-      m_queue, 1, &submitInfo,
-      fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
-}
-
 static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
-                         VkQueue queue, VkPresentInfoKHR *pPresentInfo) {
+                         VkQueue queue, VkPresentInfoKHR const *pPresentInfo) {
   auto result = p_vkQueuePresentKHR(queue, pPresentInfo);
 
   if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR) {
@@ -74,69 +50,13 @@ static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
   return false;
 }
 
-bool Queue::present(const SwapChainConstRefArray &swapChains,
-                    const SemaphoreConstRefArray &waitFor) {
-  VkPresentInfoKHR presentInfo{};
-
-  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.pNext = nullptr;
-  presentInfo.waitSemaphoreCount = waitFor.size();
-  presentInfo.pWaitSemaphores = waitFor;
-  presentInfo.swapchainCount = swapChains.size();
-  presentInfo.pSwapchains = swapChains;
-
-  std::vector<uint32_t> images;
-
-  images.reserve(swapChains.size());
-
-  for (auto &swapChain : swapChains) {
-    images.push_back(swapChain.get().currentImage());
-  }
-  presentInfo.pImageIndices = images.data();
-  presentInfo.pResults = nullptr;
-
-  return queuePresent(swapChains.begin()->get().ext().vkQueuePresentKHR,
-                      m_queue, &presentInfo);
+bool Queue::m_present(const VkPresentInfoKHR *presentInfo,
+                      Extension<ext::KHR_swapchain> const &swpExtension) {
+  return queuePresent(swpExtension.vkQueuePresentKHR, m_queue, presentInfo);
 }
+void Queue::m_submit(const VkSubmitInfo *info, Fence const *fence) {
 
-bool Queue::present(const SwapChain &swapChain,
-                    const SemaphoreConstRefArray &waitFor) {
-  VkPresentInfoKHR presentInfo{};
-
-  presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-  presentInfo.pNext = nullptr;
-  presentInfo.waitSemaphoreCount = waitFor.size();
-  presentInfo.pWaitSemaphores = waitFor;
-  presentInfo.swapchainCount = 1;
-  VkSwapchainKHR rawSwapChain = swapChain.operator VkSwapchainKHR_T *();
-  presentInfo.pSwapchains = &rawSwapChain;
-  uint32_t image = swapChain.currentImage();
-  presentInfo.pImageIndices = &image;
-  presentInfo.pResults = nullptr;
-
-  return queuePresent(swapChain.ext().vkQueuePresentKHR, m_queue, &presentInfo);
-}
-
-void Queue::submit(const SemaphoreConstRefArray &waitFor,
-                   const std::vector<VkPipelineStageFlags> &waitTill,
-                   const SemaphoreConstRefArray &signalTo, const Fence *fence) {
-
-    assert(waitTill.size() == waitFor.size() &&
-           "Count of dst stage masks must be equal to count of wait semaphores");
-
-    VkSubmitInfo submitInfo{};
-    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    submitInfo.pNext = nullptr;
-    submitInfo.commandBufferCount = 0;
-    submitInfo.signalSemaphoreCount = signalTo.size();
-    submitInfo.pSignalSemaphores = signalTo;
-    submitInfo.waitSemaphoreCount = waitFor.size();
-    submitInfo.pWaitSemaphores = waitFor;
-    submitInfo.pWaitDstStageMask = waitTill.data();
-
-    VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
-        m_queue, 1, &submitInfo,
-        fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
-
+  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
+      m_queue, 1, info, fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
 }
 } // namespace vkw

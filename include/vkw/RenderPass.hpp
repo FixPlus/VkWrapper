@@ -3,7 +3,7 @@
 
 #include "Common.hpp"
 #include <optional>
-#include <vulkan/vulkan.h>
+#include <vector>
 
 namespace vkw {
 
@@ -113,10 +113,30 @@ class RenderPassCreateInfo {
 public:
   RenderPassCreateInfo(RenderPassCreateInfo &&another);
   RenderPassCreateInfo(RenderPassCreateInfo const &another) = delete;
-  RenderPassCreateInfo(AttachmentDescriptionConstRefArray attachments,
+  template <forward_range_of<AttachmentDescription> T>
+  RenderPassCreateInfo(T const &attachments,
                        std::vector<SubpassDescriptionCRef> const &subpasses,
                        std::vector<SubpassDependency> const &dependencies,
-                       VkRenderPassCreateFlags flags = 0);
+                       VkRenderPassCreateFlags flags = 0) {
+    auto attachmentsSubrange =
+        ranges::make_subrange<AttachmentDescription>(attachments);
+    using attachmentsSubrangeT = decltype(attachmentsSubrange);
+    std::transform(attachmentsSubrange.begin(), attachmentsSubrange.end(),
+                   std::back_inserter(m_attachments),
+                   [](auto const &attachment) {
+                     return std::reference_wrapper<const AttachmentDescription>{
+                         attachmentsSubrangeT::get(attachment)};
+                   });
+    m_init(subpasses, dependencies, flags);
+  }
+
+  RenderPassCreateInfo(AttachmentDescription const &attachment,
+                       std::vector<SubpassDescriptionCRef> const &subpasses,
+                       std::vector<SubpassDependency> const &dependencies,
+                       VkRenderPassCreateFlags flags = 0) {
+    m_attachments.emplace_back(attachment);
+    m_init(subpasses, dependencies, flags);
+  }
 
   RenderPassCreateInfo &
   operator=(RenderPassCreateInfo &&another) noexcept = default;
@@ -141,6 +161,10 @@ public:
   }
 
 private:
+  void m_init(std::vector<SubpassDescriptionCRef> const &subpasses,
+              std::vector<SubpassDependency> const &dependencies,
+              VkRenderPassCreateFlags flags = 0);
+
   std::vector<AttachmentDescriptionCRef> m_attachments;
   std::vector<VkAttachmentDescription> m_attachments_raw;
   std::vector<M_subpassDesc> m_subpassesDescs;
