@@ -66,12 +66,6 @@ Library::Library() {
         m_instance_extension_properties.data() + extensionAccumulated);
     extensionAccumulated += extensionCount;
   }
-
-#define VKW_MAP_ENTRY(X, Y) m_extensions_name_map[X] = Y;
-#define VKW_DUMP_EXTENSION_NAME_MAP_DEFINITION
-#include "SymbolTable.inc"
-#undef VKW_DUMP_EXTENSION_NAME_MAP_DEFINITION
-#undef VKW_MAP_ENTRY
 }
 
 ApiVersion::ApiVersion(uint32_t encoded)

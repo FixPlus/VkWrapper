@@ -31,24 +31,6 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
   createInfo.pApplicationInfo = &appInfo;
 
-#if 0
-  const char *validationLayerName = "VK_LAYER_KHRONOS_validation";
-  if (m_validation) {
-
-    if (library.hasLayer(validationLayerName)) {
-      createInfo.ppEnabledLayerNames = &validationLayerName;
-      createInfo.enabledLayerCount = 1;
-    } else {
-      createInfo.enabledLayerCount = 0;
-      m_validation = false;
-      throw Error("Validation layer VK_LAYER_KHRONOS_validation not present!");
-    }
-  }
-
-  // validation layer requires VK_EXT_debug_utils extension
-  if (m_validation)
-    reqExtensions.push_back(ext::EXT_debug_utils);
-#endif
   // Check presence of all required layers and extensions
 
   std::for_each(reqLayers.begin(), reqLayers.end(), [&library](layer id) {
@@ -92,11 +74,6 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   for (auto &layer : reqLayers) {
     m_enabledLayers.emplace(layer);
   }
-
-#if 0
-  if (m_validation)
-    debug::setupDebugging(*this, 0, nullptr);
-#endif
 }
 
 std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
@@ -125,17 +102,21 @@ std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
 Instance::Instance(Instance &&another) noexcept
     : m_instance(another.m_instance),
       m_enabledExtensions(std::move(another.m_enabledExtensions)),
+      m_enabledLayers(std::move(another.m_enabledLayers)),
       m_vulkanLib(another.m_vulkanLib),
-      m_coreInstanceSymbols(std::move(another.m_coreInstanceSymbols)) {
+      m_coreInstanceSymbols(std::move(another.m_coreInstanceSymbols)),
+      m_apiVer(another.m_apiVer) {
   another.m_instance = VK_NULL_HANDLE;
 }
 
 Instance &Instance::operator=(Instance &&another) noexcept {
   m_instance = another.m_instance;
   m_enabledExtensions = std::move(another.m_enabledExtensions);
+  m_enabledLayers = std::move(another.m_enabledLayers);
   m_vulkanLib = another.m_vulkanLib;
   m_coreInstanceSymbols = std::move(another.m_coreInstanceSymbols);
-  another.m_instance = VK_NULL_HANDLE;
+  m_apiVer = another.m_apiVer;
+  std::swap(m_instance, another.m_instance);
 
   return *this;
 }
@@ -143,10 +124,6 @@ Instance &Instance::operator=(Instance &&another) noexcept {
 Instance::~Instance() {
   if (m_instance == VK_NULL_HANDLE)
     return;
-#if 0
-  if (m_validation)
-    debug::freeDebugCallback(*this);
-#endif
   core<1, 0>().vkDestroyInstance(m_instance, nullptr);
 }
 
