@@ -50,13 +50,16 @@ static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
   return false;
 }
 
-bool Queue::m_present(const VkPresentInfoKHR *presentInfo,
-                      Extension<ext::KHR_swapchain> const &swpExtension) {
-  return queuePresent(swpExtension.vkQueuePresentKHR, m_queue, presentInfo);
+bool Queue::present(PresentInfo const &presentInfo) const {
+  VkPresentInfoKHR info = presentInfo;
+  return queuePresent(presentInfo.swapChainExtension().vkQueuePresentKHR,
+                      m_queue, &info);
 }
-void Queue::m_submit(const VkSubmitInfo *info, Fence const *fence) {
+void Queue::m_submit(const VkSubmitInfo *info, size_t infoCount,
+                     Fence const *fence) const {
 
   VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
-      m_queue, 1, info, fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
+      m_queue, infoCount, info,
+      fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
 }
 } // namespace vkw
