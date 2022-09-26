@@ -3,15 +3,70 @@
 
 #include "Common.hpp"
 #include "Exception.hpp"
+#include <sstream>
 #include <string>
 #include <vector>
 
 namespace vkw {
 
-namespace device {} // namespace device
-
 enum class ext;
 
+class QueueFamily {
+public:
+  enum { GRAPHICS = 0x1, TRANSFER = 0x2, COMPUTE = 0x4 };
+  struct Type {
+    unsigned value : 3;
+    Type(unsigned val) : value(val) {}
+  };
+
+  QueueFamily(VkQueueFamilyProperties family, unsigned index)
+      : m_family(family), m_index(index) {}
+
+  bool strictly(Type type) const {
+    VkQueueFlags flags = 0;
+    if (type.value & GRAPHICS)
+      flags |= VK_QUEUE_GRAPHICS_BIT;
+    if (type.value & TRANSFER)
+      flags |= VK_QUEUE_TRANSFER_BIT;
+    if (type.value & COMPUTE)
+      flags |= VK_QUEUE_COMPUTE_BIT;
+
+    auto result = flags ^ m_family.queueFlags;
+    return !(result & VK_QUEUE_GRAPHICS_BIT) &&
+           !(result & VK_QUEUE_TRANSFER_BIT) &&
+           !(result & VK_QUEUE_COMPUTE_BIT);
+  }
+  bool graphics() const { return m_family.queueFlags & VK_QUEUE_GRAPHICS_BIT; }
+
+  bool transfer() const { return m_family.queueFlags & VK_QUEUE_TRANSFER_BIT; }
+
+  bool compute() const { return m_family.queueFlags & VK_QUEUE_COMPUTE_BIT; }
+
+  unsigned queueCount() const { return m_family.queueCount; }
+  unsigned queueRequestedCount() const { return m_queuesRequested.size(); }
+  float queuePriority(unsigned id) const { return m_queuesRequested.at(id); }
+
+  bool hasRequestedQueues() const { return !m_queuesRequested.empty(); }
+  float const *queuePrioritiesRaw() const { return m_queuesRequested.data(); }
+
+  unsigned index() const { return m_index; }
+
+  void requestQueue(float priority = 0.0f) {
+    if (m_queuesRequested.size() == m_family.queueCount) {
+      std::stringstream ss;
+      ss << "Requested for " << (m_family.queueCount + 1)
+         << " queues in queue family index " << m_index
+         << ", when it only supports at max " << m_family.queueCount;
+      throw Error(ss.str());
+    }
+    m_queuesRequested.emplace_back(priority);
+  }
+
+private:
+  std::vector<float> m_queuesRequested;
+  unsigned m_index;
+  VkQueueFamilyProperties m_family;
+};
 class PhysicalDevice {
 public:
   enum class feature {
@@ -60,7 +115,9 @@ public:
 
   void enableExtension(ext extension);
 
-  std::vector<VkQueueFamilyProperties> const &queueProperties() const {
+  std::vector<QueueFamily> &queueFamilies() { return m_queueFamilyProperties; }
+
+  std::vector<QueueFamily> const &queueFamilies() const {
     return m_queueFamilyProperties;
   }
 
@@ -76,7 +133,7 @@ protected:
   /** @brief Memory types and heaps of the physical device */
   VkPhysicalDeviceMemoryProperties m_memoryProperties{};
   /** @brief Queue family properties of the physical device */
-  std::vector<VkQueueFamilyProperties> m_queueFamilyProperties{};
+  std::vector<QueueFamily> m_queueFamilyProperties{};
   /** @brief List of extensions supported by the device */
   std::vector<ext> m_supportedExtensions{};
 

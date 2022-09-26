@@ -3,6 +3,7 @@
 
 #include "CommandBuffer.hpp"
 #include "Common.hpp"
+#include "PhysicalDevice.hpp"
 #include "Semaphore.hpp"
 #include "SwapChain.hpp"
 #include <cassert>
@@ -294,15 +295,15 @@ public:
     m_submit(m_infos.data(), m_infos.size(), nullptr);
   }
 
-  uint32_t familyIndex() const { return m_familyIndex; }
+  QueueFamily const &family() const;
 
-  bool supportsGraphics() const { return m_flags & VK_QUEUE_GRAPHICS_BIT; }
-  bool supportsTransfer() const { return m_flags & VK_QUEUE_TRANSFER_BIT; }
+  unsigned index() const { return m_queueIndex; }
+
   bool supportsPresenting(Surface const &surface) const;
 
   operator VkQueue() const { return m_queue; }
 
-  void waitIdle();
+  void waitIdle() const;
 
 private:
   Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex);
@@ -312,9 +313,9 @@ private:
   void m_submit(VkSubmitInfo const *info, size_t infoCount,
                 Fence const *fence) const;
   DeviceRef m_parent;
-  VkQueue m_queue;
-  VkQueueFlags m_flags;
+  VkQueue m_queue = VK_NULL_HANDLE;
   uint32_t m_familyIndex;
+  uint32_t m_queueIndex;
 };
 } // namespace vkw
 #endif // VKRENDERER_QUEUE_HPP

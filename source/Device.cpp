@@ -11,20 +11,12 @@
 namespace vkw {
 
 Device::Device(Device &&another)
-    : m_parent(another.m_parent), m_ph_device(std::move(another.m_ph_device)) {
-  m_device = another.m_device;
-
-  queueFamilyIndices = another.queueFamilyIndices;
-
-  m_allocator = another.m_allocator;
-
-  m_available_queues = another.m_available_queues;
-
-  m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
-
-  m_enabledExtensions = std::move(another.m_enabledExtensions);
-
-  another.m_device = VK_NULL_HANDLE;
+    : m_parent(another.m_parent), m_ph_device(std::move(another.m_ph_device)),
+      m_queues(std::move(another.m_queues)), m_device(VK_NULL_HANDLE),
+      m_allocator(another.m_allocator), m_apiVer(another.m_apiVer),
+      m_enabledExtensions(std::move(another.m_enabledExtensions)),
+      m_coreDeviceSymbols(std::move(another.m_coreDeviceSymbols)) {
+  std::swap(m_device, another.m_device);
 }
 
 uint32_t getQueueFamilyIndex(
@@ -79,63 +71,21 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
 
   std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
 
-  const float defaultQueuePriority(0.0f);
+  auto const &queueFamilies = m_ph_device.queueFamilies();
+  queueCreateInfos.reserve(queueFamilies.size());
 
-  // Graphics queue
-  if (requestedQueueTypes & VK_QUEUE_GRAPHICS_BIT) {
-    queueFamilyIndices.graphics = getQueueFamilyIndex(
-        m_ph_device.queueProperties(), VK_QUEUE_GRAPHICS_BIT);
-    VkDeviceQueueCreateInfo queueInfo{};
-    queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-    queueInfo.queueFamilyIndex = queueFamilyIndices.graphics;
-    queueInfo.queueCount = 1;
-    queueInfo.pQueuePriorities = &defaultQueuePriority;
-    queueCreateInfos.push_back(queueInfo);
-    m_available_queues.emplace_back(queueFamilyIndices.graphics, 1);
-  } else {
-    queueFamilyIndices.graphics = 0;
-  }
+  std::for_each(queueFamilies.begin(), queueFamilies.end(),
+                [&queueCreateInfos](auto const &family) {
+                  if (!family.hasRequestedQueues())
+                    return;
 
-  // Dedicated compute queue
-  if (requestedQueueTypes & VK_QUEUE_COMPUTE_BIT) {
-    queueFamilyIndices.compute = getQueueFamilyIndex(
-        m_ph_device.queueProperties(), VK_QUEUE_COMPUTE_BIT);
-    if (queueFamilyIndices.compute != queueFamilyIndices.graphics) {
-      // If compute family index differs, we need an additional queue create
-      // info for the compute queue
-      VkDeviceQueueCreateInfo queueInfo{};
-      queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-      queueInfo.queueFamilyIndex = queueFamilyIndices.compute;
-      queueInfo.queueCount = 1;
-      queueInfo.pQueuePriorities = &defaultQueuePriority;
-      queueCreateInfos.push_back(queueInfo);
-      m_available_queues.emplace_back(queueFamilyIndices.compute, 1);
-    }
-  } else {
-    // Else we use the same queue
-    queueFamilyIndices.compute = queueFamilyIndices.graphics;
-  }
-
-  // Dedicated transfer queue
-  if (requestedQueueTypes & VK_QUEUE_TRANSFER_BIT) {
-    queueFamilyIndices.transfer = getQueueFamilyIndex(
-        m_ph_device.queueProperties(), VK_QUEUE_TRANSFER_BIT);
-    if ((queueFamilyIndices.transfer != queueFamilyIndices.graphics) &&
-        (queueFamilyIndices.transfer != queueFamilyIndices.compute)) {
-      // If compute family index differs, we need an additional queue create
-      // info for the compute queue
-      VkDeviceQueueCreateInfo queueInfo{};
-      queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-      queueInfo.queueFamilyIndex = queueFamilyIndices.transfer;
-      queueInfo.queueCount = 1;
-      queueInfo.pQueuePriorities = &defaultQueuePriority;
-      queueCreateInfos.push_back(queueInfo);
-      m_available_queues.emplace_back(queueFamilyIndices.transfer, 1);
-    }
-  } else {
-    // Else we use the same queue
-    queueFamilyIndices.transfer = queueFamilyIndices.graphics;
-  }
+                  VkDeviceQueueCreateInfo queueInfo{};
+                  queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+                  queueInfo.queueFamilyIndex = family.index();
+                  queueInfo.queueCount = family.queueRequestedCount();
+                  queueInfo.pQueuePriorities = family.queuePrioritiesRaw();
+                  queueCreateInfos.push_back(queueInfo);
+                });
 
   VkDeviceCreateInfo deviceCreateInfo = {};
   deviceCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -202,6 +152,19 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
 
   VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &m_allocator))
+
+  std::transform(queueFamilies.begin(), queueFamilies.end(),
+                 std::back_inserter(m_queues),
+                 [this](QueueFamily const &family) {
+                   std::vector<std::unique_ptr<Queue>> queues;
+                   auto familyIndex = family.index();
+                   auto queueCount = family.queueRequestedCount();
+
+                   for (unsigned i = 0; i < queueCount; ++i)
+                     queues.emplace_back(new Queue{*this, familyIndex, i});
+
+                   return queues;
+                 });
 }
 
 Device::~Device() {
@@ -214,27 +177,83 @@ Device::~Device() {
   core<1, 0>().vkDestroyDevice(m_device, nullptr);
 }
 
-std::shared_ptr<Queue> Device::getQueue(uint32_t queueFamilyIndex,
-                                        uint32_t queueIndex) {
-  if (m_queues.contains({queueFamilyIndex, queueIndex})) {
-    return m_queues.at({queueFamilyIndex, queueIndex});
+Queue const &Device::anyGraphicsQueue() const {
+  auto graphicsFamilyPred = [](QueueFamily const &family) {
+    return family.graphics();
+  };
+  auto graphicsFamily =
+      std::find_if(m_ph_device.queueFamilies().begin(),
+                   m_ph_device.queueFamilies().end(), graphicsFamilyPred);
+  while (graphicsFamily != m_ph_device.queueFamilies().end()) {
+    if (graphicsFamily->hasRequestedQueues()) {
+      return *m_queues.at(graphicsFamily->index()).at(0);
+    }
+    graphicsFamily++;
+    graphicsFamily = std::find_if(
+        graphicsFamily, m_ph_device.queueFamilies().end(), graphicsFamilyPred);
   }
 
-  if (!std::any_of(
-          m_available_queues.begin(), m_available_queues.end(),
-          [queueFamilyIndex, queueIndex](std::pair<uint32_t, uint32_t> e) {
-            return e.first == queueFamilyIndex && queueIndex < e.second;
-          })) {
-    throw Error("Bad queue request");
-  }
-
-  return m_queues
-      .emplace(std::make_pair(
-          std::pair<uint32_t, uint32_t>{queueFamilyIndex, queueIndex},
-          std::make_shared<Queue>(Queue(*this, queueFamilyIndex, queueIndex))))
-      .first->second;
+  throw Error{"Device does not have any queues supporting graphics"};
 }
 
+Queue const &Device::anyComputeQueue() const {
+  auto computeFamilyPred = [](QueueFamily const &family) {
+    return family.compute();
+  };
+  auto transferFamily =
+      std::find_if(m_ph_device.queueFamilies().begin(),
+                   m_ph_device.queueFamilies().end(), computeFamilyPred);
+  while (transferFamily != m_ph_device.queueFamilies().end()) {
+    if (transferFamily->hasRequestedQueues()) {
+      return *m_queues.at(transferFamily->index()).at(0);
+    }
+    transferFamily++;
+    transferFamily = std::find_if(
+        transferFamily, m_ph_device.queueFamilies().end(), computeFamilyPred);
+  }
+
+  throw Error{"Device does not have any queues supporting compute"};
+}
+
+Queue const &Device::anyTransferQueue() const {
+  auto transferFamilyPred = [](QueueFamily const &family) {
+    return family.transfer();
+  };
+  auto transferFamily =
+      std::find_if(m_ph_device.queueFamilies().begin(),
+                   m_ph_device.queueFamilies().end(), transferFamilyPred);
+  while (transferFamily != m_ph_device.queueFamilies().end()) {
+    if (transferFamily->hasRequestedQueues()) {
+      return *m_queues.at(transferFamily->index()).at(0);
+    }
+    transferFamily++;
+    transferFamily = std::find_if(
+        transferFamily, m_ph_device.queueFamilies().end(), transferFamilyPred);
+  }
+
+  throw Error{"Device does not have any queues supporting transfer"};
+}
+
+Queue const &Device::getSpecificQueue(QueueFamily::Type type) const {
+  auto specificFamilyPred = [type](QueueFamily const &family) {
+    return family.strictly(type);
+  };
+  auto specificFamily =
+      std::find_if(m_ph_device.queueFamilies().begin(),
+                   m_ph_device.queueFamilies().end(), specificFamilyPred);
+  while (specificFamily != m_ph_device.queueFamilies().end()) {
+    if (specificFamily->hasRequestedQueues()) {
+      return *m_queues.at(specificFamily->index()).at(0);
+    }
+    specificFamily++;
+    specificFamily = std::find_if(
+        specificFamily, m_ph_device.queueFamilies().end(), specificFamilyPred);
+  }
+  std::stringstream ss;
+  ss << "Device does not have any specified queues of QueueFamily::Type = 0x"
+     << std::hex << type.value;
+  throw Error{ss.str()};
+}
 std::unique_ptr<BufferBase>
 Device::createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
                      VkBufferCreateInfo const &createInfo) {
@@ -251,18 +270,19 @@ Device &Device::operator=(Device &&another) noexcept {
 
   m_parent = another.m_parent;
 
-  queueFamilyIndices = another.queueFamilyIndices;
+  m_queues = std::move(m_queues);
 
   m_allocator = another.m_allocator;
-
-  m_available_queues = another.m_available_queues;
 
   m_coreDeviceSymbols = std::move(another.m_coreDeviceSymbols);
 
   m_enabledExtensions = std::move(another.m_enabledExtensions);
 
+  m_apiVer = another.m_apiVer;
+
   std::swap(m_device, another.m_device);
 
   return *this;
 }
+
 } // namespace vkw

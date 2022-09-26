@@ -48,9 +48,16 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
   instance.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
       m_physicalDevice, &queueFamilyCount, nullptr);
 
-  m_queueFamilyProperties.resize(queueFamilyCount);
+  std::vector<VkQueueFamilyProperties> rawQueueProps;
+  rawQueueProps.resize(queueFamilyCount);
   instance.core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
-      m_physicalDevice, &queueFamilyCount, m_queueFamilyProperties.data());
+      m_physicalDevice, &queueFamilyCount, rawQueueProps.data());
+  unsigned indexAcc = 0;
+  std::transform(rawQueueProps.begin(), rawQueueProps.end(),
+                 std::back_inserter(m_queueFamilyProperties),
+                 [&indexAcc](auto rawProp) {
+                   return QueueFamily{rawProp, indexAcc++};
+                 });
 
   // Get list of supported extensions
   uint32_t extCount = 0;

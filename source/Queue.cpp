@@ -13,14 +13,10 @@
 namespace vkw {
 
 Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
-    : m_parent(parent), m_familyIndex(queueFamilyIndex) {
+    : m_parent(parent), m_familyIndex(queueFamilyIndex),
+      m_queueIndex(queueIndex) {
   m_parent.get().core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex,
                                                queueIndex, &m_queue);
-
-  auto &queueFamilyProperties =
-      m_parent.get().physicalDevice().queueProperties();
-
-  queueFamilyProperties.at(queueFamilyIndex).queueFlags;
 }
 
 bool Queue::supportsPresenting(Surface const &surface) const {
@@ -30,7 +26,7 @@ bool Queue::supportsPresenting(Surface const &surface) const {
   return ret;
 }
 
-void Queue::waitIdle() {
+void Queue::waitIdle() const {
   VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueWaitIdle(m_queue))
 }
 
@@ -58,8 +54,11 @@ bool Queue::present(PresentInfo const &presentInfo) const {
 void Queue::m_submit(const VkSubmitInfo *info, size_t infoCount,
                      Fence const *fence) const {
 
-  VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
-      m_queue, infoCount, info,
-      fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))
+    VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
+        m_queue, infoCount, info,
+        fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))}
+
+QueueFamily const &Queue::family() const {
+  return m_parent.get().physicalDevice().queueFamilies().at(m_familyIndex);
 }
 } // namespace vkw

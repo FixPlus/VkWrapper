@@ -39,17 +39,17 @@ public:
   createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
                VkBufferCreateInfo const &createInfo);
 
-  std::shared_ptr<Queue> getQueue(uint32_t queueFamilyIndex,
-                                  uint32_t queueIndex);
-  std::shared_ptr<Queue> getGraphicsQueue() {
-    return getQueue(queueFamilyIndices.graphics, 0);
-  };
-  std::shared_ptr<Queue> getTransferQueue() {
-    return getQueue(queueFamilyIndices.transfer, 0);
-  };
-  std::shared_ptr<Queue> getComputeQueue() {
-    return getQueue(queueFamilyIndices.compute, 0);
-  };
+  Queue const &getQueue(unsigned queueFamilyIndex, unsigned queueIndex) const {
+    return *m_queues.at(queueFamilyIndex).at(queueIndex);
+  }
+
+  Queue const &anyGraphicsQueue() const;
+
+  Queue const &anyComputeQueue() const;
+
+  Queue const &anyTransferQueue() const;
+
+  Queue const &getSpecificQueue(QueueFamily::Type type) const;
 
   operator VkDevice() const { return m_device; }
 
@@ -77,15 +77,7 @@ private:
 
   PhysicalDevice m_ph_device;
 
-  struct {
-    uint32_t graphics;
-    uint32_t compute;
-    uint32_t transfer;
-  } queueFamilyIndices;
-
-  std::vector<std::pair<uint32_t, uint32_t>> m_available_queues;
-
-  std::map<std::pair<uint32_t, uint32_t>, std::shared_ptr<Queue>> m_queues;
+  std::vector<std::vector<std::unique_ptr<Queue>>> m_queues;
 
   std::unique_ptr<DeviceCore<1, 0>> m_coreDeviceSymbols;
   std::set<ext> m_enabledExtensions;
