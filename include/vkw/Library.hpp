@@ -3,6 +3,7 @@
 
 #include "SymbolTable.hpp"
 #include <memory>
+#include <sstream>
 #include <vector>
 #include <vulkan/vulkan.h>
 
@@ -21,8 +22,14 @@ struct ApiVersion {
   ApiVersion() = default;
 
   operator std::string() const {
-    return std::to_string(major) + "." + std::to_string(minor) + "." +
-           std::to_string(revision);
+    std::stringstream ss;
+    ss << std::to_string(major) << "." << std::to_string(minor) << "."
+       << std::to_string(revision);
+    return ss.str();
+  }
+
+  operator uint32_t() const {
+    return VK_MAKE_API_VERSION(0, major, minor, revision);
   }
   auto operator<=>(ApiVersion const &another) const = default;
 };

@@ -18,10 +18,32 @@ class DynamicLoader;
 enum class ext;
 enum class layer;
 
+class InstanceCreateInfo {
+public:
+  void requestApiVersion(ApiVersion version) { m_apiVersion = version; }
+  void requestExtension(ext ext) { m_reqExtensions.push_back(ext); }
+
+  void requestLayer(layer layer) { m_reqLayers.push_back(layer); }
+
+  auto requestedExtensionsBegin() const { return m_reqExtensions.begin(); }
+
+  auto requestedExtensionsEnd() const { return m_reqExtensions.end(); }
+
+  auto requestedLayersBegin() const { return m_reqLayers.begin(); }
+
+  auto requestedLayersEnd() const { return m_reqLayers.end(); }
+
+  ApiVersion requestedApiVersion() const { return m_apiVersion; }
+
+private:
+  std::vector<ext> m_reqExtensions;
+  std::vector<layer> m_reqLayers;
+  ApiVersion m_apiVersion = VK_API_VERSION_1_0;
+  std::string_view m_appName;
+};
 class Instance {
 public:
-  Instance(Library const &library, std::vector<ext> reqExtensions = {},
-           std::vector<layer> reqLayers = {});
+  Instance(Library const &library, InstanceCreateInfo const &createInfo);
   Instance(Instance const &another) = delete;
   Instance const &operator=(Instance const &another) = delete;
   Instance(Instance &&another) noexcept;

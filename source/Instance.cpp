@@ -10,9 +10,8 @@
 
 namespace vkw {
 
-Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
-                   std::vector<layer> reqLayers)
-    : m_vulkanLib(library) {
+Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
+    : m_vulkanLib(library), m_apiVer(CI.requestedApiVersion()) {
   VkApplicationInfo appInfo{};
 
   // TODO: all this information should be filled externally using wrapper
@@ -23,9 +22,7 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
   appInfo.pEngineName = "APITest";
   appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = VK_API_VERSION_1_0;
-
-  m_apiVer = {1, 0, 0};
+  appInfo.apiVersion = CI.requestedApiVersion();
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -33,25 +30,25 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
 
   // Check presence of all required layers and extensions
 
-  std::for_each(reqLayers.begin(), reqLayers.end(), [&library](layer id) {
-    if (!library.hasLayer(id))
-      throw LayerUnsupported{id, Library::LayerName(id)};
-  });
+  std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
+                [&library](layer id) {
+                  if (!library.hasLayer(id))
+                    throw LayerUnsupported{id, Library::LayerName(id)};
+                });
 
-  std::for_each(reqExtensions.begin(), reqExtensions.end(), [&library](ext id) {
-    if (!library.hasInstanceExtension(id))
-      throw ExtensionUnsupported{id, Library::ExtensionName(id)};
-  });
+  std::for_each(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+                [&library](ext id) {
+                  if (!library.hasInstanceExtension(id))
+                    throw ExtensionUnsupported{id, Library::ExtensionName(id)};
+                });
 
   std::vector<const char *> reqExtensionsNames{};
   std::vector<const char *> reqLayerNames{};
-  reqExtensionsNames.reserve(reqExtensions.size());
-  reqLayerNames.reserve(reqLayers.size());
 
-  std::transform(reqExtensions.begin(), reqExtensions.end(),
+  std::transform(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
                  std::back_inserter(reqExtensionsNames),
                  [](auto id) { return Library::ExtensionName(id); });
-  std::transform(reqLayers.begin(), reqLayers.end(),
+  std::transform(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
                  std::back_inserter(reqLayerNames),
                  [](auto id) { return Library::LayerName(id); });
 
@@ -67,13 +64,11 @@ Instance::Instance(Library const &library, std::vector<ext> reqExtensions,
   m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
       m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
 
-  for (auto &extension : reqExtensions) {
-    m_enabledExtensions.emplace(extension);
-  }
-
-  for (auto &layer : reqLayers) {
-    m_enabledLayers.emplace(layer);
-  }
+  std::for_each(
+      CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+      [this](auto ext) { m_enabledExtensions.template emplace(ext); });
+  std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
+                [this](auto ext) { m_enabledLayers.template emplace(ext); });
 }
 
 std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {

@@ -47,7 +47,7 @@ public:
   SurfaceOutdated() : Error("Surface outdated", ErrorCode::SURFACE_OUTDATED) {}
 };
 
-inline std::string errorString(VkResult errorCode) {
+inline const char *errorString(VkResult errorCode) {
   switch (errorCode) {
 #define STR(r)                                                                 \
   case VK_##r:                                                                 \
@@ -169,8 +169,8 @@ class VulkanError : public PositionalError {
 public:
   explicit VulkanError(VkResult error, std::string const &filename,
                        uint32_t line)
-      : PositionalError("Vulkan function call returned VkResult: " +
-                            errorString(error),
+      : PositionalError(std::string("Vulkan function call returned VkResult: ")
+                            .append(errorString(error)),
                         filename, line, ErrorCode::VULKAN_ERROR),
         m_result(error) {}
 
