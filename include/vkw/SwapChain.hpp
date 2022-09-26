@@ -47,7 +47,7 @@ public:
 
   virtual ~SwapChain();
 
-  Extension<ext::KHR_swapchain> const &ext() const { return m_swapchain_ext; }
+  Extension<ext::KHR_swapchain> const &extension() const { return m_swapchain_ext; }
 
   operator VkSwapchainKHR() const { return m_swapchain; }
 

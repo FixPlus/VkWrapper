@@ -23,7 +23,7 @@ if __name__ == '__main__':
 
     parsed_args = args.parse_args()
 
-    os.chdir(parsed_args.path + "/Bin")
+    os.chdir(parsed_args.path)
 
     for filename in glob.glob("*.json"):
         file = open(filename, 'r')

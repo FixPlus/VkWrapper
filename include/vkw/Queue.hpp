@@ -45,7 +45,7 @@ public:
 
   template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>>
   PresentInfo(SwapChain const &swapChain, SMA const &waitFor = {})
-      : m_swp_ext(swapChain.ext()) {
+      : m_swp_ext(swapChain.extension()) {
 
     auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
     using SMASubT = decltype(waitForSub);
@@ -62,7 +62,7 @@ public:
   }
 
   PresentInfo(SwapChain const &swapChain, Semaphore const &waitFor)
-      : m_swp_ext(swapChain.ext()) {
+      : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
     m_images.emplace_back(swapChain.currentImage());
@@ -71,7 +71,7 @@ public:
     m_fill_info();
   }
 
-  PresentInfo(SwapChain const &swapChain) : m_swp_ext(swapChain.ext()) {
+  PresentInfo(SwapChain const &swapChain) : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
     m_images.emplace_back(swapChain.currentImage());
