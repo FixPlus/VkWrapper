@@ -7,35 +7,44 @@
 #include <sstream>
 namespace vkw {
 
-Library::Library() {
-  static constexpr const char *libName =
+class VulkanDefaultLoader : public VulkanLibraryLoader, private DynamicLoader {
+public:
+  VulkanDefaultLoader() : DynamicLoader(m_libname){};
+
+  PFN_vkGetInstanceProcAddr getInstanceProcAddr() override {
+    return reinterpret_cast<PFN_vkGetInstanceProcAddr>(
+        getSymbol("vkGetInstanceProcAddr"));
+  };
+
+private:
+  static constexpr const char *m_libname =
 #ifdef _WIN32
       "vulkan-1.dll";
 #elif defined __linux__
       "libvulkan.so.1";
+#else
+      "";
 #endif
-  m_loader = std::make_unique<DynamicLoader>(libName);
-
-  vkCreateInstance = reinterpret_cast<PFN_vkCreateInstance>(
-      m_loader->getSymbol("vkCreateInstance"));
-  vkEnumerateInstanceExtensionProperties =
-      reinterpret_cast<PFN_vkEnumerateInstanceExtensionProperties>(
-          m_loader->getSymbol("vkEnumerateInstanceExtensionProperties"));
-  vkEnumerateInstanceLayerProperties =
-      reinterpret_cast<PFN_vkEnumerateInstanceLayerProperties>(
-          m_loader->getSymbol("vkEnumerateInstanceLayerProperties"));
-  vkGetInstanceProcAddr = reinterpret_cast<PFN_vkGetInstanceProcAddr>(
-      m_loader->getSymbol("vkGetInstanceProcAddr"));
-  try {
-    vkEnumerateInstanceVersion =
-        reinterpret_cast<PFN_vkEnumerateInstanceVersion>(
-            m_loader->getSymbol("vkEnumerateInstanceVersion"));
-  } catch (Error &e) {
-    if (e.code() == ErrorCode::DYNAMIC_LIBRARY_SYMBOL_MISSING) {
-      // it's okay, because Vulkan 1.0 doesn't have this function yet
-    } else
-      throw;
+};
+Library::Library(VulkanLibraryLoader *loader) {
+  if (loader == nullptr) {
+    m_embedded_loader = std::make_unique<VulkanDefaultLoader>();
+    loader = m_embedded_loader.get();
   }
+
+  vkGetInstanceProcAddr = loader->getInstanceProcAddr();
+  vkCreateInstance = reinterpret_cast<decltype(vkCreateInstance)>(
+      vkGetInstanceProcAddr(nullptr, "vkCreateInstance"));
+  vkEnumerateInstanceExtensionProperties =
+      reinterpret_cast<decltype(vkEnumerateInstanceExtensionProperties)>(
+          vkGetInstanceProcAddr(nullptr,
+                                "vkEnumerateInstanceExtensionProperties"));
+  vkEnumerateInstanceLayerProperties =
+      reinterpret_cast<decltype(vkEnumerateInstanceLayerProperties)>(
+          vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceLayerProperties"));
+  vkEnumerateInstanceVersion =
+      reinterpret_cast<decltype(vkEnumerateInstanceVersion)>(
+          vkGetInstanceProcAddr(nullptr, "vkEnumerateInstanceVersion"));
 
   uint32_t layerCount;
 

@@ -37,9 +37,21 @@ struct ApiVersion {
 enum class ext;
 enum class layer;
 
+class VulkanLibraryLoader {
+public:
+  virtual PFN_vkGetInstanceProcAddr getInstanceProcAddr() = 0;
+
+  virtual ~VulkanLibraryLoader() = default;
+};
+
 class Library final {
 public:
-  Library();
+  /**
+   *    Application may create their own vulkan loader
+   *    using interface VulkanLibraryLoader.
+   *    Pass nullptr to use embedded loader.
+   * */
+  Library(VulkanLibraryLoader *loader = nullptr);
 
   ~Library();
 
@@ -69,9 +81,9 @@ public:
   static layer LayerId(std::string_view extensionName);
 
 private:
+  std::unique_ptr<VulkanLibraryLoader> m_embedded_loader;
   std::vector<VkLayerProperties> m_layer_properties;
   std::vector<VkExtensionProperties> m_instance_extension_properties;
-  std::unique_ptr<DynamicLoader> m_loader;
 };
 } // namespace vkw
 #endif // VKWRAPPER_LIBRARY_HPP

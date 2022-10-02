@@ -28,7 +28,7 @@ public:
     return m_getSymbol(symbolName);
   }
 
-  ~DynamicLoader() {
+  virtual ~DynamicLoader() {
     if (m_libHandle)
       m_close();
   }

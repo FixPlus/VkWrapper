@@ -17,8 +17,10 @@ class Instance;
       throw VulkanError(res, __FILE__, __LINE__);                              \
   }
 
-class Surface final {
+class Surface {
 public:
+  Surface(Instance &parent, VkSurfaceKHR surface)
+      : m_parent(parent), m_surface_ext(parent), m_surface(surface) {}
 #ifdef _WIN32
   Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd)
       : m_parent(parent), m_surface_ext(parent) {
@@ -110,7 +112,7 @@ public:
 
   operator VkSurfaceKHR() const { return m_surface; }
 
-  ~Surface();
+  virtual ~Surface();
 
 private:
   VkSurfaceKHR m_surface;
