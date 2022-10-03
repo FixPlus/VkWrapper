@@ -61,13 +61,13 @@ bool SwapChain::acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
   }
 }
 
-std::vector<SwapChainImage> SwapChain::retrieveImages() {
+boost::container::small_vector<SwapChainImage, 3> SwapChain::retrieveImages() {
 
-  std::vector<VkImage> images(m_imageCount);
+  boost::container::small_vector<VkImage, 3> images(m_imageCount);
   VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
       m_device.get(), m_swapchain, &m_imageCount, images.data()))
 
-  std::vector<SwapChainImage> ret{};
+  boost::container::small_vector<SwapChainImage, 3> ret{};
 
   for (auto const &image : images) {
     ret.push_back(SwapChainImage{

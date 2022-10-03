@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "Image.hpp"
+#include <boost/container/small_vector.hpp>
 #include <span>
 #include <vulkan/vulkan.h>
 
@@ -12,6 +13,7 @@ class ImageViewBase;
 
 class FrameBuffer {
 public:
+  using ViewsContainerT = boost::container::small_vector<ImageViewBaseCRef, 5>;
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
               std::span<ImageViewVT<V2DA> const *> views, uint32_t layers = 1);
 
@@ -45,9 +47,9 @@ public:
 
   uint32_t layers() const { return m_createInfo.layers; }
 
-  std::vector<ImageViewBaseCRef> &attachments() { return m_views; }
+  ViewsContainerT &attachments() { return m_views; }
 
-  std::vector<ImageViewBaseCRef> const &attachments() const { return m_views; }
+  ViewsContainerT const &attachments() const { return m_views; }
 
   operator VkFramebuffer() const { return m_framebuffer; }
 
@@ -55,7 +57,7 @@ private:
   DeviceRef m_device;
   RenderPassRef m_parent;
   VkFramebufferCreateInfo m_createInfo{};
-  std::vector<ImageViewBaseCRef> m_views;
+  ViewsContainerT m_views;
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
 };
 } // namespace vkw

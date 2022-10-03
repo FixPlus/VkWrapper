@@ -4,6 +4,7 @@
 #include "Common.hpp"
 #include "DescriptorSet.hpp"
 #include "VertexBuffer.hpp"
+#include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>
 
@@ -51,7 +52,9 @@ public:
                         AllocatedImage const &dst, VkImageLayout dstLayout,
                         std::vector<VkImageCopy> const &regions);
 
-  void blitImage(AllocatedImage const& targetImage, VkImageBlit blit, bool usingGeneralLayout = false, VkFilter filter = VK_FILTER_LINEAR);
+  void blitImage(AllocatedImage const &targetImage, VkImageBlit blit,
+                 bool usingGeneralLayout = false,
+                 VkFilter filter = VK_FILTER_LINEAR);
 
   /** Synchronization */
   void
@@ -103,9 +106,8 @@ public:
     auto setsSubrange = ranges::make_subrange<DescriptorSet>(sets);
     using setsSubrangeT = decltype(setsSubrange);
 
-    std::vector<uint32_t>
-        dynamicOffsets{}; // TODO: better use something like SmallVector
-    std::vector<VkDescriptorSet> rawSets{}; // here too
+    boost::container::small_vector<uint32_t, 3> dynamicOffsets{};
+    boost::container::small_vector<VkDescriptorSet, 3> rawSets{};
     std::transform(setsSubrange.begin(), setsSubrange.end(),
                    std::back_inserter(rawSets),
                    [](auto const &set) -> VkDescriptorSet {
@@ -129,8 +131,7 @@ public:
   void bindDescriptorSets(PipelineLayout const &layout,
                           VkPipelineBindPoint bindPoint,
                           DescriptorSet const &set, uint32_t firstSet) {
-    std::vector<uint32_t>
-        dynamicOffsets{}; // TODO: better use something like SmallVector
+    boost::container::small_vector<uint32_t, 3> dynamicOffsets{};
 
     auto offsetCount = set.dynamicOffsetsCount();
     if (offsetCount != 0) {
@@ -224,8 +225,7 @@ public:
 
   template <forward_range_of<SecondaryCommandBuffer> T>
   void executeCommands(T const &commands) {
-    std::vector<VkCommandBuffer>
-        rawBufs; // TODO: better use something like SmallVector
+    boost::container::small_vector<VkCommandBuffer, 5> rawBufs;
 
     std::transform(
         commands.begin(), commands.end(),

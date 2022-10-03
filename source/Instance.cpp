@@ -71,8 +71,9 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
                 [this](auto ext) { m_enabledLayers.template emplace(ext); });
 }
 
-std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
-  std::vector<VkPhysicalDevice> devs;
+boost::container::small_vector<PhysicalDevice, 3>
+Instance::enumerateAvailableDevices() const {
+  boost::container::small_vector<VkPhysicalDevice, 3> devs;
   uint32_t deviceCount = 0;
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);
   if (deviceCount == 0)
@@ -83,7 +84,7 @@ std::vector<PhysicalDevice> Instance::enumerateAvailableDevices() const {
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
                                           devs.data());
 
-  std::vector<PhysicalDevice> ret;
+  boost::container::small_vector<PhysicalDevice, 3> ret;
   ret.reserve(devs.size());
 
   std::transform(devs.begin(), devs.end(), std::back_inserter(ret),

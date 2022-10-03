@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "Exception.hpp"
+#include <boost/container/small_vector.hpp>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -69,6 +70,7 @@ private:
 };
 class PhysicalDevice {
 public:
+  using QueueFamilyContainerT = boost::container::small_vector<QueueFamily, 3>;
   enum class feature {
 #define VKW_FEATURE_ENTRY(X) X,
 #include "DeviceFeatures.inc"
@@ -115,9 +117,9 @@ public:
 
   void enableExtension(ext extension);
 
-  std::vector<QueueFamily> &queueFamilies() { return m_queueFamilyProperties; }
+  QueueFamilyContainerT &queueFamilies() { return m_queueFamilyProperties; }
 
-  std::vector<QueueFamily> const &queueFamilies() const {
+  QueueFamilyContainerT const &queueFamilies() const {
     return m_queueFamilyProperties;
   }
 
@@ -133,7 +135,7 @@ protected:
   /** @brief Memory types and heaps of the physical device */
   VkPhysicalDeviceMemoryProperties m_memoryProperties{};
   /** @brief Queue family properties of the physical device */
-  std::vector<QueueFamily> m_queueFamilyProperties{};
+  QueueFamilyContainerT m_queueFamilyProperties{};
   /** @brief List of extensions supported by the device */
   std::vector<ext> m_supportedExtensions{};
 

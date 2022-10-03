@@ -6,6 +6,7 @@
 #include "PhysicalDevice.hpp"
 #include "Semaphore.hpp"
 #include "SwapChain.hpp"
+#include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <utility>
 #include <vector>
@@ -117,9 +118,9 @@ private:
     m_info.pImageIndices = m_images.data();
     m_info.pResults = nullptr;
   }
-  std::vector<VkSemaphore> m_wait_semaphores;
-  std::vector<VkSwapchainKHR> m_swapChains;
-  std::vector<uint32_t> m_images;
+  boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
+  boost::container::small_vector<VkSwapchainKHR, 2> m_swapChains;
+  boost::container::small_vector<uint32_t, 2> m_images;
 
   std::reference_wrapper<Extension<ext::KHR_swapchain> const> m_swp_ext;
   VkPresentInfoKHR m_info{};
@@ -128,11 +129,11 @@ private:
 class SubmitInfo {
 public:
   template <forward_range_of<PrimaryCommandBuffer> PCMDA,
-            forward_range_of<Semaphore> SMA>
+            forward_range_of<Semaphore> SMA,
+            forward_range_of<VkPipelineStageFlags> PSFA =
+                std::vector<VkPipelineStageFlags>>
   SubmitInfo(PCMDA const &commandBuffer, SMA const &waitFor = {},
-             std::vector<VkPipelineStageFlags> waitTill = {},
-             SMA const &signalTo = {})
-      : m_wait_stage(std::move(waitTill)) {
+             PSFA const &waitTill = {}, SMA const &signalTo = {}) {
     auto commandBufferSub =
         ranges::make_subrange<PrimaryCommandBuffer>(commandBuffer);
     using commandBufferSubT = decltype(commandBufferSub);
@@ -140,6 +141,9 @@ public:
     auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
     auto signalToSub = ranges::make_subrange<Semaphore>(signalTo);
     using semaphoreSubT = decltype(waitForSub);
+
+    auto waitTillSub = ranges::make_subrange<VkPipelineStageFlags>(waitTill);
+    using FSFASubT = decltype(waitTillSub);
 
     std::transform(commandBufferSub.begin(), commandBufferSub.end(),
                    std::back_inserter(m_cmd_buffers),
@@ -155,31 +159,16 @@ public:
         std::back_inserter(m_signal_semaphores),
         [](auto const &smr) -> VkSemaphore { return semaphoreSubT::get(smr); });
 
+    std::transform(waitTillSub.begin(), waitTillSub.end(),
+                   std::back_inserter(m_wait_stage),
+                   [](auto const &stage) -> VkPipelineStageFlags {
+                     return FSFASubT::get(stage);
+                   });
+
     m_fill_info();
   }
 
   operator VkSubmitInfo() const { return m_info; }
-
-  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>>
-  SubmitInfo(const PrimaryCommandBuffer &commandBuffer, SMA const &waitFor = {},
-             std::vector<VkPipelineStageFlags> waitTill = {},
-             SMA const &signalTo = {})
-      : m_wait_stage(std::move(waitTill)), m_cmd_buffers(1, commandBuffer) {
-    auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
-    auto signalToSub = ranges::make_subrange<Semaphore>(signalTo);
-    using SMASubT = decltype(waitForSub);
-
-    std::transform(
-        waitForSub.begin(), waitForSub.end(),
-        std::back_inserter(m_wait_semaphores),
-        [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
-    std::transform(
-        signalTo.begin(), signalTo.end(),
-        std::back_inserter(m_signal_semaphores),
-        [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
-
-    m_fill_info();
-  }
 
   SubmitInfo(const PrimaryCommandBuffer &commandBuffer,
              Semaphore const &waitFor, VkPipelineStageFlags waitTill,
@@ -189,13 +178,15 @@ public:
     m_fill_info();
   }
 
-  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>>
-  SubmitInfo(SMA const &waitFor = {},
-             std::vector<VkPipelineStageFlags> const &waitTill = {},
-             SMA const &signalTo = {})
-      : m_wait_stage(waitTill) {
+  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>,
+            forward_range_of<VkPipelineStageFlags> PSFA =
+                std::vector<VkPipelineStageFlags>>
+  SubmitInfo(SMA const &waitFor = {}, PSFA const &waitTill = {},
+             SMA const &signalTo = {}) {
     auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
     auto signalToSub = ranges::make_subrange<Semaphore>(signalTo);
+    auto waitTillSub = ranges::make_subrange<VkPipelineStageFlags>(waitTill);
+    using FSFASubT = decltype(waitTillSub);
     using SMASubT = decltype(waitForSub);
 
     std::transform(
@@ -207,7 +198,26 @@ public:
         std::back_inserter(m_signal_semaphores),
         [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
 
+    std::transform(waitTillSub.begin(), waitTillSub.end(),
+                   std::back_inserter(m_wait_stage),
+                   [](auto const &stage) -> VkPipelineStageFlags {
+                     return FSFASubT::get(stage);
+                   });
+
     m_fill_info();
+  }
+
+  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>,
+            forward_range_of<VkPipelineStageFlags> PSFA =
+                std::vector<VkPipelineStageFlags>>
+  SubmitInfo(const PrimaryCommandBuffer &commandBuffer, SMA const &waitFor = {},
+             PSFA const &waitTill = {}, SMA const &signalTo = {})
+      : SubmitInfo(waitFor, waitTill, signalTo) {
+
+    m_cmd_buffers.template emplace_back(commandBuffer);
+
+    m_info.commandBufferCount = m_cmd_buffers.size();
+    m_info.pCommandBuffers = m_cmd_buffers.data();
   }
 
   SubmitInfo &operator=(SubmitInfo const &another) {
@@ -234,10 +244,10 @@ public:
   SubmitInfo(SubmitInfo &&another) noexcept = default;
 
 private:
-  std::vector<VkCommandBuffer> m_cmd_buffers;
-  std::vector<VkSemaphore> m_signal_semaphores;
-  std::vector<VkSemaphore> m_wait_semaphores;
-  std::vector<VkPipelineStageFlags> m_wait_stage;
+  boost::container::small_vector<VkCommandBuffer, 2> m_cmd_buffers;
+  boost::container::small_vector<VkSemaphore, 2> m_signal_semaphores;
+  boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
+  boost::container::small_vector<VkPipelineStageFlags, 2> m_wait_stage;
 
   void m_fill_info() {
     assert(
@@ -273,7 +283,7 @@ public:
   void submit(SubmitRange const &info, Fence const &fence) const {
     auto infoSubrange = ranges::make_subrange<SubmitInfo>(info);
     using infoSubrangeT = decltype(infoSubrange);
-    std::vector<VkSubmitInfo> m_infos; // TODO: make this SmallVector
+    boost::container::small_vector<VkSubmitInfo, 3> m_infos;
     std::transform(infoSubrange.begin(), infoSubrange.end(),
                    std::back_inserter(m_infos),
                    [](auto const &info) -> VkSubmitInfo {
@@ -286,7 +296,7 @@ public:
   void submit(SubmitRange const &info) const {
     auto infoSubrange = ranges::make_subrange<SubmitInfo>(info);
     using infoSubrangeT = decltype(infoSubrange);
-    std::vector<VkSubmitInfo> m_infos; // TODO: make this SmallVector
+    boost::container::small_vector<VkSubmitInfo, 3> m_infos;
     std::transform(infoSubrange.begin(), infoSubrange.end(),
                    std::back_inserter(m_infos),
                    [](auto const &info) -> VkSubmitInfo {

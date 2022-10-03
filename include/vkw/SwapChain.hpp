@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "Extensions.hpp"
+#include <boost/container/small_vector.hpp>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -40,7 +41,7 @@ public:
   bool acquireNextImage(Fence const &signalFence,
                         uint64_t timeout = UINT64_MAX);
 
-  std::vector<SwapChainImage> retrieveImages();
+  boost::container::small_vector<SwapChainImage, 3> retrieveImages();
 
   uint32_t currentImage() const;
   uint32_t imageCount() const { return m_imageCount; }

@@ -5,12 +5,14 @@
 #include "Exception.hpp"
 #include "Library.hpp"
 #include "SymbolTable.hpp"
+#include <boost/container/small_vector.hpp>
 #include <functional>
 #include <memory>
 #include <set>
 #include <unordered_map>
 #include <vector>
 #include <vulkan/vulkan.h>
+
 namespace vkw {
 
 class DynamicLoader;
@@ -49,7 +51,8 @@ public:
   Instance(Instance &&another) noexcept;
   Instance &operator=(Instance &&another) noexcept;
 
-  std::vector<PhysicalDevice> enumerateAvailableDevices() const;
+  boost::container::small_vector<PhysicalDevice, 3>
+  enumerateAvailableDevices() const;
 
   bool isExtensionEnabled(ext extension) const {
     return m_enabledExtensions.contains(extension);
