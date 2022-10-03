@@ -2,6 +2,7 @@
 #define VKRENDERER_RENDERPASS_HPP
 
 #include "Common.hpp"
+#include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>
 
@@ -51,33 +52,33 @@ public:
   void addDepthAttachment(AttachmentDescription const &, VkImageLayout layout);
   void addPreserveAttachment(AttachmentDescription const &);
 
-  std::vector<std::pair<AttachmentDescriptionCRef, VkImageLayout>> const &
-  inputAttachments() const {
+  using SubpassAttachmentContainerT = boost::container::small_vector<
+      std::pair<AttachmentDescriptionCRef, VkImageLayout>, 2>;
+  using PreservedAttachmentContainerT =
+      boost::container::small_vector<AttachmentDescriptionCRef, 2>;
+  SubpassAttachmentContainerT const &inputAttachments() const {
     return m_inputAttachments;
   }
 
-  std::vector<std::pair<AttachmentDescriptionCRef, VkImageLayout>> const &
-  colorAttachments() const {
+  SubpassAttachmentContainerT const &colorAttachments() const {
     return m_colorAttachments;
   }
   std::optional<std::pair<AttachmentDescriptionCRef, VkImageLayout>> const &
   depthAttachments() const {
     return m_depthAttachment;
   }
-  std::vector<AttachmentDescriptionCRef> const &preserveAttachments() const {
+  PreservedAttachmentContainerT const &preserveAttachments() const {
     return m_preserveAttachments;
   }
 
   VkDependencyFlags flags;
 
 private:
-  std::vector<std::pair<AttachmentDescriptionCRef, VkImageLayout>>
-      m_inputAttachments;
-  std::vector<std::pair<AttachmentDescriptionCRef, VkImageLayout>>
-      m_colorAttachments;
+  SubpassAttachmentContainerT m_inputAttachments;
+  SubpassAttachmentContainerT m_colorAttachments;
   std::optional<std::pair<AttachmentDescriptionCRef, VkImageLayout>>
       m_depthAttachment;
-  std::vector<AttachmentDescriptionCRef> m_preserveAttachments;
+  PreservedAttachmentContainerT m_preserveAttachments;
 };
 
 class SubpassDependency {

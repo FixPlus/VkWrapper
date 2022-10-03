@@ -6,9 +6,11 @@
 namespace vkw {
 
 DescriptorPool::DescriptorPool(Device const &device, uint32_t maxSets,
-                               std::vector<VkDescriptorPoolSize> poolSizes,
+                               std::span<const VkDescriptorPoolSize> poolSizes,
                                VkDescriptorPoolCreateFlags flags)
-    : m_device(device), m_poolSizes(std::move(poolSizes)), m_maxSets(maxSets) {
+    : m_device(device), m_maxSets(maxSets) {
+  std::copy(poolSizes.begin(), poolSizes.end(),
+            std::back_inserter(m_poolSizes));
   m_createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = flags;

@@ -2,8 +2,9 @@
 #define VKWRAPPER_DESCRIPTORSET_HPP
 
 #include "Common.hpp"
-#include "UniformBuffer.hpp"
 #include "Image.hpp"
+#include "UniformBuffer.hpp"
+#include <boost/container/small_vector.hpp>
 
 namespace vkw {
 
@@ -106,7 +107,7 @@ public:
 private:
   void m_init(VkDescriptorSetLayoutCreateFlags flags);
   DeviceCRef m_device;
-  std::vector<DescriptorSetLayoutBinding> m_bindings;
+  boost::container::small_vector<DescriptorSetLayoutBinding, 3> m_bindings;
   VkDescriptorSetLayoutCreateInfo m_createInfo{};
   VkDescriptorSetLayout m_layout{};
 };
@@ -189,7 +190,7 @@ private:
     uint32_t offset{0};
     M_DynamicOffset(uint32_t bind) : binding(bind){};
   };
-  std::vector<M_DynamicOffset> m_dynamicOffsets{};
+  boost::container::small_vector<M_DynamicOffset, 2> m_dynamicOffsets{};
 
   friend class DescriptorPool;
 

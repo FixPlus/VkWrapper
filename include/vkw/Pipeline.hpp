@@ -3,8 +3,10 @@
 
 #include "Common.hpp"
 #include "VertexBuffer.hpp"
+#include <boost/container/small_vector.hpp>
 #include <functional>
 #include <optional>
+#include <span>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -62,8 +64,8 @@ public:
 private:
   void m_addConstant(const void *constant, size_t size, uint32_t id);
 
-  std::vector<VkSpecializationMapEntry> m_entries;
-  std::vector<unsigned char> m_data;
+  boost::container::small_vector<VkSpecializationMapEntry, 3> m_entries;
+  boost::container::small_vector<unsigned char, 64> m_data;
   VkSpecializationInfo m_info{};
 };
 
@@ -72,9 +74,11 @@ public:
   PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
   template <forward_range_of<DescriptorSetLayout> T>
   PipelineLayout(DeviceRef device, T const &setLayouts,
-                 std::vector<VkPushConstantRange> pushConstants = {},
+                 std::span<const VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0)
-      : m_device(device), m_pushConstants(std::move(pushConstants)) {
+      : m_device(device) {
+    std::copy(pushConstants.begin(), pushConstants.end(),
+              std::back_inserter(m_pushConstants));
     std::transform(
         setLayouts.begin(), setLayouts.end(),
         std::back_inserter(m_descriptorLayouts),
@@ -84,9 +88,11 @@ public:
 
   // overload for 1 element case
   PipelineLayout(DeviceRef device, DescriptorSetLayout const &setLayout,
-                 std::vector<VkPushConstantRange> pushConstants = {},
+                 std::span<const VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0)
-      : m_device(device), m_pushConstants(std::move(pushConstants)) {
+      : m_device(device) {
+    std::copy(pushConstants.begin(), pushConstants.end(),
+              std::back_inserter(m_pushConstants));
     m_descriptorLayouts.emplace_back(setLayout);
     m_init(flags);
   }
@@ -131,8 +137,9 @@ private:
   void m_init(VkPipelineLayoutCreateFlags flags);
 
   DeviceRef m_device;
-  std::vector<DescriptorSetLayoutCRef> m_descriptorLayouts{};
-  std::vector<VkPushConstantRange> m_pushConstants{};
+  boost::container::small_vector<DescriptorSetLayoutCRef, 4>
+      m_descriptorLayouts{};
+  boost::container::small_vector<VkPushConstantRange, 4> m_pushConstants{};
   VkPipelineLayoutCreateInfo m_createInfo{};
   VkPipelineLayout m_layout{};
 };
@@ -421,7 +428,8 @@ private:
 
   // Shader Stages
 
-  std::vector<VkPipelineShaderStageCreateInfo> m_shaderStages;
+  boost::container::small_vector<VkPipelineShaderStageCreateInfo, 2>
+      m_shaderStages;
   std::optional<VertexShaderCRef> m_vertexShader;
   std::optional<FragmentShaderCRef> m_fragmentShader;
 
@@ -439,7 +447,8 @@ private:
   VkPipelineMultisampleStateCreateInfo m_multisampleState{};
   VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
   VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
-  std::vector<VkPipelineColorBlendAttachmentState> m_blendStates{};
+  boost::container::small_vector<VkPipelineColorBlendAttachmentState, 2>
+      m_blendStates{};
 
   PipelineLayoutCRef m_layout;
   VkGraphicsPipelineCreateInfo m_createInfo{};
@@ -447,7 +456,7 @@ private:
   // dynamic states
 
   VkPipelineDynamicStateCreateInfo m_dynamicState{};
-  std::vector<VkDynamicState> m_dynStates;
+  boost::container::small_vector<VkDynamicState, 4> m_dynStates;
 };
 
 class ComputePipelineCreateInfo {

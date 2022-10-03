@@ -2,8 +2,8 @@
 #define VKRENDERER_FENCE_HPP
 
 #include "Common.hpp"
+#include <boost/container/small_vector.hpp>
 #include <concepts>
-#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -41,7 +41,7 @@ public:
 
   template <FenceIterator Iter>
   static bool wait_any(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
-    std::vector<VkFence> fences{};
+    boost::container::small_vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
       fences.push_back((*it).m_fence);
     }
@@ -51,7 +51,7 @@ public:
 
   template <FenceIterator Iter>
   static bool wait_all(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
-    std::vector<VkFence> fences{};
+    boost::container::small_vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
       fences.push_back((*it).m_fence);
     }

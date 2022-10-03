@@ -49,7 +49,7 @@ void DescriptorSetLayout::m_init(VkDescriptorSetLayoutCreateFlags flags) {
     }
   }
 
-  std::vector<VkDescriptorSetLayoutBinding> m_rawBindings;
+  boost::container::small_vector<VkDescriptorSetLayoutBinding, 5> m_rawBindings;
   std::transform(m_bindings.begin(), m_bindings.end(),
                  std::back_inserter(m_rawBindings),
                  [](DescriptorSetLayoutBinding const &entry) { return entry; });

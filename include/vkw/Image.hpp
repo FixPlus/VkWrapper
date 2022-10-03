@@ -4,7 +4,6 @@
 #include "Allocation.hpp"
 #include "Common.hpp"
 #include <memory>
-#include <vector>
 
 namespace vkw {
 

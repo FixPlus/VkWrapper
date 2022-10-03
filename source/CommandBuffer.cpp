@@ -50,16 +50,16 @@ void CommandBuffer::end() {
   m_executable = true;
 }
 
-void CommandBuffer::copyBufferToBuffer(
-    const BufferBase &src, const BufferBase &dst,
-    const std::vector<VkBufferCopy> &regions) {
+void CommandBuffer::copyBufferToBuffer(const BufferBase &src,
+                                       const BufferBase &dst,
+                                       std::span<const VkBufferCopy> regions) {
   m_device.get().core<1, 0>().vkCmdCopyBuffer(m_commandBuffer, src, dst,
                                               regions.size(), regions.data());
 }
 
 void CommandBuffer::copyBufferToImage(
     const BufferBase &src, const AllocatedImage &dst, VkImageLayout layout,
-    const std::vector<VkBufferImageCopy> &regions) {
+    std::span<const VkBufferImageCopy> regions) {
   m_device.get().core<1, 0>().vkCmdCopyBufferToImage(
       m_commandBuffer, src, dst, layout, regions.size(), regions.data());
 }
@@ -68,7 +68,7 @@ void CommandBuffer::copyImageToImage(AllocatedImage const &src,
                                      VkImageLayout srcLayout,
                                      AllocatedImage const &dst,
                                      VkImageLayout dstLayout,
-                                     std::vector<VkImageCopy> const &regions) {
+                                     std::span<const VkImageCopy> regions) {
   m_device.get().core<1, 0>().vkCmdCopyImage(m_commandBuffer, src, srcLayout,
                                              dst, dstLayout, regions.size(),
                                              regions.data());
@@ -76,9 +76,9 @@ void CommandBuffer::copyImageToImage(AllocatedImage const &src,
 
 void CommandBuffer::pipelineBarrier(
     VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-    const std::vector<VkMemoryBarrier> &memBarriers,
-    const std::vector<VkImageMemoryBarrier> &imageMemoryBarrier,
-    const std::vector<VkBufferMemoryBarrier> &bufferMemoryBarrier,
+    std::span<const VkMemoryBarrier> memBarriers,
+    std::span<const VkImageMemoryBarrier> imageMemoryBarrier,
+    std::span<const VkBufferMemoryBarrier> bufferMemoryBarrier,
     VkDependencyFlags flags) {
   m_device.get().core<1, 0>().vkCmdPipelineBarrier(
       m_commandBuffer, srcStage, dstStage, flags, memBarriers.size(),
@@ -128,18 +128,19 @@ void CommandBuffer::bindComputePipeline(ComputePipeline const &pipeline) {
   m_device.get().core<1, 0>().vkCmdBindPipeline(
       m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
-void CommandBuffer::copyImageToBuffer(
-    AllocatedImage const &src, VkImageLayout layout, BufferBase const &dst,
-    std::vector<VkBufferImageCopy> const &regions) {
+void CommandBuffer::copyImageToBuffer(AllocatedImage const &src,
+                                      VkImageLayout layout,
+                                      BufferBase const &dst,
+                                      std::span<VkBufferImageCopy> regions) {
   m_device.get().core<1, 0>().vkCmdCopyImageToBuffer(
       m_commandBuffer, src, layout, dst, regions.size(), regions.data());
 }
-void CommandBuffer::setScissors(std::vector<VkRect2D> const &scissors,
+void CommandBuffer::setScissors(std::span<const VkRect2D> scissors,
                                 uint32_t firstScissor) {
   m_device.get().core<1, 0>().vkCmdSetScissor(m_commandBuffer, firstScissor,
                                               scissors.size(), scissors.data());
 }
-void CommandBuffer::setViewports(std::vector<VkViewport> const &viewports,
+void CommandBuffer::setViewports(std::span<const VkViewport> viewports,
                                  uint32_t firstViewport) {
   m_device.get().core<1, 0>().vkCmdSetViewport(
       m_commandBuffer, firstViewport, viewports.size(), viewports.data());

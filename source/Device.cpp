@@ -6,7 +6,6 @@
 #include "vkw/SymbolTable.hpp"
 #include <cassert>
 #include <iostream>
-#include <vector>
 
 namespace vkw {
 
@@ -19,57 +18,10 @@ Device::Device(Device &&another)
   std::swap(m_device, another.m_device);
 }
 
-uint32_t getQueueFamilyIndex(
-    std::vector<VkQueueFamilyProperties> const &queueFamilyProperties,
-    VkQueueFlagBits queueFlags) {
-  // Dedicated queue for compute
-  // Try to find a queue family index that supports compute but not graphics
-  if (queueFlags & VK_QUEUE_COMPUTE_BIT) {
-    for (uint32_t i = 0;
-         i < static_cast<uint32_t>(queueFamilyProperties.size()); i++) {
-      if ((queueFamilyProperties[i].queueFlags & queueFlags) &&
-          ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) ==
-           0)) {
-        return i;
-      }
-    }
-  }
-
-  // Dedicated queue for transfer
-  // Try to find a queue family index that supports transfer but not graphics
-  // and compute
-  if (queueFlags & VK_QUEUE_TRANSFER_BIT) {
-    for (uint32_t i = 0;
-         i < static_cast<uint32_t>(queueFamilyProperties.size()); i++) {
-      if ((queueFamilyProperties[i].queueFlags & queueFlags) &&
-          ((queueFamilyProperties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) ==
-           0) &&
-          ((queueFamilyProperties[i].queueFlags & VK_QUEUE_COMPUTE_BIT) == 0)) {
-        return i;
-      }
-    }
-  }
-
-  // For other queue types or if no separate compute queue is present, return
-  // the first one to support the requested flags
-  for (uint32_t i = 0; i < static_cast<uint32_t>(queueFamilyProperties.size());
-       i++) {
-    if (queueFamilyProperties[i].queueFlags & queueFlags) {
-      return i;
-    }
-  }
-
-  throw Error("Could not find a matching queue family index");
-}
-
 Device::Device(Instance &parent, PhysicalDevice phDevice)
     : m_parent(parent), m_ph_device(std::move(phDevice)) {
 
-  // TODO: move this logic to DeviceCreateInfo level
-
-  auto requestedQueueTypes = VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT;
-
-  std::vector<VkDeviceQueueCreateInfo> queueCreateInfos{};
+  boost::container::small_vector<VkDeviceQueueCreateInfo, 3> queueCreateInfos{};
 
   auto const &queueFamilies = m_ph_device.queueFamilies();
   queueCreateInfos.reserve(queueFamilies.size());
@@ -94,7 +46,7 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   deviceCreateInfo.pQueueCreateInfos = queueCreateInfos.data();
   deviceCreateInfo.pEnabledFeatures = &m_ph_device.enabledFeatures();
 
-  std::vector<const char *> extensionsRaw{};
+  boost::container::small_vector<const char *, 8> extensionsRaw{};
   extensionsRaw.reserve(m_ph_device.enabledExtensions().size());
   auto &libRef = parent.parent();
   std::transform(
@@ -156,7 +108,7 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   std::transform(queueFamilies.begin(), queueFamilies.end(),
                  std::back_inserter(m_queues),
                  [this](QueueFamily const &family) {
-                   std::vector<std::unique_ptr<Queue>> queues;
+                   InFamilyQueueContainerT queues;
                    auto familyIndex = family.index();
                    auto queueCount = family.queueRequestedCount();
 

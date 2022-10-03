@@ -84,7 +84,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   }
 
   m_createInfo.attachmentCount = views.size();
-  std::vector<VkImageView> rawViews;
+  boost::container::small_vector<VkImageView, 4> rawViews;
   std::transform(
       views.begin(), views.end(), std::back_inserter(rawViews),
       [](ImageViewVT<V2DA> const *view) -> VkImageView { return *view; });
@@ -160,7 +160,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   counter = 0;
 
   m_createInfo.attachmentCount = views.size();
-  std::vector<VkImageView> rawViews;
+  boost::container::small_vector<VkImageView, 4> rawViews;
   std::transform(
       views.begin(), views.end(), std::back_inserter(rawViews),
       [](ImageViewVT<V2D> const *view) -> VkImageView { return *view; });

@@ -41,7 +41,7 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
 }
 void PipelineLayout::m_init(VkPipelineLayoutCreateFlags flags) {
 
-  std::vector<VkDescriptorSetLayout> layouts;
+  boost::container::small_vector<VkDescriptorSetLayout, 4> layouts;
   std::transform(
       m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
       std::back_inserter(layouts),
@@ -263,10 +263,13 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addFragmentShader(
     const FragmentShader &shader, SpecializationConstants const &constants) {
   if (m_fragmentShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
-    std::erase_if(m_shaderStages,
-                  [module](VkPipelineShaderStageCreateInfo info) {
-                    return info.module == module;
-                  });
+    auto newEnd =
+        std::remove_if(m_shaderStages.begin(), m_shaderStages.end(),
+                       [module](VkPipelineShaderStageCreateInfo info) {
+                         return info.module == module;
+                       });
+
+    m_shaderStages.erase(newEnd);
   }
   VkPipelineShaderStageCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -289,10 +292,13 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addVertexShader(
     const VertexShader &shader, SpecializationConstants const &constants) {
   if (m_vertexShader.has_value()) {
     auto module = m_fragmentShader.value().get().operator VkShaderModule_T *();
-    std::erase_if(m_shaderStages,
-                  [module](VkPipelineShaderStageCreateInfo info) {
-                    return info.module == module;
-                  });
+    auto newEnd =
+        std::remove_if(m_shaderStages.begin(), m_shaderStages.end(),
+                       [module](VkPipelineShaderStageCreateInfo info) {
+                         return info.module == module;
+                       });
+
+    m_shaderStages.erase(newEnd);
   }
   VkPipelineShaderStageCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;

@@ -3,13 +3,15 @@
 
 #include "Common.hpp"
 #include "DescriptorSet.hpp"
+#include <boost/container/small_vector.hpp>
+#include <span>
 
 namespace vkw {
 
 class DescriptorPool {
 public:
   DescriptorPool(Device const &device, uint32_t maxSets,
-                 std::vector<VkDescriptorPoolSize> poolSizes,
+                 std::span<const VkDescriptorPoolSize> poolSizes,
                  VkDescriptorPoolCreateFlags flags = 0);
   DescriptorPool(DescriptorPool const &another) = delete;
   DescriptorPool(DescriptorPool &&another) noexcept
@@ -50,7 +52,7 @@ private:
 
   friend class DescriptorSet;
   DeviceCRef m_device;
-  std::vector<VkDescriptorPoolSize> m_poolSizes;
+  boost::container::small_vector<VkDescriptorPoolSize, 3> m_poolSizes;
   VkDescriptorPoolCreateInfo m_createInfo{};
   VkDescriptorPool m_descriptorPool{};
 };

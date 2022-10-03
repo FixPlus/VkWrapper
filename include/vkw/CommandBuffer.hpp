@@ -6,7 +6,7 @@
 #include "VertexBuffer.hpp"
 #include <boost/container/small_vector.hpp>
 #include <optional>
-#include <vector>
+#include <span>
 
 namespace vkw {
 
@@ -40,17 +40,17 @@ public:
   /** Transfer */
 
   void copyBufferToBuffer(BufferBase const &src, BufferBase const &dst,
-                          std::vector<VkBufferCopy> const &regions);
+                          std::span<const VkBufferCopy> regions);
   void copyBufferToImage(BufferBase const &src, AllocatedImage const &dst,
                          VkImageLayout layout,
-                         std::vector<VkBufferImageCopy> const &regions);
+                         std::span<const VkBufferImageCopy> regions);
   void copyImageToBuffer(AllocatedImage const &src, VkImageLayout layout,
                          BufferBase const &dst,
-                         std::vector<VkBufferImageCopy> const &regions);
+                         std::span<VkBufferImageCopy> regions);
 
   void copyImageToImage(AllocatedImage const &src, VkImageLayout srcLayout,
                         AllocatedImage const &dst, VkImageLayout dstLayout,
-                        std::vector<VkImageCopy> const &regions);
+                        std::span<const VkImageCopy> regions);
 
   void blitImage(AllocatedImage const &targetImage, VkImageBlit blit,
                  bool usingGeneralLayout = false,
@@ -59,26 +59,27 @@ public:
   /** Synchronization */
   void
   pipelineBarrier(VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-                  std::vector<VkMemoryBarrier> const &memBarriers,
-                  std::vector<VkImageMemoryBarrier> const &imageMemoryBarrier,
-                  std::vector<VkBufferMemoryBarrier> const &bufferMemoryBarrier,
+                  std::span<const VkMemoryBarrier> memBarriers,
+                  std::span<const VkImageMemoryBarrier> imageMemoryBarrier,
+                  std::span<const VkBufferMemoryBarrier> bufferMemoryBarrier,
                   VkDependencyFlags flags = 0);
 
-  void imageMemoryBarrier(
-      VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-      std::vector<VkImageMemoryBarrier> const &imageMemoryBarrier,
-      VkDependencyFlags flags = 0) {
+  void
+  imageMemoryBarrier(VkPipelineStageFlags srcStage,
+                     VkPipelineStageFlags dstStage,
+                     std::span<const VkImageMemoryBarrier> imageMemoryBarrier,
+                     VkDependencyFlags flags = 0) {
     pipelineBarrier(srcStage, dstStage, {}, imageMemoryBarrier, {}, flags);
   }
   void bufferMemoryBarrier(
       VkPipelineStageFlags srcStage, VkPipelineStageFlags dstStage,
-      std::vector<VkBufferMemoryBarrier> const &bufferMemoryBarrier,
+      std::span<const VkBufferMemoryBarrier> bufferMemoryBarrier,
       VkDependencyFlags flags = 0) {
     pipelineBarrier(srcStage, dstStage, {}, {}, bufferMemoryBarrier, flags);
   }
   void memoryBarrier(VkPipelineStageFlags srcStage,
                      VkPipelineStageFlags dstStage,
-                     std::vector<VkMemoryBarrier> const &memBarriers,
+                     std::span<const VkMemoryBarrier> memBarriers,
                      VkDependencyFlags flags = 0) {
     pipelineBarrier(srcStage, dstStage, memBarriers, {}, {}, flags);
   }
@@ -166,9 +167,9 @@ public:
 
   /** Pipeline dynamic state sets */
 
-  void setScissors(std::vector<VkRect2D> const &scissors,
+  void setScissors(std::span<const VkRect2D> scissors,
                    uint32_t firstScissor = 0);
-  void setViewports(std::vector<VkViewport> const &viewports,
+  void setViewports(std::span<const VkViewport> viewports,
                     uint32_t firstViewport = 0);
 
   /** Finishing */

@@ -6,13 +6,13 @@
 #include "PhysicalDevice.hpp"
 #include "SymbolTable.hpp"
 #include "vma/vk_mem_alloc.h"
+#include <boost/container/small_vector.hpp>
 #include <cstdint>
 #include <map>
 #include <memory>
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -77,7 +77,12 @@ private:
 
   PhysicalDevice m_ph_device;
 
-  std::vector<std::vector<std::unique_ptr<Queue>>> m_queues;
+  using InFamilyQueueContainerT =
+      boost::container::small_vector<std::unique_ptr<Queue>, 3>;
+  using FamilyContainerT =
+      boost::container::small_vector<InFamilyQueueContainerT, 3>;
+
+  FamilyContainerT m_queues;
 
   std::unique_ptr<DeviceCore<1, 0>> m_coreDeviceSymbols;
   std::set<ext> m_enabledExtensions;

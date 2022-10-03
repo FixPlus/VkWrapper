@@ -9,7 +9,6 @@
 #include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <utility>
-#include <vector>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -44,7 +43,8 @@ public:
     m_fill_info();
   }
 
-  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>>
+  template <forward_range_of<Semaphore> SMA =
+                boost::container::small_vector<Semaphore, 2>>
   PresentInfo(SwapChain const &swapChain, SMA const &waitFor = {})
       : m_swp_ext(swapChain.extension()) {
 
@@ -131,7 +131,7 @@ public:
   template <forward_range_of<PrimaryCommandBuffer> PCMDA,
             forward_range_of<Semaphore> SMA,
             forward_range_of<VkPipelineStageFlags> PSFA =
-                std::vector<VkPipelineStageFlags>>
+                boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(PCMDA const &commandBuffer, SMA const &waitFor = {},
              PSFA const &waitTill = {}, SMA const &signalTo = {}) {
     auto commandBufferSub =
@@ -178,9 +178,10 @@ public:
     m_fill_info();
   }
 
-  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>,
+  template <forward_range_of<Semaphore> SMA =
+                boost::container::small_vector<Semaphore, 2>,
             forward_range_of<VkPipelineStageFlags> PSFA =
-                std::vector<VkPipelineStageFlags>>
+                boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(SMA const &waitFor = {}, PSFA const &waitTill = {},
              SMA const &signalTo = {}) {
     auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
@@ -207,9 +208,10 @@ public:
     m_fill_info();
   }
 
-  template <forward_range_of<Semaphore> SMA = std::vector<Semaphore>,
+  template <forward_range_of<Semaphore> SMA =
+                boost::container::small_vector<Semaphore, 2>,
             forward_range_of<VkPipelineStageFlags> PSFA =
-                std::vector<VkPipelineStageFlags>>
+                boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(const PrimaryCommandBuffer &commandBuffer, SMA const &waitFor = {},
              PSFA const &waitTill = {}, SMA const &signalTo = {})
       : SubmitInfo(waitFor, waitTill, signalTo) {
