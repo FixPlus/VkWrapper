@@ -19,10 +19,10 @@ class Instance;
 
 class Surface {
 public:
-  Surface(Instance &parent, VkSurfaceKHR surface)
+  Surface(Instance const &parent, VkSurfaceKHR surface)
       : m_parent(parent), m_surface_ext(parent), m_surface(surface) {}
 #ifdef _WIN32
-  Surface(Instance &parent, HINSTANCE hinstance, HWND hwnd)
+  Surface(Instance const &parent, HINSTANCE hinstance, HWND hwnd)
       : m_parent(parent), m_surface_ext(parent) {
     Extension<ext::KHR_win32_surface> win32SurfaceExt{parent};
 
@@ -39,7 +39,7 @@ public:
   }
 #elif defined __linux__
 #ifdef VK_USE_PLATFORM_XLIB_KHR
-  Surface(Instance &parent, Display *display, Window window)
+  Surface(Instance const &parent, Display *display, Window window)
       : m_parent(parent), m_surface_ext(parent) {
     Extension<ext::KHR_xlib_surface> xlibSurfaceExt{parent};
 
@@ -53,7 +53,8 @@ public:
         m_parent.get(), &createInfo, nullptr, &m_surface))
   };
 #elif defined VK_USE_PLATFORM_XCB_KHR
-  Surface(Instance &parent, xcb_connection_t *connection, xcb_window_t window)
+  Surface(Instance const &parent, xcb_connection_t *connection,
+          xcb_window_t window)
       : m_parent(parent), m_surface_ext(parent) {
     Extension<ext::KHR_xcb_surface> xcbSurfaceExt{parent};
 
@@ -67,7 +68,7 @@ public:
                                                          nullptr, &m_surface))
   };
 #elif defined VK_USE_PLATFORM_WAYLAND_KHR
-  Surface(Instance &parent, wl_display *display, wl_surface *surface)
+  Surface(Instance const &parent, wl_display *display, wl_surface *surface)
       : m_parent(parent), m_surface_ext(parent) {
     Extension<ext::KHR_wayland_surface> waylandSurfaceExt{parent};
 
@@ -97,7 +98,7 @@ public:
     return *this;
   };
 
-  Instance &getParent() const { return m_parent; };
+  Instance const &getParent() const { return m_parent; };
 
   auto const &ext() const { return m_surface_ext; }
 
@@ -117,7 +118,7 @@ public:
 private:
   VkSurfaceKHR m_surface;
   Extension<ext::KHR_surface> m_surface_ext;
-  InstanceRef m_parent;
+  InstanceCRef m_parent;
 };
 } // namespace vkw
 
