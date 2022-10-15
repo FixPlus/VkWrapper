@@ -1,6 +1,7 @@
 #ifndef VKRENDERER_SHADER_HPP
 #define VKRENDERER_SHADER_HPP
 
+#include "vkw/SPIRVModule.hpp"
 #include <functional>
 #include <vulkan/vulkan.h>
 
@@ -10,7 +11,7 @@ class Device;
 
 class ShaderBase {
 public:
-  ShaderBase(Device &device, size_t codeSize, uint32_t *pCode,
+  ShaderBase(Device &device, SPIRVModule const &module,
              VkShaderStageFlagBits stage, VkShaderModuleCreateFlags flags = 0);
   ShaderBase(ShaderBase &&another)
       : m_device(another.m_device), m_shader(another.m_shader),
@@ -40,26 +41,23 @@ private:
 
 class FragmentShader : public ShaderBase {
 public:
-  FragmentShader(Device &device, size_t codeSize, uint32_t *pCode,
+  FragmentShader(Device &device, SPIRVModule const &module,
                  VkShaderModuleCreateFlags flags = 0)
-      : ShaderBase(device, codeSize, pCode, VK_SHADER_STAGE_FRAGMENT_BIT,
-                   flags) {}
+      : ShaderBase(device, module, VK_SHADER_STAGE_FRAGMENT_BIT, flags) {}
 };
 
 class VertexShader : public ShaderBase {
 public:
-  VertexShader(Device &device, size_t codeSize, uint32_t *pCode,
+  VertexShader(Device &device, SPIRVModule const &module,
                VkShaderModuleCreateFlags flags = 0)
-      : ShaderBase(device, codeSize, pCode, VK_SHADER_STAGE_VERTEX_BIT, flags) {
-  }
+      : ShaderBase(device, module, VK_SHADER_STAGE_VERTEX_BIT, flags) {}
 };
 
 class ComputeShader : public ShaderBase {
 public:
-  ComputeShader(Device &device, size_t codeSize, uint32_t *pCode,
+  ComputeShader(Device &device, SPIRVModule const &module,
                 VkShaderModuleCreateFlags flags = 0)
-      : ShaderBase(device, codeSize, pCode, VK_SHADER_STAGE_COMPUTE_BIT,
-                   flags) {}
+      : ShaderBase(device, module, VK_SHADER_STAGE_COMPUTE_BIT, flags) {}
 };
 
 } // namespace vkw

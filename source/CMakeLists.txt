@@ -21,10 +21,17 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SymbolTable.inc ${CMAKE_CURRENT_BINARY
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
+find_library(SPIRV_TOOLS NAMES SPIRV-Tools PATHS ${VULKAN_SDK_PATH}/Lib REQUIRED)
+find_library(SPIRV_LINK NAMES SPIRV-Tools-link PATHS ${VULKAN_SDK_PATH}/Lib REQUIRED)
+find_library(SPIRV_OPT NAMES SPIRV-Tools-opt PATHS ${VULKAN_SDK_PATH}/Lib REQUIRED)
+message(STATUS "Found SPIRV-Tools: " ${SPIRV_TOOLS})
+message(STATUS "Found SPIRV-Link: " ${SPIRV_LINK})
+message(STATUS "Found SPIRV-Opt: " ${SPIRV_OPT})
+
 file(GLOB ${PROJECT_NAME}_SOURCE *.cpp *.h *.hpp ../include/vkw/*.h ../include/vkw/*.hpp)
 
 add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCE} SymbolTable.inc DeviceFeatures.inc LayerMap.inc)
 
 add_subdirectory(loader)
 
-target_link_libraries(${PROJECT_NAME} LOADER_LIB)
+target_link_libraries(${PROJECT_NAME} LOADER_LIB ${SPIRV_TOOLS} ${SPIRV_LINK} ${SPIRV_OPT})
