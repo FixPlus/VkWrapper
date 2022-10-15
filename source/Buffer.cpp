@@ -4,10 +4,10 @@
 
 namespace vkw {
 
-void *Allocation::map() {
-  void *ret;
-  VK_CHECK_RESULT(vmaMapMemory(m_allocator, m_allocation, &ret))
-  return ret;
+void Allocation::map() {
+  if (!m_allocInfo.pMappedData)
+    VK_CHECK_RESULT(
+        vmaMapMemory(m_allocator, m_allocation, &m_allocInfo.pMappedData));
 }
 
 BufferBase::BufferBase(VmaAllocator allocator,

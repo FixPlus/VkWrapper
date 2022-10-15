@@ -494,15 +494,14 @@ public:
                            0, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_LINEAR,
                            VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
         AllocatedImage(allocator,
-                       {.usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
+                       {.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
+                        .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
                         .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}) {
   }
 
-  unsigned char *map() {
-    return static_cast<unsigned char *>(AllocatedImage::map());
+  unsigned char *mapped() {
+    return static_cast<unsigned char *>(AllocatedImage::mapped());
   }
-
-  void unmap() { AllocatedImage::unmap(); }
 
   void flush() { AllocatedImage::flush(0, VK_WHOLE_SIZE); }
 

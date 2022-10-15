@@ -20,4 +20,3 @@ add_subdirectory(source)
 
 install(TARGETS ${PROJECT_NAME})
 install(DIRECTORY include DESTINATION .)
-install(DIRECTORY external/vma DESTINATION ./include)

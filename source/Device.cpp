@@ -76,7 +76,12 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
   allocatorInfo.device = m_device;
   allocatorInfo.instance = parent;
 
-  VmaVulkanFunctions vmaVulkanFunctions;
+  VmaVulkanFunctions vmaVulkanFunctions{};
+  vmaVulkanFunctions.vkGetInstanceProcAddr =
+      getParent().parent().vkGetInstanceProcAddr;
+  vmaVulkanFunctions.vkGetDeviceProcAddr =
+      getParent().core<1, 0>().vkGetDeviceProcAddr;
+#if 0
   vmaVulkanFunctions.vkCmdCopyBuffer = core<1, 0>().vkCmdCopyBuffer;
   vmaVulkanFunctions.vkAllocateMemory = core<1, 0>().vkAllocateMemory;
   vmaVulkanFunctions.vkBindBufferMemory = core<1, 0>().vkBindBufferMemory;
@@ -100,6 +105,7 @@ Device::Device(Instance &parent, PhysicalDevice phDevice)
       core<1, 0>().vkInvalidateMappedMemoryRanges;
   vmaVulkanFunctions.vkMapMemory = core<1, 0>().vkMapMemory;
   vmaVulkanFunctions.vkUnmapMemory = core<1, 0>().vkUnmapMemory;
+#endif
 
   allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
 

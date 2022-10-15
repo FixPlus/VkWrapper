@@ -2,6 +2,7 @@
 #define VKRENDERER_BUFFER_HPP
 #include "Allocation.hpp"
 #include <memory>
+#include <span>
 
 namespace vkw {
 
@@ -84,7 +85,11 @@ public:
 
   bool coherent() const { return m_buffer->coherent(); }
 
-  T *map() { return reinterpret_cast<T *>(m_buffer->map()); }
+  void map() { m_buffer->map(); }
+
+  std::span<T> mapped() const {
+    return {reinterpret_cast<T *>(m_buffer->mapped()), size()};
+  }
 
   void unmap() { m_buffer->unmap(); }
 

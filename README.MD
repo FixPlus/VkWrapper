@@ -6,7 +6,7 @@ Lightweight C++ wrapper over Vulkan library. This is WIP.
 * CMake: 3.10+
 * Boost: 1.62+
 * Python 3+
-* Vulkan SDK: https://vulkan.lunarg.com/
+* Vulkan SDK 1.3.224.1+: https://vulkan.lunarg.com/
 ## Download & Build
 * Linux-like environments:
 ```

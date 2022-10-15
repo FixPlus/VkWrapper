@@ -28,9 +28,14 @@ public:
     return bits & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
   }
 
-  void *map();
+  void *mapped() const { return m_allocInfo.pMappedData; }
 
-  void unmap() { vmaUnmapMemory(m_allocator, m_allocation); }
+  void map();
+
+  void unmap() {
+    vmaUnmapMemory(m_allocator, m_allocation);
+    m_allocInfo.pMappedData = nullptr;
+  }
   void flush(VkDeviceSize offset, VkDeviceSize size) {
     vmaFlushAllocation(m_allocator, m_allocation, offset, size);
   }
