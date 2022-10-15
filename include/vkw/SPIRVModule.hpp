@@ -17,10 +17,14 @@ public:
       typename std::remove_cv<std::ranges::range_value_t<Modules>>::type,
       SPIRVModule>
   explicit SPIRVModule(Modules const &modules, bool linkLibrary = false) {
+#ifndef __linux__
     boost::container::small_vector<std::span<const unsigned>, 3> input;
+#else
+    std::vector<std::span<const unsigned>> input;
+#endif
     std::transform(modules.begin(), modules.end(), std::back_inserter(input),
                    [](SPIRVModule const &module) { return module.code(); });
-    m_link(m_code, input, linkLibrary);
+    m_link(m_code, std::span<const std::span<const unsigned>>{input}, linkLibrary);
   }
 
   std::span<const unsigned> code() const { return m_code; }

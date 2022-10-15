@@ -67,8 +67,7 @@ void SPIRVModule::m_link(std::vector<unsigned int> &output,
   spvtools::LinkerOptions options;
 
   if (linkLibrary) {
-    options.SetCreateLibrary(
-        spvOperandIsConcrete(SPV_OPERAND_TYPE_PACKED_VECTOR_FORMAT));
+    options.SetCreateLibrary(true);
     options.SetAllowPartialLinkage(true);
   }
 
