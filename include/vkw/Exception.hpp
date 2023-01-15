@@ -21,6 +21,7 @@ enum class ErrorCode {
   DYNAMIC_LIBRARY_SYMBOL_MISSING,
 
   VULKAN_ERROR,
+  VALIDATION_ERROR,
   EXTENSION_MISSING,
   EXTENSION_UNSUPPORTED,
   LAYER_MISSING,
@@ -179,6 +180,12 @@ public:
 
 private:
   VkResult m_result;
+};
+
+class ValidationError : public Error {
+public:
+  explicit ValidationError(std::string_view what)
+      : Error(what, ErrorCode::VALIDATION_ERROR){};
 };
 
 } // namespace vkw

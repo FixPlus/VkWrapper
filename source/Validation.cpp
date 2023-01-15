@@ -19,7 +19,7 @@ class ValidationImpl final : private Layer<layer::KHRONOS_validation>,
 public:
   ValidationImpl(Instance const &instance);
 
-  void register_validation(Validation const &validation) {
+  void register_validation(Validation &validation) {
     auto register_guard = std::lock_guard{m_mutex};
     assert(!m_validations.contains(&validation) && "Double registration");
 
@@ -29,7 +29,7 @@ public:
     m_validations.emplace(&validation);
   }
 
-  void unregister_validation(Validation const &validation) {
+  void unregister_validation(Validation &validation) {
     auto register_guard = std::lock_guard{m_mutex};
     assert(m_validations.contains(&validation) && "Unknown validation");
 
@@ -43,7 +43,7 @@ public:
 
 private:
   std::mutex m_mutex;
-  std::set<Validation const *> m_validations;
+  std::set<Validation *> m_validations;
 
   static VKAPI_ATTR VkBool32 VKAPI_CALL
   m_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
@@ -62,7 +62,7 @@ private:
     auto callbackGuard = std::lock_guard{m_mutex};
     VkBool32 acc = false;
     acc = std::accumulate(m_validations.begin(), m_validations.end(), acc,
-                          [&](VkBool32 a, Validation const *val) {
+                          [&](VkBool32 a, Validation *val) {
                             auto result = val->messageCallback(
                                 messageSeverity, messageType, pCallbackData,
                                 pUserData);
@@ -106,17 +106,17 @@ ValidationImpl::ValidationImpl(const Instance &instance)
   handle = this;
 }
 
-void register_callback(Validation const &validation, Instance const &instance) {
+void register_callback(Validation &validation, Instance const &instance) {
   static ValidationImpl impl{instance};
   impl.register_validation(validation);
 }
 
-void register_callback_secondary(Validation const &validation) {
+void register_callback_secondary(Validation &validation) {
   assert(ValidationImpl::handle && "handle must be valid here");
   ValidationImpl::handle->register_validation(validation);
 }
 
-void unregister_callback(Validation const &validation) {
+void unregister_callback(Validation &validation) {
   assert(ValidationImpl::handle && "handle must be valid here");
   ValidationImpl::handle->unregister_validation(validation);
 }
@@ -131,7 +131,7 @@ bool Validation::messageCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-    void *pUserData) const {
+    void *pUserData) {
   VkBool32 result = VK_FALSE;
   std::string prefix("");
 

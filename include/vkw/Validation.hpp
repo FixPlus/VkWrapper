@@ -19,7 +19,7 @@ public:
   messageCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                   VkDebugUtilsMessageTypeFlagsEXT messageType,
                   const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-                  void *pUserData) const;
+                  void *pUserData);
 
   virtual ~Validation();
 };
