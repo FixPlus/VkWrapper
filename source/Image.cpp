@@ -56,7 +56,7 @@ AllocatedImage::AllocatedImage(VmaAllocator allocator,
   vmaDestroyImage(m_allocator, m_image, m_allocation);
 }
 
-static bool isDepthFormat(VkFormat format) {
+bool ImageInterface::isDepthFormat(VkFormat format) {
   switch (format) {
   case VK_FORMAT_D16_UNORM:
   case VK_FORMAT_D16_UNORM_S8_UINT:
@@ -69,6 +69,10 @@ static bool isDepthFormat(VkFormat format) {
   default:
     return false;
   }
+}
+
+bool ImageInterface::isColorFormat(VkFormat format) {
+  return !isDepthFormat(format);
 }
 VkImageSubresourceRange ImageInterface::completeSubresourceRange() const {
   VkImageSubresourceRange ret{};

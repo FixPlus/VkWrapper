@@ -2,6 +2,7 @@
 #define VKRENDERER_ALLOCATION_HPP
 
 #include "vma/vk_mem_alloc.h"
+#include <span>
 
 namespace vkw {
 
@@ -28,7 +29,11 @@ public:
     return bits & VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
   }
 
-  void *mapped() const { return m_allocInfo.pMappedData; }
+  template <typename T> std::span<T> mapped() const {
+    auto *ptr = reinterpret_cast<T *>(m_allocInfo.pMappedData);
+    auto count = m_allocInfo.size / sizeof(T);
+    return {ptr, ptr + count};
+  }
 
   void map();
 

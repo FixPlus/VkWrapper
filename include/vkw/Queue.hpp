@@ -30,6 +30,12 @@ public:
                    [](auto const &swp) -> VkSwapchainKHR {
                      return swapChainsSubrangeT::get(swp);
                    });
+
+    std::transform(swapChainsSubrange.begin(), swapChainsSubrange.end(),
+                   std::back_inserter(m_pswapChains),
+                   [](auto const &swp) -> SwapChain const * {
+                     return &swapChainsSubrangeT::get(swp);
+                   });
     std::transform(
         waitForSub.begin(), waitForSub.end(),
         std::back_inserter(m_wait_semaphores),
@@ -52,6 +58,7 @@ public:
     using SMASubT = decltype(waitForSub);
 
     m_swapChains.emplace_back(swapChain);
+    m_pswapChains.emplace_back(&swapChain);
     m_images.emplace_back(swapChain.currentImage());
 
     std::transform(
@@ -66,6 +73,7 @@ public:
       : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
+    m_pswapChains.emplace_back(&swapChain);
     m_images.emplace_back(swapChain.currentImage());
     m_wait_semaphores.emplace_back(waitFor);
 
@@ -75,9 +83,18 @@ public:
   PresentInfo(SwapChain const &swapChain) : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
+    m_pswapChains.emplace_back(&swapChain);
     m_images.emplace_back(swapChain.currentImage());
 
     m_fill_info();
+  }
+
+  void updateImages() {
+    auto swpIt = m_pswapChains.begin();
+    auto swpIm = m_images.begin();
+    for (; swpIt != m_pswapChains.end(); ++swpIt, ++swpIm) {
+      *swpIm = (*swpIt)->currentImage();
+    }
   }
 
   operator VkPresentInfoKHR() const { return m_info; }
@@ -119,6 +136,7 @@ private:
     m_info.pResults = nullptr;
   }
   boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
+  boost::container::small_vector<SwapChain const *, 2> m_pswapChains;
   boost::container::small_vector<VkSwapchainKHR, 2> m_swapChains;
   boost::container::small_vector<uint32_t, 2> m_images;
 

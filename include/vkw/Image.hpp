@@ -88,6 +88,10 @@ public:
 
   virtual operator VkImage() const = 0;
 
+  static bool isDepthFormat(VkFormat format);
+
+  static bool isColorFormat(VkFormat format);
+
 protected:
   VkImageCreateInfo m_createInfo{};
 };
@@ -499,8 +503,8 @@ public:
                         .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}) {
   }
 
-  unsigned char *mapped() {
-    return static_cast<unsigned char *>(AllocatedImage::mapped());
+  std::span<unsigned char> mapped() {
+    return AllocatedImage::mapped<unsigned char>();
   }
 
   void flush() { AllocatedImage::flush(0, VK_WHOLE_SIZE); }

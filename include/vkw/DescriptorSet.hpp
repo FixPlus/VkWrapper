@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "Image.hpp"
+#include "Sampler.hpp"
 #include "UniformBuffer.hpp"
 #include <boost/container/small_vector.hpp>
 
@@ -130,27 +131,23 @@ public:
     return *this;
   };
 
+  void write(uint32_t binding, BufferBase const &buffer, VkDescriptorType type,
+             VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE);
+
   template <typename T>
   void write(uint32_t binding, UniformBuffer<T> const &uniformBuffer) {
-    VkDescriptorBufferInfo info{};
-    info.offset = 0;
-    info.range = sizeof(T);
-    info.buffer = uniformBuffer.operator const vkw::BufferBase &();
-    m_write_uniformBuffer(binding, info);
+    write(binding, uniformBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
+          sizeof(T));
   }
 
   template <typename T>
   void write(uint32_t binding, StorageBuffer<T> const &storageBuffer) {
-    VkDescriptorBufferInfo info{};
-    info.offset = 0;
-    info.range = sizeof(T);
-    info.buffer = storageBuffer.operator const vkw::BufferBase &();
-    m_write_storageBuffer(binding, info);
+    write(binding, storageBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0,
+          sizeof(T));
   }
 
-  template<ImagePixelType ptype, ImageViewType vtype>
-  void write(uint32_t binding, ImageView<ptype, vtype> const &image,
-             VkImageLayout layout, Sampler const &sampler){
+  void write(uint32_t binding, ImageViewBase const &image, VkImageLayout layout,
+             Sampler const &sampler) {
     m_write_combined_image_sampler(binding, {sampler, image, layout});
   }
 

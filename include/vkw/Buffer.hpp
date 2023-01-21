@@ -30,6 +30,8 @@ public:
     return *this;
   }
 
+  unsigned size() const { return m_createInfo.size; }
+
   ~BufferBase() override;
 
   operator VkBuffer() const { return m_buffer; }
@@ -87,9 +89,7 @@ public:
 
   void map() { m_buffer->map(); }
 
-  std::span<T> mapped() const {
-    return {reinterpret_cast<T *>(m_buffer->mapped()), size()};
-  }
+  std::span<T> mapped() const { return m_buffer->mapped<T>(); }
 
   void unmap() { m_buffer->unmap(); }
 

@@ -160,5 +160,23 @@ void DescriptorSet::m_write_storageBuffer(uint32_t binding,
   writeSet.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   m_write(1, &writeSet);
 }
+void DescriptorSet::write(uint32_t binding, BufferBase const &buffer,
+                          VkDescriptorType type, VkDeviceSize offset,
+                          VkDeviceSize range) {
+  VkWriteDescriptorSet writeSet{};
+  VkDescriptorBufferInfo bufferInfo;
+  bufferInfo.buffer = buffer;
+  bufferInfo.offset = offset;
+  bufferInfo.range = range;
+  writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeSet.pNext = nullptr;
+  writeSet.descriptorCount = 1;
+  writeSet.dstSet = m_set;
+  writeSet.dstArrayElement = 0;
+  writeSet.pBufferInfo = &bufferInfo;
+  writeSet.dstBinding = binding;
+  writeSet.descriptorType = type;
+  m_write(1, &writeSet);
+}
 
 } // namespace vkw
