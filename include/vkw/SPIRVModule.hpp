@@ -5,6 +5,7 @@
 #include <ranges>
 #include <span>
 #include <vector>
+#include <algorithm>
 
 namespace vkw {
 

@@ -5,6 +5,7 @@
 #include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>
+#include <algorithm>
 
 namespace vkw {
 

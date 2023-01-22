@@ -5,6 +5,8 @@
 #include <cassert>
 #include <cstring>
 #include <sstream>
+#include <algorithm>
+
 namespace vkw {
 
 class VulkanDefaultLoader : public VulkanLibraryLoader, private DynamicLoader {

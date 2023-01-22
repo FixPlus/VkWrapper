@@ -6,6 +6,7 @@
 #include "Sampler.hpp"
 #include "UniformBuffer.hpp"
 #include <boost/container/small_vector.hpp>
+#include <algorithm>
 
 namespace vkw {
 
