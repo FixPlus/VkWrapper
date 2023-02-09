@@ -234,7 +234,7 @@ public:
              PSFA const &waitTill = {}, SMA const &signalTo = {})
       : SubmitInfo(waitFor, waitTill, signalTo) {
 
-    m_cmd_buffers.template emplace_back(commandBuffer);
+    m_cmd_buffers.emplace_back(commandBuffer);
 
     m_info.commandBufferCount = m_cmd_buffers.size();
     m_info.pCommandBuffers = m_cmd_buffers.data();

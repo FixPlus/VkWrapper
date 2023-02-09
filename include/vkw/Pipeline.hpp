@@ -3,6 +3,7 @@
 
 #include "Common.hpp"
 #include "VertexBuffer.hpp"
+#include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <functional>
 #include <optional>

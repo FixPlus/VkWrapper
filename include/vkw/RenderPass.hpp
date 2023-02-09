@@ -2,6 +2,7 @@
 #define VKRENDERER_RENDERPASS_HPP
 
 #include "Common.hpp"
+#include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>

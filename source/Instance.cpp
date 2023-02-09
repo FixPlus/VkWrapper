@@ -5,6 +5,7 @@
 #include "vkw/Exception.hpp"
 #include "vkw/Extensions.hpp"
 #include "vkw/Validation.hpp"
+#include <algorithm>
 #include <cassert>
 #include <cstring>
 
@@ -64,11 +65,10 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
   m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
       m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
 
-  std::for_each(
-      CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
-      [this](auto ext) { m_enabledExtensions.template emplace(ext); });
+  std::for_each(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+                [this](auto ext) { m_enabledExtensions.emplace(ext); });
   std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
-                [this](auto ext) { m_enabledLayers.template emplace(ext); });
+                [this](auto ext) { m_enabledLayers.emplace(ext); });
 }
 
 boost::container::small_vector<PhysicalDevice, 3>

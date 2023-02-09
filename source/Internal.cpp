@@ -1,6 +1,7 @@
 
 #include "vkw/Device.hpp"
 #include "vkw/Instance.hpp"
+#include <algorithm>
 
 namespace vkw {
 

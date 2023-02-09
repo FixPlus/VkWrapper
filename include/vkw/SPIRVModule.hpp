@@ -1,6 +1,7 @@
 #ifndef VKWRAPPER_SPIRVMODULE_HPP
 #define VKWRAPPER_SPIRVMODULE_HPP
 
+#include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <ranges>
 #include <span>
@@ -25,7 +26,8 @@ public:
 #endif
     std::transform(modules.begin(), modules.end(), std::back_inserter(input),
                    [](SPIRVModule const &module) { return module.code(); });
-    m_link(m_code, std::span<const std::span<const unsigned>>{input}, linkLibrary);
+    m_link(m_code, std::span<const std::span<const unsigned>>{input},
+           linkLibrary);
   }
 
   std::span<const unsigned> code() const { return m_code; }

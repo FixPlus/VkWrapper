@@ -1,7 +1,9 @@
 #include "vkw/PhysicalDevice.hpp"
 #include "Utils.hpp"
 #include "vkw/Instance.hpp"
+#include <algorithm>
 #include <sstream>
+
 namespace vkw {
 
 namespace {

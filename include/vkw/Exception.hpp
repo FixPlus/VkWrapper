@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <stdexcept>
+#include <string>
 #include <vulkan/vulkan.h>
 
 namespace vkw {

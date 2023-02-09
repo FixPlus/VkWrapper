@@ -14,9 +14,14 @@ find_package(Boost 1.62 REQUIRED)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
+if (MSVC)
+    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
+endif ()
+
 include_directories(include)
 include_directories(external)
 add_subdirectory(source)
+
 
 install(TARGETS ${PROJECT_NAME})
 install(DIRECTORY include DESTINATION .)
