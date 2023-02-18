@@ -1,7 +1,7 @@
 #ifndef VKRENDERER_SURFACE_HPP
 #define VKRENDERER_SURFACE_HPP
 
-#include "Extensions.hpp"
+#include "vkw/Extensions.hpp"
 #include "vkw/Instance.hpp"
 #include <vector>
 #include <vulkan/vulkan.h>

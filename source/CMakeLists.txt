@@ -1,11 +1,11 @@
 find_program(PYTHON_EXE NAMES python python3 py REQUIRED)
 
 
-set(VULKAN_REGISTRY_LOCATION ${VULKAN_SDK_PATH}/share/vulkan/registry)
+set(VULKAN_REGISTRY_LOCATION $ENV{VULKAN_SDK}/share/vulkan/registry)
 if(WIN32)
-    set(VULKAN_LAYER_DESC_LOCATION ${VULKAN_SDK_PATH}/Bin)
+    set(VULKAN_LAYER_DESC_LOCATION $ENV{VULKAN_SDK}/Bin)
 elseif(UNIX)
-    set(VULKAN_LAYER_DESC_LOCATION ${VULKAN_SDK_PATH}/etc/vulkan/explicit_layer.d)
+    set(VULKAN_LAYER_DESC_LOCATION $ENV{VULKAN_SDK}/etc/vulkan/explicit_layer.d)
 endif()
 add_custom_command(OUTPUT SymbolTable.inc
         COMMAND ${PYTHON_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_headers.py -path=${VULKAN_REGISTRY_LOCATION} >${CMAKE_CURRENT_BINARY_DIR}/SymbolTable.inc)
@@ -22,7 +22,7 @@ install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SymbolTable.inc ${CMAKE_CURRENT_BINARY
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
 if(WIN32)
-    set(VULKAN_SDK_LIB_DIR ${VULKAN_SDK_PATH}/Lib)
+    set(VULKAN_SDK_LIB_DIR $ENV{VULKAN_SDK}/Lib)
 elseif(UNIX)
     set(VULKAN_SDK_LIB_DIR $ENV{VULKAN_SDK}/lib)
 endif()
@@ -39,4 +39,4 @@ add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCE} SymbolTable.inc Dev
 
 add_subdirectory(loader)
 
-target_link_libraries(${PROJECT_NAME} LOADER_LIB  ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK} ${SPIRV_OPT})
+target_link_libraries(${PROJECT_NAME} PRIVATE LOADER_LIB ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK} ${SPIRV_OPT})
