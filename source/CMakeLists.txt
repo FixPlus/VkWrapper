@@ -17,7 +17,7 @@ add_custom_command(OUTPUT LayerMap.inc
         COMMAND ${PYTHON_EXE} ${CMAKE_CURRENT_SOURCE_DIR}/../scripts/generate_layer_map.py -path=${VULKAN_LAYER_DESC_LOCATION} >${CMAKE_CURRENT_BINARY_DIR}/LayerMap.inc)
 
 
-install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SymbolTable.inc ${CMAKE_CURRENT_BINARY_DIR}/DeviceFeatures.inc ${CMAKE_CURRENT_BINARY_DIR}/LayerMap.inc DESTINATION ./include/vkw)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/SymbolTable.inc ${CMAKE_CURRENT_BINARY_DIR}/DeviceFeatures.inc ${CMAKE_CURRENT_BINARY_DIR}/LayerMap.inc DESTINATION include/vkw)
 
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
 
