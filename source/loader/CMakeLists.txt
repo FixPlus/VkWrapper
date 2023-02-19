@@ -1,6 +1,6 @@
 file(GLOB LOADER_SOURCE *.cpp *.h *.hpp)
 add_library(LOADER_LIB OBJECT ${LOADER_SOURCE})
-target_link_libraries(LOADER_LIB PUBLIC Vulkan::Vulkan)
+target_include_directories(LOADER_LIB PRIVATE $ENV{Vulkan_INCLUDE_DIR})
 if(UNIX)
 	target_compile_options(LOADER_LIB PUBLIC -fPIC)
 endif()	
