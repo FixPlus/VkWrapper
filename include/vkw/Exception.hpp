@@ -2,6 +2,7 @@
 #define VKRENDERER_EXCEPTION_HPP
 
 #include <exception>
+#include <functional>
 #include <stdexcept>
 #include <string>
 #include <vulkan/vulkan.h>
@@ -30,6 +31,7 @@ enum class ErrorCode {
   FEATURE_UNSUPPORTED,
   SURFACE_OUTDATED,
   SPIRV_LINK_ERROR,
+  REFERENCE_GUARD_ERROR,
   UNKNOWN,
 };
 
@@ -40,6 +42,29 @@ public:
       : Exception(what), m_errCode(errorCode) {}
 
   ErrorCode code() const { return m_errCode; }
+
+  std::string codeString() const {
+    switch (m_errCode) {
+#define STR(r)                                                                 \
+  case ErrorCode ::r:                                                          \
+    return #r;
+      STR(DYNAMIC_LIBRARY_NOT_FOUND)
+      STR(DYNAMIC_LIBRARY_SYMBOL_MISSING)
+      STR(VULKAN_ERROR)
+      STR(VALIDATION_ERROR)
+      STR(EXTENSION_MISSING)
+      STR(EXTENSION_UNSUPPORTED)
+      STR(LAYER_MISSING)
+      STR(LAYER_UNSUPPORTED)
+      STR(FEATURE_UNSUPPORTED)
+      STR(SURFACE_OUTDATED)
+      STR(SPIRV_LINK_ERROR)
+      STR(REFERENCE_GUARD_ERROR)
+      STR(UNKNOWN)
+#undef STR
+    }
+    return "";
+  }
 
 private:
   ErrorCode m_errCode;
@@ -189,6 +214,23 @@ public:
   explicit ValidationError(std::string_view what)
       : Error(what, ErrorCode::VALIDATION_ERROR){};
 };
+
+class ReferenceGuardError : public Error {
+public:
+  explicit ReferenceGuardError(unsigned strongReferenceLeft)
+      : Error(std::string("Number of strong references left: ")
+                  .append(std::to_string(strongReferenceLeft)),
+              ErrorCode::REFERENCE_GUARD_ERROR){};
+};
+
+// In some cases exception cannot be thrown(e.g. in destructor or move
+// constructors). irrecoverableError() is called then which will eventually call
+// std::terminate. Application might want to do something at that point(e.g.
+// display diagnostics) For that it can add its own callbacks via
+// addIrrecoverableErrorCallback()
+
+[[noreturn]] void irrecoverableError(Error &e);
+void addIrrecoverableErrorCallback(std::function<void(Error &)> callback);
 
 } // namespace vkw
 #endif // VKRENDERER_EXCEPTION_HPP

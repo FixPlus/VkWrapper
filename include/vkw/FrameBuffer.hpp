@@ -1,8 +1,9 @@
 #ifndef VKRENDERER_FRAMEBUFFER_HPP
 #define VKRENDERER_FRAMEBUFFER_HPP
 
-#include "Common.hpp"
-#include "Image.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Image.hpp"
+#include "vkw/RenderPass.hpp"
 #include <boost/container/small_vector.hpp>
 #include <span>
 #include <vulkan/vulkan.h>
@@ -11,9 +12,10 @@ namespace vkw {
 
 class ImageViewBase;
 
-class FrameBuffer {
+class FrameBuffer : public ReferenceGuard {
 public:
-  using ViewsContainerT = boost::container::small_vector<ImageViewBaseCRef, 5>;
+  using ViewsContainerT =
+      boost::container::small_vector<StrongReference<ImageViewBase const>, 5>;
   FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
               std::span<ImageViewVT<V2DA> const *> views, uint32_t layers = 1);
 
@@ -54,8 +56,8 @@ public:
   operator VkFramebuffer() const { return m_framebuffer; }
 
 private:
-  DeviceRef m_device;
-  RenderPassRef m_parent;
+  StrongReference<Device> m_device;
+  StrongReference<RenderPass> m_parent;
   VkFramebufferCreateInfo m_createInfo{};
   ViewsContainerT m_views;
   VkFramebuffer m_framebuffer = VK_NULL_HANDLE;

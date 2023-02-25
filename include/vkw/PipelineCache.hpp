@@ -1,11 +1,11 @@
 #ifndef VKWRAPPER_PIPELINECACHE_HPP
 #define VKWRAPPER_PIPELINECACHE_HPP
 
-#include "vkw/Common.hpp"
+#include "vkw/Device.hpp"
 
 namespace vkw {
 
-class PipelineCache {
+class PipelineCache : public ReferenceGuard {
 public:
   explicit PipelineCache(Device &device, size_t initDataSize = 0,
                          void *initData = nullptr,
@@ -34,7 +34,7 @@ public:
   operator VkPipelineCache() const { return m_cache; }
 
 private:
-  DeviceCRef m_device;
+  StrongReference<Device> m_device;
   VkPipelineCache m_cache;
 };
 

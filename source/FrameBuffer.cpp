@@ -14,7 +14,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
     : m_device(device), m_parent(renderPass) {
   std::transform(
       views.begin(), views.end(), std::back_inserter(m_views),
-      [](ImageViewVT<V2DA> const *view) -> ImageViewBaseCRef { return *view; });
+      [](ImageViewVT<V2DA> const *view) { return StrongReference<ImageViewBase const>(*view); });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -101,7 +101,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
     : m_device(device), m_parent(renderPass) {
   std::transform(
       views.begin(), views.end(), std::back_inserter(m_views),
-      [](ImageViewVT<V2D> const *view) -> ImageViewBaseCRef { return *view; });
+      [](ImageViewVT<V2D> const *view) { return StrongReference<ImageViewBase const>(*view); });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;

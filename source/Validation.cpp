@@ -96,6 +96,8 @@ private:
     m_debugUtilsMessenger = VK_NULL_HANDLE;
   }
   VkDebugUtilsMessengerEXT m_debugUtilsMessenger = VK_NULL_HANDLE;
+  // FIXME: Cannot use StrongReference here because ValidationImpl has static
+  // storage duration
   std::reference_wrapper<Instance const> m_instance;
 };
 

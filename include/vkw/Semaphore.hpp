@@ -1,11 +1,11 @@
 #ifndef VKRENDERER_SEMAPHORE_HPP
 #define VKRENDERER_SEMAPHORE_HPP
 
-#include "Common.hpp"
-#include <vulkan/vulkan.h>
+#include "vkw/Device.hpp"
+
 namespace vkw {
 
-class Semaphore {
+class Semaphore : public ReferenceGuard {
 public:
   Semaphore(Device &device);
   Semaphore(Semaphore &&another)
@@ -23,7 +23,7 @@ public:
   operator VkSemaphore() const { return m_semaphore; }
 
 private:
-  DeviceRef m_device;
+  StrongReference<Device> m_device;
   VkSemaphore m_semaphore;
 };
 

@@ -1,8 +1,9 @@
 #ifndef VKRENDERER_SWAPCHAIN_HPP
 #define VKRENDERER_SWAPCHAIN_HPP
 
-#include "Common.hpp"
-#include "Extensions.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Extensions.hpp"
+#include "vkw/Image.hpp"
 #include <boost/container/small_vector.hpp>
 #include <memory>
 #include <optional>
@@ -11,7 +12,10 @@
 
 namespace vkw {
 
-class SwapChain {
+class Semaphore;
+class Fence;
+
+class SwapChain : public ReferenceGuard {
 public:
   SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo);
   SwapChain(SwapChain &&another)
@@ -57,7 +61,7 @@ private:
   bool acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
                             uint64_t timeout);
   std::optional<uint32_t> m_currentImage{};
-  DeviceRef m_device;
+  StrongReference<Device> m_device;
   Extension<ext::KHR_swapchain> m_swapchain_ext;
   VkSwapchainCreateInfoKHR m_createInfo;
   VkSwapchainKHR m_swapchain = VK_NULL_HANDLE;

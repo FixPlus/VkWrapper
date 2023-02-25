@@ -1,16 +1,16 @@
 #ifndef VKRENDERER_RENDERPASS_HPP
 #define VKRENDERER_RENDERPASS_HPP
 
-#include "Common.hpp"
+#include "vkw/Common.hpp"
+#include "vkw/Device.hpp"
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>
-#include <algorithm>
 
 namespace vkw {
 
-class AttachmentDescription final {
+class AttachmentDescription final : public ReferenceGuard {
 public:
   AttachmentDescription(VkFormat viewFormat, VkSampleCountFlagBits samples,
                         VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp,
@@ -47,7 +47,7 @@ private:
   VkAttachmentDescription m_description;
 };
 
-class SubpassDescription {
+class SubpassDescription : public ReferenceGuard {
 public:
   void addInputAttachment(AttachmentDescription const &, VkImageLayout layout);
   void addColorAttachment(AttachmentDescription const &, VkImageLayout layout);
@@ -55,9 +55,10 @@ public:
   void addPreserveAttachment(AttachmentDescription const &);
 
   using SubpassAttachmentContainerT = boost::container::small_vector<
-      std::pair<AttachmentDescriptionCRef, VkImageLayout>, 2>;
-  using PreservedAttachmentContainerT =
-      boost::container::small_vector<AttachmentDescriptionCRef, 2>;
+      std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>,
+      2>;
+  using PreservedAttachmentContainerT = boost::container::small_vector<
+      StrongReference<AttachmentDescription const>, 2>;
   SubpassAttachmentContainerT const &inputAttachments() const {
     return m_inputAttachments;
   }
@@ -65,7 +66,8 @@ public:
   SubpassAttachmentContainerT const &colorAttachments() const {
     return m_colorAttachments;
   }
-  std::optional<std::pair<AttachmentDescriptionCRef, VkImageLayout>> const &
+  std::optional<std::pair<StrongReference<AttachmentDescription const>,
+                          VkImageLayout>> const &
   depthAttachments() const {
     return m_depthAttachment;
   }
@@ -78,7 +80,8 @@ public:
 private:
   SubpassAttachmentContainerT m_inputAttachments;
   SubpassAttachmentContainerT m_colorAttachments;
-  std::optional<std::pair<AttachmentDescriptionCRef, VkImageLayout>>
+  std::optional<
+      std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>>
       m_depthAttachment;
   PreservedAttachmentContainerT m_preserveAttachments;
 };
@@ -93,13 +96,9 @@ public:
     m_dstSubpass = subpass;
   }
 
-  std::optional<SubpassDescriptionCRef> srcSubpass() const {
-    return m_srcSubpass;
-  }
+  auto srcSubpass() const { return m_srcSubpass; }
 
-  std::optional<SubpassDescriptionCRef> dstSubpass() const {
-    return m_dstSubpass;
-  }
+  auto dstSubpass() const { return m_dstSubpass; }
 
   VkPipelineStageFlags srcStageMask{};
   VkPipelineStageFlags dstStageMask{};
@@ -108,8 +107,8 @@ public:
   VkDependencyFlags dependencyFlags{};
 
 private:
-  std::optional<SubpassDescriptionCRef> m_srcSubpass{};
-  std::optional<SubpassDescriptionCRef> m_dstSubpass{};
+  std::optional<StrongReference<SubpassDescription const>> m_srcSubpass{};
+  std::optional<StrongReference<SubpassDescription const>> m_dstSubpass{};
 };
 
 class RenderPassCreateInfo {
@@ -117,26 +116,28 @@ public:
   RenderPassCreateInfo(RenderPassCreateInfo &&another);
   RenderPassCreateInfo(RenderPassCreateInfo const &another) = delete;
   template <forward_range_of<AttachmentDescription> T>
-  RenderPassCreateInfo(T const &attachments,
-                       std::vector<SubpassDescriptionCRef> const &subpasses,
-                       std::vector<SubpassDependency> const &dependencies,
-                       VkRenderPassCreateFlags flags = 0) {
+  RenderPassCreateInfo(
+      T const &attachments,
+      std::vector<StrongReference<SubpassDescription const>> const &subpasses,
+      std::vector<SubpassDependency> const &dependencies,
+      VkRenderPassCreateFlags flags = 0) {
     auto attachmentsSubrange =
         ranges::make_subrange<AttachmentDescription>(attachments);
     using attachmentsSubrangeT = decltype(attachmentsSubrange);
     std::transform(attachmentsSubrange.begin(), attachmentsSubrange.end(),
                    std::back_inserter(m_attachments),
                    [](auto const &attachment) {
-                     return std::reference_wrapper<const AttachmentDescription>{
+                     return StrongReference<const AttachmentDescription>{
                          attachmentsSubrangeT::get(attachment)};
                    });
     m_init(subpasses, dependencies, flags);
   }
 
-  RenderPassCreateInfo(AttachmentDescription const &attachment,
-                       std::vector<SubpassDescriptionCRef> const &subpasses,
-                       std::vector<SubpassDependency> const &dependencies,
-                       VkRenderPassCreateFlags flags = 0) {
+  RenderPassCreateInfo(
+      AttachmentDescription const &attachment,
+      std::vector<StrongReference<SubpassDescription const>> const &subpasses,
+      std::vector<SubpassDependency> const &dependencies,
+      VkRenderPassCreateFlags flags = 0) {
     m_attachments.emplace_back(attachment);
     m_init(subpasses, dependencies, flags);
   }
@@ -159,16 +160,15 @@ public:
     return m_subpassesDescs.at(subpass);
   }
 
-  std::vector<AttachmentDescriptionCRef> const &attachmentDescriptions() const {
-    return m_attachments;
-  }
+  auto const &attachmentDescriptions() const { return m_attachments; }
 
 private:
-  void m_init(std::vector<SubpassDescriptionCRef> const &subpasses,
-              std::vector<SubpassDependency> const &dependencies,
-              VkRenderPassCreateFlags flags = 0);
+  void m_init(
+      std::vector<StrongReference<SubpassDescription const>> const &subpasses,
+      std::vector<SubpassDependency> const &dependencies,
+      VkRenderPassCreateFlags flags = 0);
 
-  std::vector<AttachmentDescriptionCRef> m_attachments;
+  std::vector<StrongReference<AttachmentDescription const>> m_attachments;
   std::vector<VkAttachmentDescription> m_attachments_raw;
   std::vector<M_subpassDesc> m_subpassesDescs;
   std::vector<VkSubpassDescription> m_subpasses;
@@ -177,7 +177,7 @@ private:
   VkRenderPassCreateInfo m_createInfo{};
 };
 
-class RenderPass {
+class RenderPass : public ReferenceGuard {
 public:
   RenderPass(Device &device, RenderPassCreateInfo createInfo);
 
@@ -202,7 +202,7 @@ public:
   operator VkRenderPass() const { return m_renderPass; }
 
 private:
-  DeviceRef m_parent;
+  StrongReference<Device> m_parent;
   RenderPassCreateInfo m_createInfo;
   VkRenderPass m_renderPass = VK_NULL_HANDLE;
 };

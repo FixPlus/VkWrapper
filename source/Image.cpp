@@ -9,7 +9,7 @@ ImageViewBase::ImageViewBase(ImageInterface const *image, VkFormat format,
                              uint32_t baseMipLevel, uint32_t levelCount,
                              VkComponentMapping componentMapping,
                              VkImageViewCreateFlags flags)
-    : m_parent(image) {
+    : m_parent(*image) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.subresourceRange.baseMipLevel = baseMipLevel;

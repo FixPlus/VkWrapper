@@ -1,68 +1,13 @@
 #ifndef VKRENDERER_IMAGE_HPP
 #define VKRENDERER_IMAGE_HPP
 
-#include "Allocation.hpp"
-#include "Common.hpp"
+#include "vkw/Allocation.hpp"
+#include "vkw/Device.hpp"
 #include <memory>
 
 namespace vkw {
 
-class ImageViewBase {
-public:
-
-  bool operator==(ImageViewBase const &another) const;
-
-  ImageInterface const *image() const { return m_parent; }
-
-  virtual operator VkImageView() const = 0;
-
-  VkFormat format() const { return m_createInfo.format; };
-
-  virtual ~ImageViewBase() = default;
-
-protected:
-  explicit ImageViewBase(ImageInterface const *image = nullptr,
-                         VkFormat format = VK_FORMAT_MAX_ENUM,
-                         uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
-                         VkComponentMapping componentMapping = {},
-                         VkImageViewCreateFlags flags = 0);
-  VkImageViewCreateInfo m_createInfo{};
-
-private:
-  ImageInterface const *m_parent{};
-};
-
-class ImageViewCreator : virtual public ImageViewBase {
-public:
-  ~ImageViewCreator() override;
-
-protected:
-  explicit ImageViewCreator(Device const &device);
-
-public:
-  ImageViewCreator(ImageViewCreator const &another) = delete;
-  ImageViewCreator(ImageViewCreator &&another) noexcept
-      : ImageViewBase(std::move(another)), m_device(another.m_device),
-        m_imageView(another.m_imageView) {
-    another.m_imageView = VK_NULL_HANDLE;
-  };
-
-  ImageViewCreator &operator=(ImageViewCreator const &another) = delete;
-  ImageViewCreator &operator=(ImageViewCreator &&another) noexcept {
-    m_createInfo = another.m_createInfo;
-    std::swap(m_device, another.m_device);
-    std::swap(m_imageView, another.m_imageView);
-    return *this;
-  }
-
-  operator VkImageView() const override { return m_imageView; };
-
-private:
-  VkImageView m_imageView{};
-  DeviceCRef m_device;
-};
-
-class ImageInterface {
+class ImageInterface : public ReferenceGuard {
 public:
   explicit ImageInterface(VkImageUsageFlags usage = 0) {
     m_createInfo.usage = usage;
@@ -71,6 +16,12 @@ public:
     m_createInfo.arrayLayers =
         1; // default parameter, maybe overridden by child classes
   };
+
+  ImageInterface(ImageInterface &&another) = default;
+  ImageInterface(ImageInterface const &another) = delete;
+
+  ImageInterface &operator=(ImageInterface &&another) = default;
+  ImageInterface &operator=(ImageInterface const &another) = delete;
 
   virtual ~ImageInterface() = default;
 
@@ -96,18 +47,95 @@ protected:
   VkImageCreateInfo m_createInfo{};
 };
 
+class ImageViewBase : public ReferenceGuard {
+public:
+  bool operator==(ImageViewBase const &another) const;
+
+  ImageInterface const *image() const { return &m_parent.get(); }
+
+  ImageViewBase(ImageViewBase &&another) noexcept
+      : ReferenceGuard(std::move(another)),
+        m_parent(std::move(another.m_parent)),
+        m_createInfo(another.m_createInfo) {
+    another.m_moved_out = true;
+  }
+  ImageViewBase(ImageViewBase const &another) = delete;
+
+  ImageViewBase &operator=(ImageViewBase &&another) noexcept {
+    ReferenceGuard::operator=(std::move(another));
+    std::swap(m_parent, another.m_parent);
+    m_createInfo = another.m_createInfo;
+    another.m_moved_out = true;
+    return *this;
+  }
+  ImageViewBase &operator=(ImageViewBase const &another) = delete;
+
+  virtual operator VkImageView() const = 0;
+
+  VkFormat format() const { return m_createInfo.format; };
+
+  virtual ~ImageViewBase() = default;
+
+protected:
+  explicit ImageViewBase(ImageInterface const *image = nullptr,
+                         VkFormat format = VK_FORMAT_MAX_ENUM,
+                         uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
+                         VkComponentMapping componentMapping = {},
+                         VkImageViewCreateFlags flags = 0);
+  VkImageViewCreateInfo m_createInfo{};
+  auto isMovedOut() const { return m_moved_out; }
+
+private:
+  bool m_moved_out = false;
+  StrongReference<ImageInterface const> m_parent;
+};
+
+class ImageViewCreator : virtual public ImageViewBase {
+public:
+  ~ImageViewCreator() override;
+
+protected:
+  explicit ImageViewCreator(Device const &device);
+
+public:
+  ImageViewCreator(ImageViewCreator const &another) = delete;
+  ImageViewCreator(ImageViewCreator &&another) noexcept
+      : m_device(another.m_device), m_imageView(another.m_imageView) {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+    another.m_imageView = VK_NULL_HANDLE;
+  };
+
+  ImageViewCreator &operator=(ImageViewCreator const &another) = delete;
+  ImageViewCreator &operator=(ImageViewCreator &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+    std::swap(m_device, another.m_device);
+    std::swap(m_imageView, another.m_imageView);
+    return *this;
+  }
+
+  operator VkImageView() const override { return m_imageView; };
+
+private:
+  VkImageView m_imageView{};
+  StrongReference<Device const> m_device;
+};
+
 class AllocatedImage : public Allocation, virtual public ImageInterface {
 public:
   AllocatedImage(VmaAllocator allocator,
                  VmaAllocationCreateInfo allocCreateInfo);
   AllocatedImage(AllocatedImage &&another) noexcept
-      : Allocation(another), ImageInterface(another), m_image(another.m_image) {
+      : Allocation(another), ImageInterface(std::move(another)),
+        m_image(another.m_image) {
     another.m_image = VK_NULL_HANDLE;
   }
 
   AllocatedImage(AllocatedImage const &another) = delete;
   AllocatedImage const &operator=(AllocatedImage const &another) = delete;
   AllocatedImage &operator=(AllocatedImage &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
     std::swap(m_image, another.m_image);
     return *this;
   }
@@ -122,6 +150,14 @@ private:
 
 class NonOwingImage : virtual public ImageInterface {
 public:
+  NonOwingImage(NonOwingImage &&another) noexcept
+      : ImageInterface(std::move(another)), m_image(another.m_image) {}
+  NonOwingImage &operator=(NonOwingImage &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    m_image = another.m_image;
+    return *this;
+  }
+
   operator VkImage() const override { return m_image; }
 
 protected:
@@ -135,12 +171,26 @@ class ImageArray : virtual public ImageInterface {
 public:
   ImageArray(unsigned arrayLayers) { m_createInfo.arrayLayers = arrayLayers; }
 
+  ImageArray(ImageArray &&another) noexcept
+      : ImageInterface(std::move(another)) {}
+  ImageArray &operator=(ImageArray &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   unsigned layers() const { return m_createInfo.arrayLayers; }
 };
 
 class ImageSingle : virtual public ImageInterface {
 public:
   ImageSingle(unsigned arrayLayers = 1) { m_createInfo.arrayLayers = 1; }
+
+  ImageSingle(ImageSingle &&another) noexcept
+      : ImageInterface(std::move(another)) {}
+  ImageSingle &operator=(ImageSingle &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
 };
 
 enum ImageArrayness { SINGLE, ARRAY };
@@ -254,6 +304,17 @@ template <> struct ImageViewTypeVal<V3D> {
 
 template <ImagePixelType ptype>
 class ImageViewIPT : virtual public ImageViewBase {
+public:
+  ImageViewIPT(ImageViewIPT &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+  }
+  ImageViewIPT &operator=(ImageViewIPT &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+    return *this;
+  }
+
 protected:
   ImageViewIPT(VkFormat format) {
     m_createInfo.subresourceRange.aspectMask = ImageAspectVal<ptype>::value;
@@ -264,6 +325,15 @@ protected:
 template <ImageViewType vtype>
 class ImageViewVT : virtual public ImageViewBase {
 public:
+  ImageViewVT(ImageViewVT &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+  }
+  ImageViewVT &operator=(ImageViewVT &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+    return *this;
+  }
   unsigned layers() const { return m_createInfo.subresourceRange.layerCount; }
   unsigned baseLayer() const {
     return m_createInfo.subresourceRange.baseArrayLayer;
@@ -274,6 +344,17 @@ protected:
 };
 
 class ImageViewSubRange : virtual public ImageViewBase {
+public:
+  ImageViewSubRange(ImageViewSubRange &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+  }
+  ImageViewSubRange &operator=(ImageViewSubRange &&another) noexcept {
+    if (!another.isMovedOut())
+      ImageViewBase::operator=(std::move(another));
+    return *this;
+  }
+
 protected:
   ImageViewSubRange(unsigned baseLayer, unsigned layerCount,
                     unsigned baseMipLevel, unsigned mipLevelCount) {
@@ -285,6 +366,13 @@ protected:
 };
 
 template <ImagePixelType ptype> class ImageIPT : virtual public ImageInterface {
+public:
+  ImageIPT(ImageIPT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIPT &operator=(ImageIPT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
 protected:
   ImageIPT(VkFormat format) { m_createInfo.format = format; }
 };
@@ -298,6 +386,12 @@ unsigned m_FormatStencilBits(VkFormat);
 
 template <> class ImageIPT<COLOR> : virtual public ImageInterface {
 public:
+  ImageIPT(ImageIPT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIPT &operator=(ImageIPT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   unsigned redBits() const { return m_FormatRedBits(m_createInfo.format); }
   unsigned greenBits() const { return m_FormatGreenBits(m_createInfo.format); }
   unsigned blueBits() const { return m_FormatBlueBits(m_createInfo.format); }
@@ -309,6 +403,12 @@ protected:
 
 template <> class ImageIPT<DEPTH> : virtual public ImageInterface {
 public:
+  ImageIPT(ImageIPT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIPT &operator=(ImageIPT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   unsigned dBits() const { return m_FormatDepthBits(m_createInfo.format); }
 
 protected:
@@ -317,6 +417,12 @@ protected:
 
 template <> class ImageIPT<DEPTH_STENCIL> : virtual public ImageInterface {
 public:
+  ImageIPT(ImageIPT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIPT &operator=(ImageIPT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   unsigned dBits() const { return m_FormatDepthBits(m_createInfo.format); }
   unsigned sBits() const { return m_FormatStencilBits(m_createInfo.format); }
 
@@ -326,11 +432,23 @@ protected:
 
 template <ImageType itype> class ImageIT : virtual public ImageInterface {
 public:
+  ImageIT(ImageIT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIT &operator=(ImageIT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   ImageIT() { m_createInfo.imageType = ImageTypeVal<itype>::value; }
 };
 
 template <> class ImageIT<I1D> : virtual public ImageInterface {
 public:
+  ImageIT(ImageIT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIT &operator=(ImageIT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   ImageIT(unsigned width, unsigned = 0, unsigned = 0) {
     m_createInfo.imageType = ImageTypeVal<I1D>::value;
     m_createInfo.extent.width = width;
@@ -343,6 +461,12 @@ public:
 
 template <> class ImageIT<I2D> : virtual public ImageInterface {
 public:
+  ImageIT(ImageIT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIT &operator=(ImageIT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   ImageIT(unsigned width, unsigned height, unsigned = 0) {
     m_createInfo.imageType = ImageTypeVal<I2D>::value;
     m_createInfo.extent.width = width;
@@ -357,6 +481,12 @@ public:
 
 template <> class ImageIT<I3D> : virtual public ImageInterface {
 public:
+  ImageIT(ImageIT &&another) noexcept : ImageInterface(std::move(another)) {}
+  ImageIT &operator=(ImageIT &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
   ImageIT(unsigned width, unsigned height, unsigned depth) {
     m_createInfo.imageType = ImageTypeVal<I3D>::value;
     m_createInfo.extent.width = width;
@@ -432,6 +562,14 @@ public:
 };
 
 class ImageRestInterface : virtual public ImageInterface {
+public:
+  ImageRestInterface(ImageRestInterface &&another) noexcept
+      : ImageInterface(std::move(another)) {}
+  ImageRestInterface &operator=(ImageRestInterface &&another) noexcept {
+    ImageInterface::operator=(std::move(another));
+    return *this;
+  }
+
 protected:
   ImageRestInterface(VkSampleCountFlagBits samples, uint32_t mipLevels,
                      VkImageUsageFlags usage, VkImageCreateFlags flags,

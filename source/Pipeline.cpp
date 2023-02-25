@@ -9,7 +9,7 @@
 
 namespace vkw {
 
-PipelineLayout::PipelineLayout(DeviceRef device,
+PipelineLayout::PipelineLayout(Device &device,
                                VkPipelineLayoutCreateFlags flags)
     : m_device(device) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -45,9 +45,9 @@ void PipelineLayout::m_init(VkPipelineLayoutCreateFlags flags) {
   std::transform(
       m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
       std::back_inserter(layouts),
-      [](DescriptorSetLayoutCRef const &layout) -> VkDescriptorSetLayout {
-        return layout.operator const vkw::DescriptorSetLayout &();
-      });
+                 [](auto &layout) -> VkDescriptorSetLayout {
+                   return layout.operator const vkw::DescriptorSetLayout &();
+                 });
   m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = flags;
@@ -170,8 +170,9 @@ RasterizationStateCreateInfo::RasterizationStateCreateInfo(
 }
 
 GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
-    RenderPassCRef renderPass, uint32_t subpass, PipelineLayoutCRef layout)
-    : m_renderPass(renderPass.get()), m_layout(layout.get()) {
+    RenderPass const &renderPass, uint32_t subpass,
+    PipelineLayout const &layout)
+    : m_renderPass(renderPass), m_layout(layout) {
 
   m_inputAssemblyStateCreateInfo = vkw::InputAssemblyStateCreateInfo{};
   m_rasterizationStateCreateInfo = vkw::RasterizationStateCreateInfo{};

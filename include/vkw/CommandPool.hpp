@@ -1,12 +1,12 @@
 #ifndef VKRENDERER_COMMANDPOOL_HPP
 #define VKRENDERER_COMMANDPOOL_HPP
 
-#include "Common.hpp"
+#include <vkw/Device.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
 
-class CommandPool {
+class CommandPool : public ReferenceGuard {
 public:
   CommandPool(Device &device, VkCommandPoolCreateFlags flags,
               uint32_t queueFamily);
@@ -42,7 +42,7 @@ public:
   operator VkCommandPool() const { return m_commandPool; }
 
 private:
-  DeviceRef m_device;
+  StrongReference<Device> m_device;
   VkCommandPool m_commandPool;
   VkCommandPoolCreateFlags m_createFlags;
   uint32_t m_queueFamily;

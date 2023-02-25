@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <vector>
+#include <vkw/ReferenceGuard.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -44,7 +45,7 @@ public:
   virtual ~VulkanLibraryLoader() = default;
 };
 
-class Library final {
+class Library final : public ReferenceGuard {
 public:
   /**
    *    Application may create their own vulkan loader

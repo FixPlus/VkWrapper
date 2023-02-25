@@ -1,19 +1,20 @@
 #ifndef VKRENDERER_FENCE_HPP
 #define VKRENDERER_FENCE_HPP
 
-#include "Common.hpp"
+#include "vkw/Device.hpp"
 #include <boost/container/small_vector.hpp>
 #include <concepts>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
 
+class Fence;
 template <typename T>
 concept FenceIterator = std::forward_iterator<T> && requires(T a) {
   { *a } -> std::same_as<Fence &>;
 };
 
-class Fence {
+class Fence : public ReferenceGuard {
 public:
   Fence(Device &device, bool createSignaled = false);
   Fence(Fence &&another)
@@ -62,7 +63,7 @@ public:
   operator VkFence() const { return m_fence; }
 
 private:
-  DeviceRef m_device;
+  StrongReference<Device> m_device;
   VkFence m_fence = VK_NULL_HANDLE;
 
   static bool wait_impl(Device &device, VkFence *pFences, uint32_t fenceCount,

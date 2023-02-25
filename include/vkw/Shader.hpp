@@ -1,6 +1,7 @@
 #ifndef VKRENDERER_SHADER_HPP
 #define VKRENDERER_SHADER_HPP
 
+#include "vkw/Device.hpp"
 #include "vkw/SPIRVModule.hpp"
 #include <functional>
 #include <vulkan/vulkan.h>
@@ -9,7 +10,7 @@ namespace vkw {
 
 class Device;
 
-class ShaderBase {
+class ShaderBase : public ReferenceGuard {
 public:
   ShaderBase(Device &device, SPIRVModule const &module,
              VkShaderStageFlagBits stage, VkShaderModuleCreateFlags flags = 0);
@@ -34,7 +35,7 @@ public:
   operator VkShaderModule() const { return m_shader; }
 
 private:
-  std::reference_wrapper<Device> m_device;
+  StrongReference<Device> m_device;
   VkShaderStageFlagBits m_stage;
   VkShaderModule m_shader = VK_NULL_HANDLE;
 };
