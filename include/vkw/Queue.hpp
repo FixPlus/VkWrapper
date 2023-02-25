@@ -1,11 +1,10 @@
 #ifndef VKRENDERER_QUEUE_HPP
 #define VKRENDERER_QUEUE_HPP
 
-#include "CommandBuffer.hpp"
-#include "Common.hpp"
-#include "PhysicalDevice.hpp"
-#include "Semaphore.hpp"
-#include "SwapChain.hpp"
+#include "vkw/CommandBuffer.hpp"
+#include "vkw/PhysicalDevice.hpp"
+#include "vkw/Semaphore.hpp"
+#include "vkw/SwapChain.hpp"
 #include <boost/container/small_vector.hpp>
 #include <cassert>
 #include <utility>
@@ -34,7 +33,7 @@ public:
     std::transform(swapChainsSubrange.begin(), swapChainsSubrange.end(),
                    std::back_inserter(m_pswapChains),
                    [](auto const &swp) -> SwapChain const * {
-                     return &swapChainsSubrangeT::get(swp);
+                     return swapChainsSubrangeT::get(swp);
                    });
     std::transform(
         waitForSub.begin(), waitForSub.end(),
@@ -73,7 +72,7 @@ public:
       : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
-    m_pswapChains.emplace_back(&swapChain);
+    m_pswapChains.emplace_back(swapChain);
     m_images.emplace_back(swapChain.currentImage());
     m_wait_semaphores.emplace_back(waitFor);
 
@@ -83,7 +82,7 @@ public:
   PresentInfo(SwapChain const &swapChain) : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
-    m_pswapChains.emplace_back(&swapChain);
+    m_pswapChains.emplace_back(swapChain);
     m_images.emplace_back(swapChain.currentImage());
 
     m_fill_info();
@@ -93,7 +92,7 @@ public:
     auto swpIt = m_pswapChains.begin();
     auto swpIm = m_images.begin();
     for (; swpIt != m_pswapChains.end(); ++swpIt, ++swpIm) {
-      *swpIm = (*swpIt)->currentImage();
+      *swpIm = (*swpIt).get().currentImage();
     }
   }
 
@@ -136,10 +135,12 @@ private:
     m_info.pResults = nullptr;
   }
   boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
-  boost::container::small_vector<SwapChain const *, 2> m_pswapChains;
+  boost::container::small_vector<StrongReference<SwapChain const>, 2>
+      m_pswapChains;
   boost::container::small_vector<VkSwapchainKHR, 2> m_swapChains;
   boost::container::small_vector<uint32_t, 2> m_images;
 
+  // TODO: rewrite to have a StrongReference or just copy it
   std::reference_wrapper<Extension<ext::KHR_swapchain> const> m_swp_ext;
   VkPresentInfoKHR m_info{};
 };
@@ -248,20 +249,33 @@ public:
     m_fill_info();
     return *this;
   }
-  SubmitInfo &operator=(SubmitInfo &&another) = default;
+  SubmitInfo &operator=(SubmitInfo &&another) noexcept {
+    m_cmd_buffers = std::move(another.m_cmd_buffers);
+    m_signal_semaphores = std::move(another.m_signal_semaphores);
+    m_wait_semaphores = std::move(another.m_wait_semaphores);
+    m_wait_stage = std::move(another.m_wait_stage);
+    m_fill_info();
+    return *this;
+  }
 
   SubmitInfo(SubmitInfo const &another)
       : m_cmd_buffers(another.m_cmd_buffers),
         m_signal_semaphores(another.m_signal_semaphores),
         m_wait_semaphores(another.m_wait_semaphores),
         m_wait_stage(another.m_wait_stage) {
+    m_fill_info();
+  }
+  SubmitInfo(SubmitInfo &&another) noexcept
+      : m_cmd_buffers(std::move(another.m_cmd_buffers)),
+        m_signal_semaphores(std::move(another.m_signal_semaphores)),
+        m_wait_semaphores(std::move(another.m_wait_semaphores)),
+        m_wait_stage(std::move(another.m_wait_stage)) {
     m_cmd_buffers = another.m_cmd_buffers;
     m_signal_semaphores = another.m_signal_semaphores;
     m_wait_semaphores = another.m_wait_semaphores;
     m_wait_stage = another.m_wait_stage;
     m_fill_info();
   }
-  SubmitInfo(SubmitInfo &&another) noexcept = default;
 
 private:
   boost::container::small_vector<VkCommandBuffer, 2> m_cmd_buffers;
@@ -342,7 +356,7 @@ private:
 
   void m_submit(VkSubmitInfo const *info, size_t infoCount,
                 Fence const *fence) const;
-  DeviceRef m_parent;
+  StrongReference<Device> m_parent;
   VkQueue m_queue = VK_NULL_HANDLE;
   uint32_t m_familyIndex;
   uint32_t m_queueIndex;

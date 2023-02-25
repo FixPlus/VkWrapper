@@ -1,12 +1,13 @@
 #ifndef VKWRAPPER_VALIDATION_HPP
 #define VKWRAPPER_VALIDATION_HPP
 
-#include "Extensions.hpp"
-#include "Layers.hpp"
+#include "vkw/Extensions.hpp"
+#include "vkw/Layers.hpp"
+#include "vkw/ReferenceGuard.hpp"
 #include <functional>
 
 namespace vkw::debug {
-class Validation {
+class Validation : public ReferenceGuard {
 public:
   explicit Validation(Instance const &instance);
 

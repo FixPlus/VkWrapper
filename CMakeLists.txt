@@ -12,6 +12,13 @@ set(PROJECT_VERSION 1.1)
 include(cmake/find_dependencies.cmake)
 include(cmake/find_vulkan_sdk.cmake)
 
+# toggle ReferenceGuard
+
+option(VKW_ENABLE_REFERENCE_GUARD "Toggle ReferenceGuard checker" OFF)
+if (VKW_ENABLE_REFERENCE_GUARD)
+    add_definitions(-DVKW_ENABLE_REFERENCE_GUARD)
+endif ()
+
 if (MSVC)
     set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS 1)
 endif ()

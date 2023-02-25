@@ -2,6 +2,7 @@
 #define VKRENDERER_COMMON_HPP
 
 #include <ranges>
+#include <vkw/ReferenceGuard.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -195,46 +196,5 @@ namespace ranges {
   }
 } // namespace ranges
 
-#define VKR_DECLARE_REF_TYPES(T)                                               \
-  using T##Ref = std::reference_wrapper<T>;                                    \
-  using T##CRef = std::reference_wrapper<T const>;
-
-VKR_DECLARE_REF_TYPES(AttachmentDescription)
-VKR_DECLARE_REF_TYPES(BufferBase)
-VKR_DECLARE_REF_TYPES(CommandBuffer)
-VKR_DECLARE_REF_TYPES(SecondaryCommandBuffer)
-VKR_DECLARE_REF_TYPES(PrimaryCommandBuffer)
-VKR_DECLARE_REF_TYPES(DescriptorPool)
-VKR_DECLARE_REF_TYPES(DescriptorSet)
-VKR_DECLARE_REF_TYPES(DescriptorSetLayout)
-VKR_DECLARE_REF_TYPES(DescriptorSetLayoutBinding)
-VKR_DECLARE_REF_TYPES(Device)
-VKR_DECLARE_REF_TYPES(Fence)
-VKR_DECLARE_REF_TYPES(FrameBuffer)
-VKR_DECLARE_REF_TYPES(AllocatedImage)
-VKR_DECLARE_REF_TYPES(ImageInterface)
-VKR_DECLARE_REF_TYPES(SwapChainImage)
-VKR_DECLARE_REF_TYPES(ImageViewBase)
-VKR_DECLARE_REF_TYPES(Instance)
-VKR_DECLARE_REF_TYPES(PhysicalDevice)
-VKR_DECLARE_REF_TYPES(Pipeline)
-VKR_DECLARE_REF_TYPES(PipelineCache)
-VKR_DECLARE_REF_TYPES(PipelineLayout)
-VKR_DECLARE_REF_TYPES(GraphicsPipeline)
-VKR_DECLARE_REF_TYPES(ComputePipeline)
-VKR_DECLARE_REF_TYPES(Queue)
-VKR_DECLARE_REF_TYPES(RenderPass)
-VKR_DECLARE_REF_TYPES(Sampler)
-VKR_DECLARE_REF_TYPES(Semaphore)
-VKR_DECLARE_REF_TYPES(ShaderBase)
-VKR_DECLARE_REF_TYPES(VertexShader)
-VKR_DECLARE_REF_TYPES(FragmentShader)
-VKR_DECLARE_REF_TYPES(ComputeShader)
-VKR_DECLARE_REF_TYPES(SubpassDependency)
-VKR_DECLARE_REF_TYPES(SubpassDescription)
-VKR_DECLARE_REF_TYPES(Surface)
-VKR_DECLARE_REF_TYPES(SwapChain)
-
-#undef VKR_DECLARE_REF_TYPES
 } // namespace vkw
 #endif // VKRENDERER_COMMON_HPP

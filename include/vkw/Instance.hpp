@@ -1,16 +1,15 @@
 #ifndef VKRENDERER_INSTANCE_HPP
 #define VKRENDERER_INSTANCE_HPP
 
-#include "Device.hpp"
-#include "Exception.hpp"
-#include "Library.hpp"
-#include "SymbolTable.hpp"
 #include <boost/container/small_vector.hpp>
 #include <functional>
 #include <memory>
 #include <set>
 #include <unordered_map>
 #include <vector>
+#include <vkw/Exception.hpp>
+#include <vkw/Library.hpp>
+#include <vkw/SymbolTable.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -19,6 +18,8 @@ class DynamicLoader;
 
 enum class ext;
 enum class layer;
+
+class PhysicalDevice;
 
 class InstanceCreateInfo {
 public:
@@ -43,7 +44,7 @@ private:
   ApiVersion m_apiVersion = VK_API_VERSION_1_0;
   std::string_view m_appName;
 };
-class Instance {
+class Instance : public ReferenceGuard {
 public:
   Instance(Library const &library, InstanceCreateInfo const &createInfo);
   Instance(Instance const &another) = delete;
@@ -51,7 +52,7 @@ public:
   Instance(Instance &&another) noexcept;
   Instance &operator=(Instance &&another) noexcept;
 
-  boost::container::small_vector<PhysicalDevice, 3>
+  boost::container::small_vector<std::unique_ptr<PhysicalDevice>, 3>
   enumerateAvailableDevices() const;
 
   bool isExtensionEnabled(ext extension) const {
@@ -86,7 +87,7 @@ private:
   std::set<ext> m_enabledExtensions;
   std::set<layer> m_enabledLayers;
 
-  std::reference_wrapper<Library const> m_vulkanLib;
+  StrongReference<Library const> m_vulkanLib;
   std::unique_ptr<InstanceCore<1, 0>> m_coreInstanceSymbols{};
   ApiVersion m_apiVer;
 };

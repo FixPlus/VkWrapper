@@ -3,6 +3,7 @@
 #include "Allocation.hpp"
 #include <memory>
 #include <span>
+#include <vkw/Device.hpp>
 
 namespace vkw {
 
@@ -58,7 +59,7 @@ createBufferBaseOnDevice(Device &device,
                          VkBufferCreateInfo const &bufferCreateInfo,
                          VmaAllocationCreateInfo const &allocCreateInfo);
 
-template <typename T> class Buffer {
+template <typename T> class Buffer : public ReferenceGuard {
 public:
   Buffer(Device &device, uint64_t count, VkBufferUsageFlags usage,
          VmaAllocationCreateInfo const &allocCreateInfo)
@@ -112,7 +113,7 @@ public:
   virtual ~Buffer() = default;
 
 protected:
-  std::reference_wrapper<Device> m_device;
+  StrongReference<Device> m_device;
 
 private:
   uint64_t m_count;

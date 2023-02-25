@@ -1,6 +1,6 @@
 #ifndef VKWRAPPER_UNIFORMBUFFER_HPP
 #define VKWRAPPER_UNIFORMBUFFER_HPP
-#include "Buffer.hpp"
+#include "vkw/Buffer.hpp"
 
 namespace vkw {
 

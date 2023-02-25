@@ -26,6 +26,9 @@ configure_file(cmake/${PROJECT_NAME}Config.cmake
         )
 file(READ cmake/find_dependencies.cmake DEPS_CONTENT)
 file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake" ${DEPS_CONTENT})
+if (VKW_ENABLE_REFERENCE_GUARD)
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake" "\nadd_definitions(-DVKW_ENABLE_REFERENCE_GUARD)")
+endif ()
 set(ConfigPackageLocation lib/cmake/${PROJECT_NAME})
 
 install(EXPORT ${PROJECT_NAME}Targets

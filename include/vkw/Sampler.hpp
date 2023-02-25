@@ -1,11 +1,11 @@
 #ifndef VKWRAPPER_SAMPLER_HPP
 #define VKWRAPPER_SAMPLER_HPP
 
-#include "Common.hpp"
+#include "vkw/Device.hpp"
 
 namespace vkw {
 
-class Sampler {
+class Sampler : public ReferenceGuard {
 public:
   Sampler(Device const &device, VkSamplerCreateInfo createInfo);
   Sampler(Sampler const &another) = delete;
@@ -26,7 +26,7 @@ public:
   virtual ~Sampler();
 
 private:
-  DeviceCRef m_device;
+  StrongReference<Device const> m_device;
   VkSamplerCreateInfo m_createInfo{};
   VkSampler m_sampler{};
 };

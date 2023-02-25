@@ -1,8 +1,8 @@
 #ifndef VKWRAPPER_PHYSICALDEVICE_HPP
 #define VKWRAPPER_PHYSICALDEVICE_HPP
 
-#include "Common.hpp"
-#include "Exception.hpp"
+#include "vkw/Exception.hpp"
+#include "vkw/Instance.hpp"
 #include <boost/container/small_vector.hpp>
 #include <sstream>
 #include <string>
@@ -68,7 +68,7 @@ private:
   unsigned m_index;
   VkQueueFamilyProperties m_family;
 };
-class PhysicalDevice {
+class PhysicalDevice : public ReferenceGuard {
 public:
   using QueueFamilyContainerT = boost::container::small_vector<QueueFamily, 3>;
   enum class feature {
@@ -142,7 +142,7 @@ protected:
   std::vector<ext> m_enabledExtensions{};
 
   VkPhysicalDevice m_physicalDevice{};
-  InstanceCRef m_instance;
+  StrongReference<Instance const> m_instance;
 };
 
 class FeatureUnsupported : public Error {

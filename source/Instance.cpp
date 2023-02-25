@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstring>
+#include <vkw/PhysicalDevice.hpp>
 
 namespace vkw {
 
@@ -71,7 +72,7 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
                 [this](auto ext) { m_enabledLayers.emplace(ext); });
 }
 
-boost::container::small_vector<PhysicalDevice, 3>
+boost::container::small_vector<std::unique_ptr<PhysicalDevice>, 3>
 Instance::enumerateAvailableDevices() const {
   boost::container::small_vector<VkPhysicalDevice, 3> devs;
   uint32_t deviceCount = 0;
@@ -84,14 +85,13 @@ Instance::enumerateAvailableDevices() const {
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount,
                                           devs.data());
 
-  boost::container::small_vector<PhysicalDevice, 3> ret;
+  boost::container::small_vector<std::unique_ptr<PhysicalDevice>, 3> ret;
   ret.reserve(devs.size());
 
   std::transform(devs.begin(), devs.end(), std::back_inserter(ret),
                  [this](VkPhysicalDevice device) {
-                   return PhysicalDevice{*this, device};
+                   return std::make_unique<PhysicalDevice>(*this, device);
                  });
-
   return ret;
 }
 

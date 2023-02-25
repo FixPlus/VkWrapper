@@ -1,14 +1,16 @@
 #ifndef VKWRAPPER_DESCRIPTORPOOL_HPP
 #define VKWRAPPER_DESCRIPTORPOOL_HPP
 
-#include "Common.hpp"
-#include "DescriptorSet.hpp"
+#include "vkw/Device.hpp"
 #include <boost/container/small_vector.hpp>
 #include <span>
 
 namespace vkw {
 
-class DescriptorPool {
+class DescriptorSetLayout;
+class DescriptorSet;
+
+class DescriptorPool : public ReferenceGuard {
 public:
   DescriptorPool(Device const &device, uint32_t maxSets,
                  std::span<const VkDescriptorPoolSize> poolSizes,
@@ -51,7 +53,7 @@ private:
   uint32_t m_setCount = 0;
 
   friend class DescriptorSet;
-  DeviceCRef m_device;
+  StrongReference<Device const> m_device;
   boost::container::small_vector<VkDescriptorPoolSize, 3> m_poolSizes;
   VkDescriptorPoolCreateInfo m_createInfo{};
   VkDescriptorPool m_descriptorPool{};

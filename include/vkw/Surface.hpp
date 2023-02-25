@@ -4,7 +4,6 @@
 #include "vkw/Extensions.hpp"
 #include "vkw/Instance.hpp"
 #include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 
@@ -17,7 +16,7 @@ class Instance;
       throw VulkanError(res, __FILE__, __LINE__);                              \
   }
 
-class Surface {
+class Surface : public ReferenceGuard {
 public:
   Surface(Instance const &parent, VkSurfaceKHR surface)
       : m_parent(parent), m_surface_ext(parent), m_surface(surface) {}
@@ -118,7 +117,7 @@ public:
 private:
   VkSurfaceKHR m_surface;
   Extension<ext::KHR_surface> m_surface_ext;
-  InstanceCRef m_parent;
+  StrongReference<Instance const> m_parent;
 };
 } // namespace vkw
 

@@ -52,13 +52,13 @@ void DescriptorPool::freeSet(const DescriptorSet &set) {
   VkDescriptorSet vSet = set;
 
   // This function is meant to be called inside the DescriptorSet destructor.
-  // That means we are not allowed to pass any exceptions out and handle them
-  // here.
+  // That means it is not allowed to pass any exceptions out.
+  // That's why irrecoverableError() is issued instead.
   try {
     VK_CHECK_RESULT(m_device.get().core<1, 0>().vkFreeDescriptorSets(
         m_device.get(), m_descriptorPool, 1, &vSet))
   } catch (VulkanError &e) {
-    // do something
+    irrecoverableError(e);
   }
   m_setCount--;
 }

@@ -13,6 +13,8 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <vkw/Instance.hpp>
+#include <vkw/ReferenceGuard.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -23,7 +25,7 @@ class Queue;
 
 enum class ext;
 
-class Device {
+class Device : public ReferenceGuard {
 public:
   Instance const &getParent() const { return m_parent; };
 
@@ -70,7 +72,7 @@ public:
   void waitIdle();
 
 private:
-  InstanceRef m_parent;
+  StrongReference<Instance> m_parent;
   VkDevice m_device;
 
   VmaAllocator m_allocator;

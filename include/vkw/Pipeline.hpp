@@ -1,8 +1,12 @@
 #ifndef VKRENDERER_PIPELINE_HPP
 #define VKRENDERER_PIPELINE_HPP
 
-#include "Common.hpp"
-#include "VertexBuffer.hpp"
+#include "vkw/DescriptorSet.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Shader.hpp"
+#include "vkw/VertexBuffer.hpp"
+#include <vkw/RenderPass.hpp>
+
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <functional>
@@ -70,25 +74,28 @@ private:
   VkSpecializationInfo m_info{};
 };
 
-class PipelineLayout {
+class PipelineLayout : public ReferenceGuard {
 public:
-  PipelineLayout(DeviceRef device, VkPipelineLayoutCreateFlags flags = 0);
+  PipelineLayout(Device &device, VkPipelineLayoutCreateFlags flags = 0);
   template <forward_range_of<DescriptorSetLayout> T>
-  PipelineLayout(DeviceRef device, T const &setLayouts,
+  PipelineLayout(Device &device, T const &setLayouts,
                  std::span<const VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0)
       : m_device(device) {
     std::copy(pushConstants.begin(), pushConstants.end(),
               std::back_inserter(m_pushConstants));
-    std::transform(
-        setLayouts.begin(), setLayouts.end(),
-        std::back_inserter(m_descriptorLayouts),
-        [](std::ranges::range_value_t<T> const &layout) { return layout; });
+    std::transform(setLayouts.begin(), setLayouts.end(),
+                   std::back_inserter(m_descriptorLayouts),
+                   [](std::ranges::range_value_t<T> const &layout) {
+                     return StrongReference<DescriptorSetLayout const>(
+                         layout.get());
+                     // Hello
+                   });
     m_init(flags);
   }
 
   // overload for 1 element case
-  PipelineLayout(DeviceRef device, DescriptorSetLayout const &setLayout,
+  PipelineLayout(Device &device, DescriptorSetLayout const &setLayout,
                  std::span<const VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0)
       : m_device(device) {
@@ -137,8 +144,8 @@ public:
 private:
   void m_init(VkPipelineLayoutCreateFlags flags);
 
-  DeviceRef m_device;
-  boost::container::small_vector<DescriptorSetLayoutCRef, 4>
+  StrongReference<Device> m_device;
+  boost::container::small_vector<StrongReference<DescriptorSetLayout const>, 4>
       m_descriptorLayouts{};
   boost::container::small_vector<VkPushConstantRange, 4> m_pushConstants{};
   VkPipelineLayoutCreateInfo m_createInfo{};
@@ -372,8 +379,8 @@ private:
 
 class GraphicsPipelineCreateInfo {
 public:
-  GraphicsPipelineCreateInfo(RenderPassCRef renderPass, uint32_t subpass,
-                             PipelineLayoutCRef layout);
+  GraphicsPipelineCreateInfo(RenderPass const &renderPass, uint32_t subpass,
+                             PipelineLayout const &layout);
 
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) noexcept;
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another);
@@ -416,23 +423,19 @@ public:
 
   uint32_t subpass() const { return m_createInfo.subpass; }
 
-  std::optional<VertexShaderCRef> vertexShader() const {
-    return m_vertexShader;
-  }
+  auto vertexShader() const { return m_vertexShader; }
 
-  std::optional<FragmentShaderCRef> fragmentShader() const {
-    return m_fragmentShader;
-  }
+  auto fragmentShader() const { return m_fragmentShader; }
 
 private:
-  RenderPassCRef m_renderPass;
+  StrongReference<RenderPass const> m_renderPass;
 
   // Shader Stages
 
   boost::container::small_vector<VkPipelineShaderStageCreateInfo, 2>
       m_shaderStages;
-  std::optional<VertexShaderCRef> m_vertexShader;
-  std::optional<FragmentShaderCRef> m_fragmentShader;
+  std::optional<StrongReference<VertexShader const>> m_vertexShader;
+  std::optional<StrongReference<FragmentShader const>> m_fragmentShader;
 
   // TODO: support other shader stages
 
@@ -451,7 +454,7 @@ private:
   boost::container::small_vector<VkPipelineColorBlendAttachmentState, 2>
       m_blendStates{};
 
-  PipelineLayoutCRef m_layout;
+  StrongReference<PipelineLayout const> m_layout;
   VkGraphicsPipelineCreateInfo m_createInfo{};
 
   // dynamic states
@@ -468,14 +471,14 @@ public:
 
   operator VkComputePipelineCreateInfo() const { return m_createInfo; }
 
-  PipelineLayoutCRef layout() const { return m_layout; }
+  auto &layout() const { return m_layout.get(); }
 
 private:
-  PipelineLayoutCRef m_layout;
+  StrongReference<PipelineLayout const> m_layout;
   SpecializationConstants m_constants;
   VkComputePipelineCreateInfo m_createInfo;
 };
-class Pipeline {
+class Pipeline : public ReferenceGuard {
 public:
   Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo);
   Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo);
@@ -506,8 +509,8 @@ public:
   operator VkPipeline() const { return m_pipeline; }
 
 private:
-  DeviceRef m_device;
-  PipelineLayoutCRef m_pipelineLayout;
+  StrongReference<Device> m_device;
+  StrongReference<PipelineLayout const> m_pipelineLayout;
   VkPipeline m_pipeline = VK_NULL_HANDLE;
 };
 

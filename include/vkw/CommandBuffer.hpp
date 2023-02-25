@@ -1,16 +1,18 @@
 #ifndef VKRENDERER_COMMANDBUFFER_HPP
 #define VKRENDERER_COMMANDBUFFER_HPP
 
-#include "Common.hpp"
-#include "DescriptorSet.hpp"
-#include "VertexBuffer.hpp"
+#include "vkw/CommandPool.hpp"
+#include "vkw/DescriptorSet.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/VertexBuffer.hpp"
 #include <boost/container/small_vector.hpp>
 #include <optional>
 #include <span>
+#include <vkw/RenderPass.hpp>
 
 namespace vkw {
 
-class CommandBuffer {
+class CommandBuffer : public ReferenceGuard {
 public:
   CommandBuffer(CommandBuffer &&another) noexcept
       : m_device(another.m_device), m_pool(another.m_pool),
@@ -178,8 +180,8 @@ public:
 
 protected:
   CommandBuffer(CommandPool &pool, VkCommandBufferLevel bufferLevel);
-  DeviceRef m_device;
-  std::reference_wrapper<CommandPool> m_pool;
+  StrongReference<Device> m_device;
+  StrongReference<CommandPool> m_pool;
   VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
   void m_begin(VkCommandBufferUsageFlags flags,
                VkCommandBufferInheritanceInfo const *inheritanceInfo);
@@ -247,7 +249,7 @@ public:
 private:
   void m_executeCommands(size_t nbufs, VkCommandBuffer const *buffers);
 
-  std::optional<RenderPassCRef> m_currentPass;
+  std::optional<StrongReference<RenderPass const>> m_currentPass;
   uint32_t m_currentSubpass;
 };
 

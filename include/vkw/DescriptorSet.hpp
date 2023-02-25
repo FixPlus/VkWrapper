@@ -1,10 +1,13 @@
 #ifndef VKWRAPPER_DESCRIPTORSET_HPP
 #define VKWRAPPER_DESCRIPTORSET_HPP
 
-#include "Image.hpp"
-#include "Sampler.hpp"
-#include "UniformBuffer.hpp"
 #include "vkw/Common.hpp"
+#include "vkw/DescriptorPool.hpp"
+#include "vkw/Device.hpp"
+#include "vkw/Image.hpp"
+#include "vkw/Sampler.hpp"
+#include "vkw/UniformBuffer.hpp"
+
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <iterator>
@@ -44,7 +47,7 @@ private:
   VkDescriptorSetLayoutBinding m_binding;
 };
 
-class DescriptorSetLayout {
+class DescriptorSetLayout : public ReferenceGuard {
 public:
   template <forward_range_of<DescriptorSetLayoutBinding> T>
   DescriptorSetLayout(Device const &device, T const &bindings,
@@ -109,13 +112,13 @@ public:
 
 private:
   void m_init(VkDescriptorSetLayoutCreateFlags flags);
-  DeviceCRef m_device;
+  StrongReference<Device const> m_device;
   boost::container::small_vector<DescriptorSetLayoutBinding, 3> m_bindings;
   VkDescriptorSetLayoutCreateInfo m_createInfo{};
   VkDescriptorSetLayout m_layout{};
 };
 
-class DescriptorSet {
+class DescriptorSet : public ReferenceGuard {
 public:
   DescriptorSet(DescriptorSet const &another) = delete;
   DescriptorSet(DescriptorSet &&another) noexcept
@@ -193,8 +196,8 @@ private:
 
   friend class DescriptorPool;
 
-  DescriptorPoolRef m_pool;
-  DescriptorSetLayoutCRef m_layout;
+  StrongReference<DescriptorPool> m_pool;
+  StrongReference<DescriptorSetLayout const> m_layout;
   VkDescriptorSet m_set{};
 };
 } // namespace vkw
