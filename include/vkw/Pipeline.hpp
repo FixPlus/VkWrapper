@@ -515,7 +515,7 @@ public:
   addBlendState(VkPipelineColorBlendAttachmentState state, uint32_t attachment);
   GraphicsPipelineCreateInfo &addDynamicState(VkDynamicState state);
 
-  operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
+  operator VkGraphicsPipelineCreateInfo const &() const { return m_createInfo; }
 
   VertexInputStateCreateInfoBase const &vertexInputState() const {
     return m_vertexInputStateCreateInfo;
@@ -590,7 +590,7 @@ public:
                             ComputeShader const &shader,
                             SpecializationConstants constants = {});
 
-  operator VkComputePipelineCreateInfo() const { return m_createInfo; }
+  operator VkComputePipelineCreateInfo const &() const { return m_createInfo; }
 
   auto &layout() const { return m_layout.get(); }
 
