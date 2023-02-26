@@ -14,19 +14,15 @@ public:
 
   BufferBase(BufferBase const &another) = delete;
   BufferBase(BufferBase &&another) noexcept
-      : Allocation(another.m_allocator), m_buffer(another.m_buffer),
+      : Allocation(std::move(another)), m_buffer(another.m_buffer),
         m_createInfo(another.m_createInfo) {
-    m_allocInfo = another.m_allocInfo;
-    m_allocation = another.m_allocation;
     another.m_buffer = VK_NULL_HANDLE;
   }
 
   BufferBase const &operator=(BufferBase const &another) = delete;
   BufferBase &operator=(BufferBase &&another) noexcept {
-    m_allocator = another.m_allocator;
-    m_allocInfo = another.m_allocInfo;
+    Allocation::operator=(std::move(another));
     m_createInfo = another.m_createInfo;
-    m_allocation = another.m_allocation;
     std::swap(m_buffer, another.m_buffer);
     return *this;
   }

@@ -53,6 +53,7 @@ AllocatedImage::AllocatedImage(VmaAllocator allocator,
       AllocatedImage::~AllocatedImage() {
   if (m_image == VK_NULL_HANDLE)
     return;
+  unmap();
   vmaDestroyImage(m_allocator, m_image, m_allocation);
 }
 

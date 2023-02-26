@@ -516,13 +516,12 @@ private:
 
 class GraphicsPipeline : public Pipeline {
 public:
-  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo createInfo)
-      : Pipeline(device, createInfo), m_createInfo(std::move(createInfo)) {}
+  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
+      : Pipeline(device, createInfo), m_createInfo(createInfo) {}
 
-  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo createInfo,
+  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
                    PipelineCache const &cache)
-      : Pipeline(device, createInfo, cache),
-        m_createInfo(std::move(createInfo)) {}
+      : Pipeline(device, createInfo, cache), m_createInfo(createInfo) {}
 
   GraphicsPipelineCreateInfo const &info() const { return m_createInfo; }
 
@@ -532,10 +531,10 @@ private:
 
 class ComputePipeline : public Pipeline {
 public:
-  ComputePipeline(Device &device, ComputePipelineCreateInfo createInfo)
+  ComputePipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
       : Pipeline(device, createInfo), m_createInfo(createInfo){};
 
-  ComputePipeline(Device &device, ComputePipelineCreateInfo createInfo,
+  ComputePipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
                   PipelineCache const &cache)
       : Pipeline(device, createInfo, cache), m_createInfo(createInfo){};
   ComputePipelineCreateInfo const &info() const { return m_createInfo; }

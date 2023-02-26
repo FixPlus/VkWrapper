@@ -5,9 +5,8 @@
 namespace vkw {
 
 void Allocation::map() {
-  if (!m_allocInfo.pMappedData)
-    VK_CHECK_RESULT(
-        vmaMapMemory(m_allocator, m_allocation, &m_allocInfo.pMappedData));
+  if (!m_mapped)
+    VK_CHECK_RESULT(vmaMapMemory(m_allocator, m_allocation, &m_mapped));
 }
 
 BufferBase::BufferBase(VmaAllocator allocator,
@@ -23,8 +22,10 @@ BufferBase::BufferBase(VmaAllocator allocator,
       }
 
       BufferBase::~BufferBase() {
-  if (m_buffer != VK_NULL_HANDLE)
+  if (m_buffer != VK_NULL_HANDLE) {
+    unmap();
     vmaDestroyBuffer(m_allocator, m_buffer, m_allocation);
+  }
 }
 
 std::unique_ptr<BufferBase>

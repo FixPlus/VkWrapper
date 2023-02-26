@@ -3,17 +3,33 @@
 #include "Utils.hpp"
 #include "vkw/Extensions.hpp"
 #include "vkw/Instance.hpp"
+#include <algorithm>
 #include <cassert>
-#include <iostream>
 #include <memory>
 #include <mutex>
 #include <numeric>
 #include <sstream>
 #include <string>
+
 namespace vkw::debug {
 
 namespace {
 
+MsgSeverity convert(VkDebugUtilsMessageSeverityFlagBitsEXT severity) {
+  if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT) {
+    return MsgSeverity::Verbose;
+  } else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT) {
+    return MsgSeverity::Info;
+  } else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) {
+    return MsgSeverity::Warning;
+  } else if (severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+    return MsgSeverity::Error;
+  } else if (severity >= VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) {
+    return MsgSeverity::Error;
+  } else {
+    return MsgSeverity::Verbose;
+  }
+}
 class ValidationImpl final : private Layer<layer::KHRONOS_validation>,
                              private Extension<ext::EXT_debug_utils> {
 public:
@@ -54,21 +70,34 @@ private:
                                    pUserData);
   }
 
-  bool
+  VkBool32
   m_self_callback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
                   VkDebugUtilsMessageTypeFlagsEXT messageType,
                   const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
                   void *pUserData) {
     auto callbackGuard = std::lock_guard{m_mutex};
-    VkBool32 acc = false;
-    acc = std::accumulate(m_validations.begin(), m_validations.end(), acc,
-                          [&](VkBool32 a, Validation *val) {
-                            auto result = val->messageCallback(
-                                messageSeverity, messageType, pCallbackData,
-                                pUserData);
-                            return a || result;
-                          });
-    return acc;
+    Validation::Message message{pCallbackData->messageIdNumber,
+                                pCallbackData->pMessageIdName,
+                                pCallbackData->pMessage};
+    auto severity = convert(messageSeverity);
+    std::for_each(m_validations.begin(), m_validations.end(),
+                  [&](Validation *val) {
+                    if (!(val->messageSeverityFilter & severity))
+                      return;
+                    switch (messageType) {
+                    default:
+                    case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+                      val->onGeneralMessage(severity, message);
+                      break;
+                    case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+                      val->onValidationMessage(severity, message);
+                      break;
+                    case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+                      val->onPerformanceMessage(severity, message);
+                      break;
+                    }
+                  });
+    return severity == MsgSeverity::Error;
   }
 
   void m_setup() {
@@ -128,7 +157,7 @@ Validation::Validation(const Instance &instance) {
   register_callback(*this, instance);
 }
 Validation::~Validation() { unregister_callback(*this); }
-
+#if 0
 bool Validation::messageCallback(
     VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
     VkDebugUtilsMessageTypeFlagsEXT messageType,
@@ -164,6 +193,7 @@ bool Validation::messageCallback(
 
   return result;
 }
+#endif
 Validation::Validation(const Validation &another) {
   register_callback_secondary(*this);
 }

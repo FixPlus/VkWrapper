@@ -248,9 +248,12 @@ public:
 
 private:
   void m_executeCommands(size_t nbufs, VkCommandBuffer const *buffers);
-
+  // FIXME: This strong reference causes irrecoverable errors when exception is
+  // thrown while recording. Better to use something else.
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   std::optional<StrongReference<RenderPass const>> m_currentPass;
   uint32_t m_currentSubpass;
+#endif
 };
 
 } // namespace vkw

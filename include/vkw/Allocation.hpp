@@ -30,7 +30,7 @@ public:
   }
 
   template <typename T> std::span<T> mapped() const {
-    auto *ptr = reinterpret_cast<T *>(m_allocInfo.pMappedData);
+    auto *ptr = reinterpret_cast<T *>(m_mapped);
     auto count = m_allocInfo.size / sizeof(T);
     return {ptr, ptr + count};
   }
@@ -38,8 +38,10 @@ public:
   void map();
 
   void unmap() {
+    if (!m_mapped)
+      return;
     vmaUnmapMemory(m_allocator, m_allocation);
-    m_allocInfo.pMappedData = nullptr;
+    m_mapped = nullptr;
   }
   void flush(VkDeviceSize offset, VkDeviceSize size) {
     vmaFlushAllocation(m_allocator, m_allocation, offset, size);
@@ -49,11 +51,28 @@ public:
     vmaInvalidateAllocation(m_allocator, m_allocation, offset, size);
   }
 
+  Allocation(Allocation &&another) noexcept
+      : m_allocator(another.m_allocator), m_allocation(another.m_allocation),
+        m_allocInfo(another.m_allocInfo), m_mapped(another.m_mapped) {
+    another.m_mapped = nullptr;
+  }
+  Allocation(Allocation const &another) = delete;
+
+  Allocation &operator=(Allocation &&another) noexcept {
+    std::swap(m_allocator, another.m_allocator);
+    std::swap(m_allocation, another.m_allocation);
+    std::swap(m_allocInfo, another.m_allocInfo);
+    std::swap(m_mapped, another.m_mapped);
+    return *this;
+  }
+  Allocation &operator=(Allocation const &another) = delete;
+
 protected:
   explicit Allocation(VmaAllocator parent) : m_allocator(parent){};
 
   VmaAllocator m_allocator;
   VmaAllocation m_allocation = VK_NULL_HANDLE;
+  void *m_mapped = nullptr;
   VmaAllocationInfo m_allocInfo{};
 };
 } // namespace vkw

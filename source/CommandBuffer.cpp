@@ -152,10 +152,11 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
                                            bool useSecondary,
                                            uint32_t clearValuesCount,
                                            VkClearValue *pClearValues) {
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (m_currentPass.has_value())
     throw Error("CommandBuffer record failed: called beginRenderPass() while "
                 "having another RenderPass active");
-
+#endif
   VkRenderPassBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
   beginInfo.pNext = nullptr;
@@ -169,31 +170,40 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
       m_commandBuffer, &beginInfo,
       useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
                    : VK_SUBPASS_CONTENTS_INLINE);
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   m_currentPass = renderPass;
   m_currentSubpass = 0;
+#endif
 }
 
 void PrimaryCommandBuffer::nextSubpass(bool useSecondary) {
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (!m_currentPass.has_value())
     throw Error("CommandBuffer record failed: called nextSubpass() while "
                 "having no RenderPass active");
   if (m_currentPass.value().get().info().subpassCount() == m_currentSubpass)
     throw Error("CommandBuffer record failed: call to nextSubpass() caused "
                 "subpass overflow");
-
+#endif
   m_device.get().core<1, 0>().vkCmdNextSubpass(
       m_commandBuffer, useSecondary
                            ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
                            : VK_SUBPASS_CONTENTS_INLINE);
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   m_currentSubpass++;
+#endif
 }
 
 void PrimaryCommandBuffer::endRenderPass() {
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (!m_currentPass.has_value())
     throw Error("CommandBuffer record failed: called endRenderPass() while "
                 "having no RenderPass active");
+#endif
   m_device.get().core<1, 0>().vkCmdEndRenderPass(m_commandBuffer);
+#ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   m_currentPass.reset();
+#endif
 }
 
 void PrimaryCommandBuffer::m_executeCommands(size_t nbufs,
