@@ -127,7 +127,7 @@ public:
   AllocatedImage(VmaAllocator allocator,
                  VmaAllocationCreateInfo allocCreateInfo);
   AllocatedImage(AllocatedImage &&another) noexcept
-      : Allocation(another), ImageInterface(std::move(another)),
+      : Allocation(std::move(another)), ImageInterface(std::move(another)),
         m_image(another.m_image) {
     another.m_image = VK_NULL_HANDLE;
   }
