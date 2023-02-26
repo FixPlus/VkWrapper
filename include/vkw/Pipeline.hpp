@@ -16,6 +16,15 @@
 
 namespace vkw {
 
+/**
+ *
+ * @class SpecializationConstants
+ *
+ * @brief Represents VkSpecializationInfo structure.
+ *
+ *
+ */
+
 class SpecializationConstants {
 public:
   SpecializationConstants();
@@ -73,6 +82,15 @@ private:
   boost::container::small_vector<unsigned char, 64> m_data;
   VkSpecializationInfo m_info{};
 };
+
+/**
+ *
+ * @class PipelineLayout
+ *
+ * @brief Represents vulkan's VkPipelineLayout structure.
+ *
+ *
+ */
 
 class PipelineLayout : public ReferenceGuard {
 public:
@@ -152,7 +170,30 @@ private:
   VkPipelineLayout m_layout{};
 };
 
-class VertexInputStateCreateInfoBase {
+/*
+ *
+ * Following structures represent:
+ *
+ * VERTEX INPUT STATE STAGE DESCRIPTION
+ *
+ */
+
+/**
+ *
+ * @class VertexInputStateCreateInfoBase
+ *
+ * @brief Base class for VertexInputStateCreateInfo structures
+ *
+ * @note Derived classes must provide storage for data referenced
+ * by VkPipelineVertexInputStateCreateInfo.
+ *
+ *
+ * You may want to add your own derived classes that will fit
+ * your needs
+ *
+ */
+
+class VertexInputStateCreateInfoBase : public ReferenceGuard {
 public:
   VertexInputStateCreateInfoBase(
       uint32_t attributeDescCount,
@@ -181,28 +222,42 @@ private:
   VkPipelineVertexInputStateCreateInfo m_createInfo{};
 };
 
-struct VertexInputStateCreateInfoBaseHandle
-    : public std::unique_ptr<VertexInputStateCreateInfoBase> {
-  template <typename... Args>
-  VertexInputStateCreateInfoBaseHandle(Args... args)
-      : std::unique_ptr<VertexInputStateCreateInfoBase>{
-            std::make_unique<VertexInputStateCreateInfoBase>(args...)} {}
-  VertexInputStateCreateInfoBaseHandle(
-      VertexInputStateCreateInfoBaseHandle const &another)
-      : std::unique_ptr<VertexInputStateCreateInfoBase>{
-            std::make_unique<VertexInputStateCreateInfoBase>(*another.get())} {}
+/**
+ *
+ * @class NullVertexInputState
+ * @brief Implementation of VertexInputStateCreateInfoBase data holder.
+ * Represents null vertex input state with no bindings at all. As such
+ * state has only one possible configuration, it is implemented as singleton.
+ *
+ */
 
-  VertexInputStateCreateInfoBaseHandle(
-      VertexInputStateCreateInfoBaseHandle &&another) noexcept
-      : std::unique_ptr<VertexInputStateCreateInfoBase>{std::move(another)} {}
+class NullVertexInputState : public VertexInputStateCreateInfoBase {
+public:
+  /**
+   * @return reference to statically created NullVertexInputState object
+   */
+  static NullVertexInputState &get();
 
-  VertexInputStateCreateInfoBaseHandle &
-  operator=(VertexInputStateCreateInfoBaseHandle &&another) noexcept {
-    std::unique_ptr<VertexInputStateCreateInfoBase>::operator=(
-        std::move(another));
-    return *this;
-  }
+private:
+  NullVertexInputState()
+      : VertexInputStateCreateInfoBase(0, nullptr, 0, nullptr, 0){};
 };
+
+/**
+ * @concept BindingPointDescriptionLike
+ *
+ * Used by @class VertexInputStateCreateInfo to check if parameters
+ * representing VkVertexInputBindingDescription are satisfy following
+ * constraints:
+ *
+ *   1. Class must have static constexpr @member 'binding' of type
+ *   uint32_t, representing binding number.
+ *   2. Class must have static constexpr @member 'value' of type
+ *   VkVertexInputBindingDescription, representing binding info.
+ *   3. Class must have 'Attributes' name alias for class that
+ *   satisfy @concept AttributeArray.
+ *
+ */
 
 template <typename T>
 concept BindingPointDescriptionLike = requires(T desc) {
@@ -214,6 +269,16 @@ concept BindingPointDescriptionLike = requires(T desc) {
 }
 &&AttributeArray<typename T::Attributes>;
 
+/**
+ *
+ * @class per_vertex
+ * @brief Implementation of BindingPointDescriptionLike class that represents
+ * input binding description with inputRate=VK_VERTEX_INPUT_RATE_VERTEX
+ *
+ * @tparam T is AttributeArray structure type.
+ * @tparam bindingT is uint32_t constant representing binding number.
+ */
+
 template <AttributeArray T, uint32_t bindingT = 0> struct per_vertex {
   using Attributes = T;
   constexpr static const uint32_t binding = bindingT;
@@ -222,6 +287,16 @@ template <AttributeArray T, uint32_t bindingT = 0> struct per_vertex {
       .stride = sizeof(T),
       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX};
 };
+
+/**
+ *
+ * @class per_instance
+ * @brief Implementation of BindingPointDescriptionLike class that represents
+ * input binding description with inputRate=VK_VERTEX_INPUT_RATE_INSTANCE.
+ *
+ * @tparam T is AttributeArray structure type.
+ * @tparam bindingT is uint32_t constant representing binding number.
+ */
 
 template <AttributeArray T, uint32_t bindingT = 0> struct per_instance {
   using Attributes = T;
@@ -232,11 +307,15 @@ template <AttributeArray T, uint32_t bindingT = 0> struct per_instance {
       .inputRate = VK_VERTEX_INPUT_RATE_INSTANCE};
 };
 
-class NullVertexInputState : public VertexInputStateCreateInfoBase {
-public:
-  NullVertexInputState()
-      : VertexInputStateCreateInfoBase(0, nullptr, 0, nullptr, 0){};
-};
+/**
+ *
+ * @class VertexInputStateCreateInfo
+ * @brief Implementation of VertexInputStateCreateInfoBase data holder.
+ * Used when vertex input state is known in compile time and can be
+ * represented by a pack of BindingPointDescriptionLike structure types.
+ *
+ * @tparam Bindings is a pack of BindingPointDescriptionLike structure types.
+ */
 
 template <BindingPointDescriptionLike... Bindings>
 class VertexInputStateCreateInfo : public VertexInputStateCreateInfoBase {
@@ -316,6 +395,14 @@ template <BindingPointDescriptionLike... Bindings>
 typename VertexInputStateCreateInfo<Bindings...>::M_AttributeDescHolder const
     VertexInputStateCreateInfo<Bindings...>::m_AttributeDescHolder = {};
 
+/*
+ *
+ * Following structures represent:
+ *
+ * INPUT ASSEMBLY STATE DESCRIPTION
+ *
+ */
+
 class InputAssemblyStateCreateInfo {
 public:
   InputAssemblyStateCreateInfo(
@@ -337,6 +424,14 @@ public:
 private:
   VkPipelineInputAssemblyStateCreateInfo m_createInfo{};
 };
+
+/*
+ *
+ * Following structures represent:
+ *
+ * RASTERIZATION STATE DESCRIPTION
+ *
+ */
 
 class RasterizationStateCreateInfo {
 public:
@@ -360,6 +455,14 @@ private:
   VkPipelineRasterizationStateCreateInfo m_createInfo{};
 };
 
+/*
+ *
+ * Following structures represent:
+ *
+ * DEPTH TEST STATE DESCRIPTION
+ *
+ */
+
 class DepthTestStateCreateInfo {
 public:
   DepthTestStateCreateInfo(VkCompareOp compareOp, bool writeEnable,
@@ -376,6 +479,15 @@ public:
 private:
   VkPipelineDepthStencilStateCreateInfo m_createInfo{};
 };
+
+/**
+ *
+ * @class GraphicsPipelineCreateInfo
+ *
+ * @brief Is used to aggregate all needed data for
+ * VkGraphicsPipelineCreateInfo structure.
+ *
+ */
 
 class GraphicsPipelineCreateInfo {
 public:
@@ -394,7 +506,7 @@ public:
   addFragmentShader(FragmentShader const &shader,
                     SpecializationConstants const &constants = {});
   GraphicsPipelineCreateInfo &
-  addVertexInputState(VertexInputStateCreateInfoBaseHandle vertexInputState);
+  addVertexInputState(VertexInputStateCreateInfoBase const &vertexInputState);
   GraphicsPipelineCreateInfo &
   addInputAssemblyState(InputAssemblyStateCreateInfo const &inputAssemblyState);
   GraphicsPipelineCreateInfo &
@@ -406,7 +518,7 @@ public:
   operator VkGraphicsPipelineCreateInfo() const { return m_createInfo; }
 
   VertexInputStateCreateInfoBase const &vertexInputState() const {
-    return *m_vertexInputStateCreateInfo;
+    return m_vertexInputStateCreateInfo;
   }
 
   VkPipelineInputAssemblyStateCreateInfo inputAssemblyState() const {
@@ -441,8 +553,8 @@ private:
 
   // Fixed pipeline stages
 
-  VertexInputStateCreateInfoBaseHandle m_vertexInputStateCreateInfo =
-      NullVertexInputState();
+  vkw::StrongReference<VertexInputStateCreateInfoBase const>
+      m_vertexInputStateCreateInfo = NullVertexInputState::get();
   VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyStateCreateInfo;
   VkPipelineRasterizationStateCreateInfo m_rasterizationStateCreateInfo;
 
@@ -463,6 +575,15 @@ private:
   boost::container::small_vector<VkDynamicState, 4> m_dynStates;
 };
 
+/**
+ *
+ * @class ComputePipelineCreateInfo
+ *
+ * @brief Is used to aggregate all needed data for
+ * VkComputePipelineCreateInfo structure.
+ *
+ */
+
 class ComputePipelineCreateInfo {
 public:
   ComputePipelineCreateInfo(PipelineLayout const &layout,
@@ -478,6 +599,17 @@ private:
   SpecializationConstants m_constants;
   VkComputePipelineCreateInfo m_createInfo;
 };
+
+/**
+ *
+ * @class Pipeline
+ *
+ * @brief Represents generic VkPipeline structure. It is advised to
+ * use it's derived classes that represent specific pipelines.
+ *
+ *
+ */
+
 class Pipeline : public ReferenceGuard {
 public:
   Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo);
@@ -514,6 +646,15 @@ private:
   VkPipeline m_pipeline = VK_NULL_HANDLE;
 };
 
+/**
+ *
+ * @class GraphicsPipeline
+ *
+ * @brief Represents VKPipeline created by vkCreateGraphicsPipelines.
+ *
+ *
+ */
+
 class GraphicsPipeline : public Pipeline {
 public:
   GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
@@ -528,6 +669,15 @@ public:
 private:
   GraphicsPipelineCreateInfo m_createInfo;
 };
+
+/**
+ *
+ * @class ComputePipeline
+ *
+ * @brief Represents VkPipeline created by vkCreateComputePipelines.
+ *
+ *
+ */
 
 class ComputePipeline : public Pipeline {
 public:

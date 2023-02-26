@@ -42,9 +42,8 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
 void PipelineLayout::m_init(VkPipelineLayoutCreateFlags flags) {
 
   boost::container::small_vector<VkDescriptorSetLayout, 4> layouts;
-  std::transform(
-      m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
-      std::back_inserter(layouts),
+  std::transform(m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
+                 std::back_inserter(layouts),
                  [](auto &layout) -> VkDescriptorSetLayout {
                    return layout.operator const vkw::DescriptorSetLayout &();
                  });
@@ -136,6 +135,11 @@ VertexInputStateCreateInfoBase::binding(uint32_t index) const {
                 std::to_string(totalBindings()) + ")");
 
   return m_createInfo.pVertexBindingDescriptions[index];
+}
+
+NullVertexInputState &NullVertexInputState::get() {
+  static NullVertexInputState handle;
+  return handle;
 }
 
 InputAssemblyStateCreateInfo::InputAssemblyStateCreateInfo(
@@ -235,17 +239,17 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.pTessellationState =
       nullptr; // TODO: implement tesselation shader support
   m_createInfo.pVertexInputState =
-      &(m_vertexInputStateCreateInfo->
+      &(m_vertexInputStateCreateInfo.get().
         operator const VkPipelineVertexInputStateCreateInfo &());
 
   m_createInfo.stageCount = m_shaderStages.size();
   m_createInfo.pStages = m_shaderStages.data();
 }
 GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::addVertexInputState(
-    VertexInputStateCreateInfoBaseHandle vertexInputState) {
-  m_vertexInputStateCreateInfo = std::move(vertexInputState);
+    VertexInputStateCreateInfoBase const &vertexInputState) {
+  m_vertexInputStateCreateInfo = vertexInputState;
   m_createInfo.pVertexInputState =
-      &(m_vertexInputStateCreateInfo->
+      &(m_vertexInputStateCreateInfo.get().
         operator const VkPipelineVertexInputStateCreateInfo &());
 
   return *this;
@@ -356,7 +360,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.pRasterizationState = &m_rasterizationStateCreateInfo;
   m_createInfo.pTessellationState = nullptr;
   m_createInfo.pVertexInputState =
-      &(m_vertexInputStateCreateInfo->
+      &(m_vertexInputStateCreateInfo.get().
         operator const VkPipelineVertexInputStateCreateInfo &());
 }
 GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
@@ -384,7 +388,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_createInfo.pRasterizationState = &m_rasterizationStateCreateInfo;
   m_createInfo.pTessellationState = nullptr;
   m_createInfo.pVertexInputState =
-      &(m_vertexInputStateCreateInfo->
+      &(m_vertexInputStateCreateInfo.get().
         operator const VkPipelineVertexInputStateCreateInfo &());
   m_colorBlendState.pAttachments = m_blendStates.data();
   m_dynamicState.pDynamicStates = m_dynStates.data();
