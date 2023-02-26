@@ -16,6 +16,7 @@
 
 namespace vkw {
 
+class PipelineCache;
 /**
  *
  * @class SpecializationConstants
@@ -95,7 +96,7 @@ private:
 class PipelineLayout : public ReferenceGuard {
 public:
   PipelineLayout(Device &device, VkPipelineLayoutCreateFlags flags = 0);
-  template <forward_range_of<DescriptorSetLayout> T>
+  template <forward_range_of<DescriptorSetLayout const> T>
   PipelineLayout(Device &device, T const &setLayouts,
                  std::span<const VkPushConstantRange> pushConstants = {},
                  VkPipelineLayoutCreateFlags flags = 0)
@@ -107,7 +108,6 @@ public:
                    [](std::ranges::range_value_t<T> const &layout) {
                      return StrongReference<DescriptorSetLayout const>(
                          layout.get());
-                     // Hello
                    });
     m_init(flags);
   }

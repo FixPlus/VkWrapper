@@ -1,10 +1,10 @@
 #ifndef VKWRAPPER_DESCRIPTORSET_HPP
 #define VKWRAPPER_DESCRIPTORSET_HPP
 
-#include "vkw/Common.hpp"
 #include "vkw/DescriptorPool.hpp"
 #include "vkw/Device.hpp"
 #include "vkw/Image.hpp"
+#include "vkw/RangeConcepts.hpp"
 #include "vkw/Sampler.hpp"
 #include "vkw/UniformBuffer.hpp"
 

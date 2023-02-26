@@ -12,6 +12,11 @@
 
 namespace vkw {
 
+class GraphicsPipeline;
+class PipelineLayout;
+class ComputePipeline;
+class FrameBuffer;
+
 class CommandBuffer : public ReferenceGuard {
 public:
   CommandBuffer(CommandBuffer &&another) noexcept
