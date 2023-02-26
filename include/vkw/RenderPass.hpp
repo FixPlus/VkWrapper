@@ -1,8 +1,8 @@
 #ifndef VKRENDERER_RENDERPASS_HPP
 #define VKRENDERER_RENDERPASS_HPP
 
-#include "vkw/Common.hpp"
 #include "vkw/Device.hpp"
+#include "vkw/RangeConcepts.hpp"
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <optional>
@@ -115,14 +115,14 @@ class RenderPassCreateInfo {
 public:
   RenderPassCreateInfo(RenderPassCreateInfo &&another);
   RenderPassCreateInfo(RenderPassCreateInfo const &another) = delete;
-  template <forward_range_of<AttachmentDescription> T>
+  template <forward_range_of<AttachmentDescription const> T>
   RenderPassCreateInfo(
       T const &attachments,
       std::vector<StrongReference<SubpassDescription const>> const &subpasses,
       std::vector<SubpassDependency> const &dependencies,
       VkRenderPassCreateFlags flags = 0) {
     auto attachmentsSubrange =
-        ranges::make_subrange<AttachmentDescription>(attachments);
+        ranges::make_subrange<AttachmentDescription const>(attachments);
     using attachmentsSubrangeT = decltype(attachmentsSubrange);
     std::transform(attachmentsSubrange.begin(), attachmentsSubrange.end(),
                    std::back_inserter(m_attachments),
