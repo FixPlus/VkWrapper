@@ -13,7 +13,7 @@ namespace vkw {
 
 CommandBuffer::CommandBuffer(CommandPool &pool,
                              VkCommandBufferLevel bufferLevel)
-    : m_pool(pool), m_device(pool.getParent()) {
+    : m_pool(pool), m_device(pool.parent()) {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
   allocInfo.pNext = nullptr;

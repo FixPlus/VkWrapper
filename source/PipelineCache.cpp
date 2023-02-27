@@ -2,40 +2,39 @@
 #include "Utils.hpp"
 #include "vkw/Device.hpp"
 
-vkw::PipelineCache::PipelineCache(vkw::Device &device, size_t initDataSize,
-                                  void *initData,
-                                  VkPipelineCacheCreateFlags flags)
-    : m_device(device) {
+namespace vkw {
+
+namespace {
+
+VkPipelineCacheCreateInfo fillCreateInfo(size_t initDataSize, void *initData,
+                                         VkPipelineCacheCreateFlags flags) {
   VkPipelineCacheCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
   createInfo.pNext = nullptr;
   createInfo.flags = flags;
   createInfo.initialDataSize = initDataSize;
   createInfo.pInitialData = initData;
-
-  VK_CHECK_RESULT(device.core<1, 0>().vkCreatePipelineCache(device, &createInfo,
-                                                            nullptr, &m_cache))
+  return createInfo;
 }
-vkw::PipelineCache::~PipelineCache() {
-  if (!m_cache)
-    return;
+} // namespace
 
-  m_device.get().core<1, 0>().vkDestroyPipelineCache(m_device.get(), m_cache,
-                                                     nullptr);
-}
+PipelineCache::PipelineCache(vkw::Device const &device, size_t initDataSize,
+                             void *initData, VkPipelineCacheCreateFlags flags)
+    : UniqueVulkanObject<VkPipelineCache>(
+          device, fillCreateInfo(initDataSize, initData, flags)) {}
 
-size_t vkw::PipelineCache::dataSize() const {
+size_t PipelineCache::dataSize() const {
   size_t ret{};
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkGetPipelineCacheData(
-      m_device.get(), m_cache, &ret, nullptr))
+  VK_CHECK_RESULT(parent().core<1, 0>().vkGetPipelineCacheData(
+      parent(), handle(), &ret, nullptr))
 
   return ret;
 }
 
-bool vkw::PipelineCache::getData(void *buffer, size_t bufferLength) const {
+bool PipelineCache::getData(void *buffer, size_t bufferLength) const {
 
-  auto result = m_device.get().core<1, 0>().vkGetPipelineCacheData(
-      m_device.get(), m_cache, &bufferLength, buffer);
+  auto result = parent().core<1, 0>().vkGetPipelineCacheData(
+      parent(), handle(), &bufferLength, buffer);
   if (result == VK_INCOMPLETE) {
     return false;
   } else if (result == VK_SUCCESS) {
@@ -46,3 +45,5 @@ bool vkw::PipelineCache::getData(void *buffer, size_t bufferLength) const {
 
   return false;
 }
+
+} // namespace vkw

@@ -3,6 +3,8 @@
 
 #include "vkw/Device.hpp"
 #include "vkw/RangeConcepts.hpp"
+#include <vkw/UniqueVulkanObject.hpp>
+
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
 #include <optional>
@@ -145,7 +147,7 @@ public:
   RenderPassCreateInfo &
   operator=(RenderPassCreateInfo &&another) noexcept = default;
 
-  operator VkRenderPassCreateInfo const &() const { return m_createInfo; }
+  auto &info() const { return m_createInfo; }
 
   uint32_t subpassCount() const { return m_subpasses.size(); }
 
@@ -177,34 +179,12 @@ private:
   VkRenderPassCreateInfo m_createInfo{};
 };
 
-class RenderPass : public ReferenceGuard {
+class RenderPass : public RenderPassCreateInfo,
+                   public UniqueVulkanObject<VkRenderPass> {
 public:
-  RenderPass(Device &device, RenderPassCreateInfo createInfo);
-
-  RenderPass(RenderPass &&another) noexcept
-      : m_parent(another.m_parent),
-        m_createInfo(std::move(another.m_createInfo)),
-        m_renderPass(another.m_renderPass) {
-    another.m_renderPass = VK_NULL_HANDLE;
-  }
-
-  RenderPass &operator=(RenderPass &&another) noexcept {
-    m_parent = another.m_parent;
-    m_createInfo = std::move(another.m_createInfo);
-    std::swap(m_renderPass, another.m_renderPass);
-    return *this;
-  }
-
-  virtual ~RenderPass();
-
-  RenderPassCreateInfo const &info() const { return m_createInfo; }
-
-  operator VkRenderPass() const { return m_renderPass; }
-
-private:
-  StrongReference<Device> m_parent;
-  RenderPassCreateInfo m_createInfo;
-  VkRenderPass m_renderPass = VK_NULL_HANDLE;
+  RenderPass(Device const &device, RenderPassCreateInfo createInfo)
+      : RenderPassCreateInfo(std::move(createInfo)),
+        UniqueVulkanObject<VkRenderPass>(device, info()) {}
 };
 
 } // namespace vkw

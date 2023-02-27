@@ -185,8 +185,8 @@ public:
 
 protected:
   CommandBuffer(CommandPool &pool, VkCommandBufferLevel bufferLevel);
-  StrongReference<Device> m_device;
-  StrongReference<CommandPool> m_pool;
+  StrongReference<Device const> m_device;
+  StrongReference<CommandPool const> m_pool;
   VkCommandBuffer m_commandBuffer = VK_NULL_HANDLE;
   void m_begin(VkCommandBufferUsageFlags flags,
                VkCommandBufferInheritanceInfo const *inheritanceInfo);

@@ -9,27 +9,7 @@
 
 namespace vkw {
 
-PipelineLayout::PipelineLayout(Device &device,
-                               VkPipelineLayoutCreateFlags flags)
-    : m_device(device) {
-  m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-  m_createInfo.pNext = nullptr;
-  m_createInfo.flags = flags;
-  m_createInfo.setLayoutCount = 0;
-  m_createInfo.pushConstantRangeCount = 0;
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
-      m_device.get(), &m_createInfo, nullptr, &m_layout))
-}
-
-PipelineLayout::~PipelineLayout() {
-  if (m_layout == VK_NULL_HANDLE)
-    return;
-
-  m_device.get().core<1, 0>().vkDestroyPipelineLayout(m_device.get(), m_layout,
-                                                      nullptr);
-}
-bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
+bool PipelineLayoutInfo::operator==(PipelineLayoutInfo const &rhs) const {
   if (m_createInfo.flags != rhs.m_createInfo.flags ||
       m_descriptorLayouts.size() != rhs.m_descriptorLayouts.size())
     return false;
@@ -39,25 +19,21 @@ bool PipelineLayout::operator==(PipelineLayout const &rhs) const {
                        return layout == *(rhsLayoutIter++);
                      });
 }
-void PipelineLayout::m_init(VkPipelineLayoutCreateFlags flags) {
+void PipelineLayoutInfo::m_fillInfo(VkPipelineLayoutCreateFlags flags) {
 
-  boost::container::small_vector<VkDescriptorSetLayout, 4> layouts;
   std::transform(m_descriptorLayouts.begin(), m_descriptorLayouts.end(),
-                 std::back_inserter(layouts),
+                 std::back_inserter(m_rawLayout),
                  [](auto &layout) -> VkDescriptorSetLayout {
                    return layout.operator const vkw::DescriptorSetLayout &();
                  });
   m_createInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.flags = flags;
-  m_createInfo.setLayoutCount = layouts.size();
-  m_createInfo.pSetLayouts = layouts.data();
+  m_createInfo.setLayoutCount = m_rawLayout.size();
+  m_createInfo.pSetLayouts = m_rawLayout.data();
   // TODO : verify push constant ranges against the device limits
   m_createInfo.pushConstantRangeCount = m_pushConstants.size();
   m_createInfo.pPushConstantRanges = m_pushConstants.data();
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreatePipelineLayout(
-      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
@@ -204,7 +180,7 @@ GraphicsPipelineCreateInfo::GraphicsPipelineCreateInfo(
   m_colorBlendState.pNext = nullptr;
   m_colorBlendState.flags = 0;
   m_colorBlendState.attachmentCount =
-      m_renderPass.get().info().subpassInfo(subpass).colorAttachments.size();
+      m_renderPass.get().subpassInfo(subpass).colorAttachments.size();
   VkPipelineColorBlendAttachmentState state{};
   state.blendEnable = VK_FALSE;
   state.colorWriteMask = 0xf;

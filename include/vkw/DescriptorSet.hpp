@@ -7,6 +7,7 @@
 #include "vkw/RangeConcepts.hpp"
 #include "vkw/Sampler.hpp"
 #include "vkw/UniformBuffer.hpp"
+#include "vkw/UniqueVulkanObject.hpp"
 
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
@@ -47,12 +48,11 @@ private:
   VkDescriptorSetLayoutBinding m_binding;
 };
 
-class DescriptorSetLayout : public ReferenceGuard {
+class DescriptorSetLayoutInfo {
 public:
   template <forward_range_of<DescriptorSetLayoutBinding> T>
-  DescriptorSetLayout(Device const &device, T const &bindings,
-                      VkDescriptorSetLayoutCreateFlags flags = 0)
-      : m_device(device) {
+  explicit DescriptorSetLayoutInfo(T const &bindings,
+                                   VkDescriptorSetLayoutCreateFlags flags = 0) {
     auto bindingsSubrange =
         ranges::make_subrange<DescriptorSetLayoutBinding>(bindings);
     using bindingsSubrangeT = decltype(bindingsSubrange);
@@ -60,26 +60,18 @@ public:
                    std::back_inserter(m_bindings), [](auto const &entry) {
                      return bindingsSubrangeT::get(entry);
                    });
-    m_init(flags);
-  }
-  DescriptorSetLayout(DescriptorSetLayout const &another) = delete;
-  DescriptorSetLayout(DescriptorSetLayout &&another) noexcept
-      : m_device(another.m_device), m_bindings(std::move(another.m_bindings)),
-        m_createInfo(another.m_createInfo), m_layout(another.m_layout) {
-    another.m_layout = VK_NULL_HANDLE;
-  };
-
-  DescriptorSetLayout const &
-  operator=(DescriptorSetLayout const &another) = delete;
-  DescriptorSetLayout &operator=(DescriptorSetLayout &&another) noexcept {
-    m_createInfo = another.m_createInfo;
-    m_device = another.m_device;
-    m_bindings = std::move(another.m_bindings);
-    std::swap(m_layout, another.m_layout);
-    return *this;
+    m_fillInfo(flags);
   }
 
-  bool operator==(DescriptorSetLayout const &rhs) const {
+  auto begin() { return m_bindings.begin(); }
+
+  auto end() { return m_bindings.end(); }
+
+  auto begin() const { return m_bindings.begin(); }
+
+  auto end() const { return m_bindings.end(); }
+
+  bool operator==(DescriptorSetLayoutInfo const &rhs) const {
     if (m_bindings.size() != rhs.m_bindings.size() ||
         m_createInfo.flags != rhs.m_createInfo.flags)
       return false;
@@ -92,30 +84,37 @@ public:
         });
   }
 
-  bool operator!=(DescriptorSetLayout const &rhs) const {
+  bool operator!=(DescriptorSetLayoutInfo const &rhs) const {
     return !(*this == rhs);
   }
 
-  virtual ~DescriptorSetLayout();
-
-  auto begin() { return m_bindings.begin(); }
-
-  auto end() { return m_bindings.end(); }
-
-  auto begin() const { return m_bindings.begin(); }
-
-  auto end() const { return m_bindings.end(); }
-
   VkDescriptorSetLayoutCreateFlags flags() const { return m_createInfo.flags; }
 
-  operator VkDescriptorSetLayout() const { return m_layout; }
+  auto &info() const { return m_createInfo; }
 
 private:
-  void m_init(VkDescriptorSetLayoutCreateFlags flags);
-  StrongReference<Device const> m_device;
+  void m_fillInfo(VkDescriptorSetLayoutCreateFlags flags);
   boost::container::small_vector<DescriptorSetLayoutBinding, 3> m_bindings;
+  boost::container::small_vector<VkDescriptorSetLayoutBinding, 5> m_rawBindings;
   VkDescriptorSetLayoutCreateInfo m_createInfo{};
-  VkDescriptorSetLayout m_layout{};
+};
+
+class DescriptorSetLayout : public DescriptorSetLayoutInfo,
+                            public UniqueVulkanObject<VkDescriptorSetLayout> {
+public:
+  template <forward_range_of<DescriptorSetLayoutBinding> T>
+  DescriptorSetLayout(Device const &device, T const &bindings,
+                      VkDescriptorSetLayoutCreateFlags flags = 0)
+      : DescriptorSetLayoutInfo(bindings, flags),
+        UniqueVulkanObject<VkDescriptorSetLayout>(device, info()) {}
+
+  bool operator==(DescriptorSetLayout const &rhs) const {
+    return DescriptorSetLayoutInfo::operator==(rhs);
+  }
+
+  bool operator!=(DescriptorSetLayout const &rhs) const {
+    return !(*this == rhs);
+  }
 };
 
 class DescriptorSet : public ReferenceGuard {

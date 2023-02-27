@@ -4,6 +4,8 @@
 #include "vkw/Device.hpp"
 #include "vkw/Image.hpp"
 #include "vkw/RenderPass.hpp"
+#include "vkw/UniqueVulkanObject.hpp"
+
 #include <boost/container/small_vector.hpp>
 #include <span>
 #include <vulkan/vulkan.h>
@@ -12,34 +14,17 @@ namespace vkw {
 
 class ImageViewBase;
 
-class FrameBuffer : public ReferenceGuard {
+class FrameBufferInfo {
 public:
-  using ViewsContainerT =
-      boost::container::small_vector<StrongReference<ImageViewBase const>, 5>;
-  FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
-              std::span<ImageViewVT<V2DA> const *> views, uint32_t layers = 1);
+  FrameBufferInfo(RenderPass const &renderPass, VkExtent2D extents,
+                  std::span<ImageViewVT<V2DA> const *> views,
+                  uint32_t layers = 1);
 
-  FrameBuffer(Device &device, RenderPass &renderPass, VkExtent2D extents,
-              std::span<ImageViewVT<V2D> const *> views);
+  FrameBufferInfo(RenderPass const &renderPass, VkExtent2D extents,
+                  std::span<ImageViewVT<V2D> const *> views);
 
-  FrameBuffer(FrameBuffer &&another) noexcept
-      : m_device(another.m_device), m_parent(another.m_parent),
-        m_framebuffer(another.m_framebuffer),
-        m_views(std::move(another.m_views)),
-        m_createInfo(another.m_createInfo) {
-    another.m_framebuffer = VK_NULL_HANDLE;
-  }
-
-  FrameBuffer &operator=(FrameBuffer &&another) noexcept {
-    m_device = another.m_device;
-    m_parent = another.m_parent;
-    m_createInfo = another.m_createInfo;
-    m_views = std::move(another.m_views);
-    std::swap(m_framebuffer, another.m_framebuffer);
-    return *this;
-  }
-
-  virtual ~FrameBuffer();
+  template <typename T>
+  using ViewsContainer = boost::container::small_vector<T, 5>;
 
   VkExtent2D extents() const {
     return {m_createInfo.width, m_createInfo.height};
@@ -49,18 +34,34 @@ public:
 
   uint32_t layers() const { return m_createInfo.layers; }
 
-  ViewsContainerT &attachments() { return m_views; }
+  auto &attachments() { return m_views; }
 
-  ViewsContainerT const &attachments() const { return m_views; }
+  auto const &attachments() const { return m_views; }
 
-  operator VkFramebuffer() const { return m_framebuffer; }
+  auto &info() const { return m_createInfo; }
+
+  auto &pass() const { return m_parent.get(); }
 
 private:
-  StrongReference<Device> m_device;
-  StrongReference<RenderPass> m_parent;
+  StrongReference<RenderPass const> m_parent;
   VkFramebufferCreateInfo m_createInfo{};
-  ViewsContainerT m_views;
-  VkFramebuffer m_framebuffer = VK_NULL_HANDLE;
+  ViewsContainer<VkImageView> m_rawViews;
+  ViewsContainer<StrongReference<ImageViewBase const>> m_views;
+};
+
+class FrameBuffer : public FrameBufferInfo,
+                    public UniqueVulkanObject<VkFramebuffer> {
+public:
+  FrameBuffer(Device const &device, RenderPass const &renderPass,
+              VkExtent2D extents, std::span<ImageViewVT<V2DA> const *> views,
+              uint32_t layers = 1)
+      : FrameBufferInfo(renderPass, extents, views, layers),
+        UniqueVulkanObject<VkFramebuffer>(device, info()) {}
+
+  FrameBuffer(Device const &device, RenderPass const &renderPass,
+              VkExtent2D extents, std::span<ImageViewVT<V2D> const *> views)
+      : FrameBufferInfo(renderPass, extents, views),
+        UniqueVulkanObject<VkFramebuffer>(device, info()) {}
 };
 } // namespace vkw
 #endif // VKRENDERER_FRAMEBUFFER_HPP

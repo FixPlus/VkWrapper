@@ -23,7 +23,7 @@ bool isExtensionEnabled(Instance const &instance, const char *extName) {
   return instance.isExtensionEnabled(instance.parent().ExtensionId(extName));
 }
 bool isExtensionEnabled(Device const &device, const char *extName) {
-  auto extId = device.getParent().parent().ExtensionId(extName);
+  auto extId = device.parent().parent().ExtensionId(extName);
   auto &enabledExtensions = device.physicalDevice().enabledExtensions();
   return std::any_of(enabledExtensions.begin(), enabledExtensions.end(),
                      [extId](ext entry) { return entry == extId; });
@@ -36,7 +36,7 @@ bool isLayerEnabled(Instance const &instance, layer layer) {
 template <typename T> PFN_getProcAddr<T> getProcAddrOf(T const &instance);
 
 template <> PFN_getProcAddr<Device> getProcAddrOf(Device const &device) {
-  return device.getParent().core<1, 0>().vkGetDeviceProcAddr;
+  return device.parent().core<1, 0>().vkGetDeviceProcAddr;
 }
 
 template <> PFN_getProcAddr<Instance> getProcAddrOf(Instance const &instance) {
