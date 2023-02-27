@@ -59,7 +59,7 @@ public:
     return *this;
   }
 
-  ~ReferenceGuard() { m_check_ref_count(); }
+  virtual ~ReferenceGuard() { m_check_ref_count(); }
 
 private:
   void m_check_ref_count() {

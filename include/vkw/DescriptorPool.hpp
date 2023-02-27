@@ -2,6 +2,8 @@
 #define VKWRAPPER_DESCRIPTORPOOL_HPP
 
 #include "vkw/Device.hpp"
+#include "vkw/UniqueVulkanObject.hpp"
+
 #include <boost/container/small_vector.hpp>
 #include <span>
 
@@ -10,37 +12,29 @@ namespace vkw {
 class DescriptorSetLayout;
 class DescriptorSet;
 
-class DescriptorPool : public ReferenceGuard {
+class DescriptorPoolInfo {
+public:
+  DescriptorPoolInfo(uint32_t maxSets,
+                     std::span<const VkDescriptorPoolSize> poolSizes,
+                     VkDescriptorPoolCreateFlags flags = 0);
+
+  uint32_t maxSets() const { return m_createInfo.maxSets; }
+
+  auto &info() const { return m_createInfo; }
+
+private:
+  boost::container::small_vector<VkDescriptorPoolSize, 3> m_poolSizes;
+  VkDescriptorPoolCreateInfo m_createInfo{};
+};
+
+class DescriptorPool : public DescriptorPoolInfo,
+                       public UniqueVulkanObject<VkDescriptorPool> {
 public:
   DescriptorPool(Device const &device, uint32_t maxSets,
                  std::span<const VkDescriptorPoolSize> poolSizes,
-                 VkDescriptorPoolCreateFlags flags = 0);
-  DescriptorPool(DescriptorPool const &another) = delete;
-  DescriptorPool(DescriptorPool &&another) noexcept
-      : m_poolSizes(std::move(another.m_poolSizes)),
-        m_descriptorPool(another.m_descriptorPool), m_device(another.m_device),
-        m_createInfo(another.m_createInfo), m_maxSets(another.m_maxSets),
-        m_setCount(another.m_setCount) {
-    another.m_descriptorPool = VK_NULL_HANDLE;
-  }
-  DescriptorPool const &operator=(DescriptorPool const &another) = delete;
-  DescriptorPool &operator=(DescriptorPool &&another) noexcept {
-    m_device = another.m_device;
-    m_createInfo = another.m_createInfo;
-    m_poolSizes = std::move(another.m_poolSizes);
-    m_maxSets = another.m_maxSets;
-    m_setCount = another.m_setCount;
-    std::swap(another.m_descriptorPool, m_descriptorPool);
-    return *this;
-  }
-
-  virtual ~DescriptorPool();
-
-  operator VkDescriptorPool() const { return m_descriptorPool; }
-
-  Device const &device() const { return m_device; }
-
-  uint32_t maxSets() const { return m_maxSets; }
+                 VkDescriptorPoolCreateFlags flags = 0)
+      : DescriptorPoolInfo(maxSets, poolSizes, flags),
+        UniqueVulkanObject<VkDescriptorPool>(device, info()) {}
 
   uint32_t currentSetsCount() const { return m_setCount; }
 
@@ -49,14 +43,9 @@ private:
 
   void freeSet(DescriptorSet const &set);
 
-  uint32_t m_maxSets;
   uint32_t m_setCount = 0;
 
   friend class DescriptorSet;
-  StrongReference<Device const> m_device;
-  boost::container::small_vector<VkDescriptorPoolSize, 3> m_poolSizes;
-  VkDescriptorPoolCreateInfo m_createInfo{};
-  VkDescriptorPool m_descriptorPool{};
 };
 
 } // namespace vkw

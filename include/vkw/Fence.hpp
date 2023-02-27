@@ -2,6 +2,7 @@
 #define VKRENDERER_FENCE_HPP
 
 #include "vkw/Device.hpp"
+#include "vkw/UniqueVulkanObject.hpp"
 #include <boost/container/small_vector.hpp>
 #include <concepts>
 #include <vulkan/vulkan.h>
@@ -14,28 +15,17 @@ concept FenceIterator = std::forward_iterator<T> && requires(T a) {
   { *a } -> std::same_as<Fence &>;
 };
 
-class Fence : public ReferenceGuard {
+class Fence : public UniqueVulkanObject<VkFence> {
 public:
-  Fence(Device &device, bool createSignaled = false);
-  Fence(Fence &&another)
-      : m_device(another.m_device), m_fence(another.m_fence) {
-    another.m_fence = VK_NULL_HANDLE;
-  }
-
-  Fence &operator=(Fence &&another) noexcept {
-    m_device = another.m_device;
-    std::swap(another.m_fence, m_fence);
-    return *this;
-  }
-
-  virtual ~Fence();
+  Fence(Device const &device, bool createSignaled = false);
 
   void reset();
 
   // returns true if fence condition satisfied before timeout
 
   bool wait(uint64_t timeout = UINT64_MAX) {
-    return wait_impl(m_device, &m_fence, 1, true, timeout);
+    auto h = handle();
+    return wait_impl(parent(), &h, 1, true, timeout);
   }
 
   bool signaled() const;
@@ -60,14 +50,9 @@ public:
                      timeout);
   }
 
-  operator VkFence() const { return m_fence; }
-
 private:
-  StrongReference<Device> m_device;
-  VkFence m_fence = VK_NULL_HANDLE;
-
-  static bool wait_impl(Device &device, VkFence *pFences, uint32_t fenceCount,
-                        bool waitAll, uint64_t timeout);
+  static bool wait_impl(Device const &device, VkFence const *pFences,
+                        uint32_t fenceCount, bool waitAll, uint64_t timeout);
 };
 
 } // namespace vkw

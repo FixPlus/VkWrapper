@@ -7,14 +7,15 @@
 
 namespace vkw {
 
-FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
-                         VkExtent2D extents,
-                         std::span<ImageViewVT<V2DA> const *> views,
-                         uint32_t layers)
-    : m_device(device), m_parent(renderPass) {
-  std::transform(
-      views.begin(), views.end(), std::back_inserter(m_views),
-      [](ImageViewVT<V2DA> const *view) { return StrongReference<ImageViewBase const>(*view); });
+FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
+                                 VkExtent2D extents,
+                                 std::span<ImageViewVT<V2DA> const *> views,
+                                 uint32_t layers)
+    : m_parent(renderPass) {
+  std::transform(views.begin(), views.end(), std::back_inserter(m_views),
+                 [](ImageViewVT<V2DA> const *view) {
+                   return StrongReference<ImageViewBase const>(*view);
+                 });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -25,7 +26,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   // Attachment validation
 
-  auto &renderPassAttachments = renderPass.info().attachmentDescriptions();
+  auto &renderPassAttachments = renderPass.attachmentDescriptions();
 
   // size match check
 
@@ -84,24 +85,21 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   }
 
   m_createInfo.attachmentCount = views.size();
-  boost::container::small_vector<VkImageView, 4> rawViews;
   std::transform(
-      views.begin(), views.end(), std::back_inserter(rawViews),
+      views.begin(), views.end(), std::back_inserter(m_rawViews),
       [](ImageViewVT<V2DA> const *view) -> VkImageView { return *view; });
 
-  m_createInfo.pAttachments = rawViews.data();
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateFramebuffer(
-      m_device.get(), &m_createInfo, nullptr, &m_framebuffer))
+  m_createInfo.pAttachments = m_rawViews.data();
 }
 
-FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
-                         VkExtent2D extents,
-                         std::span<ImageViewVT<V2D> const *> views)
-    : m_device(device), m_parent(renderPass) {
-  std::transform(
-      views.begin(), views.end(), std::back_inserter(m_views),
-      [](ImageViewVT<V2D> const *view) { return StrongReference<ImageViewBase const>(*view); });
+FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
+                                 VkExtent2D extents,
+                                 std::span<ImageViewVT<V2D> const *> views)
+    : m_parent(renderPass) {
+  std::transform(views.begin(), views.end(), std::back_inserter(m_views),
+                 [](ImageViewVT<V2D> const *view) {
+                   return StrongReference<ImageViewBase const>(*view);
+                 });
   m_createInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
   m_createInfo.pNext = nullptr;
   m_createInfo.width = extents.width;
@@ -112,7 +110,7 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
 
   // Attachment validation
 
-  auto &renderPassAttachments = renderPass.info().attachmentDescriptions();
+  auto &renderPassAttachments = renderPass.attachmentDescriptions();
 
   // size match check
 
@@ -160,23 +158,11 @@ FrameBuffer::FrameBuffer(Device &device, RenderPass &renderPass,
   counter = 0;
 
   m_createInfo.attachmentCount = views.size();
-  boost::container::small_vector<VkImageView, 4> rawViews;
   std::transform(
-      views.begin(), views.end(), std::back_inserter(rawViews),
+      views.begin(), views.end(), std::back_inserter(m_rawViews),
       [](ImageViewVT<V2D> const *view) -> VkImageView { return *view; });
 
-  m_createInfo.pAttachments = rawViews.data();
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateFramebuffer(
-      m_device.get(), &m_createInfo, nullptr, &m_framebuffer))
-}
-
-FrameBuffer::~FrameBuffer() {
-  if (m_framebuffer == VK_NULL_HANDLE)
-    return;
-
-  m_device.get().core<1, 0>().vkDestroyFramebuffer(m_device.get(),
-                                                   m_framebuffer, nullptr);
+  m_createInfo.pAttachments = m_rawViews.data();
 }
 
 } // namespace vkw

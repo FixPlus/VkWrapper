@@ -20,13 +20,9 @@ bool DescriptorSetLayoutBinding::hasDynamicOffset() const {
              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
          m_binding.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC;
 }
-DescriptorSetLayout::~DescriptorSetLayout() {
-  if (m_layout == VK_NULL_HANDLE)
-    return;
-  m_device.get().core<1, 0>().vkDestroyDescriptorSetLayout(m_device.get(),
-                                                           m_layout, nullptr);
-}
-void DescriptorSetLayout::m_init(VkDescriptorSetLayoutCreateFlags flags) {
+
+void DescriptorSetLayoutInfo::m_fillInfo(
+    VkDescriptorSetLayoutCreateFlags flags) {
   // sort bindings by binding index (this will be useful)
   std::sort(m_bindings.begin(), m_bindings.end(),
             [](DescriptorSetLayoutBinding const &lhs,
@@ -49,7 +45,6 @@ void DescriptorSetLayout::m_init(VkDescriptorSetLayoutCreateFlags flags) {
     }
   }
 
-  boost::container::small_vector<VkDescriptorSetLayoutBinding, 5> m_rawBindings;
   std::transform(m_bindings.begin(), m_bindings.end(),
                  std::back_inserter(m_rawBindings),
                  [](DescriptorSetLayoutBinding const &entry) { return entry; });
@@ -59,9 +54,6 @@ void DescriptorSetLayout::m_init(VkDescriptorSetLayoutCreateFlags flags) {
   m_createInfo.flags = flags;
   m_createInfo.bindingCount = m_rawBindings.size();
   m_createInfo.pBindings = m_rawBindings.data();
-
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateDescriptorSetLayout(
-      m_device.get(), &m_createInfo, nullptr, &m_layout))
 }
 
 DescriptorSet::DescriptorSet(DescriptorPool &pool,
@@ -83,8 +75,8 @@ void DescriptorSet::m_write(uint32_t writeCount,
   for (uint32_t i = 0; i < writeCount; ++i)
     pWrites[i].dstSet = m_set;
 
-  m_pool.get().device().core<1, 0>().vkUpdateDescriptorSets(
-      m_pool.get().device(), writeCount, pWrites, 0, nullptr);
+  m_pool.get().parent().core<1, 0>().vkUpdateDescriptorSets(
+      m_pool.get().parent(), writeCount, pWrites, 0, nullptr);
 }
 void DescriptorSet::setDynamicOffset(uint32_t binding, uint32_t offset) {
   auto found = std::find_if(m_dynamicOffsets.begin(), m_dynamicOffsets.end(),

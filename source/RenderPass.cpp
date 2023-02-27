@@ -60,21 +60,6 @@ void SubpassDescription::addPreserveAttachment(
     AttachmentDescription const &attachment) {
   m_preserveAttachments.emplace_back(attachment);
 }
-RenderPass::RenderPass(Device &device, RenderPassCreateInfo createInfo)
-    : m_parent(device),
-      m_createInfo(std::move(createInfo)){
-          VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkCreateRenderPass(
-              m_parent.get(),
-              &m_createInfo.operator const VkRenderPassCreateInfo &(), nullptr,
-              &m_renderPass))}
-
-      RenderPass::~RenderPass() {
-  if (m_renderPass == VK_NULL_HANDLE)
-    return;
-
-  m_parent.get().core<1, 0>().vkDestroyRenderPass(m_parent.get(), m_renderPass,
-                                                  nullptr);
-}
 
 RenderPassCreateInfo::RenderPassCreateInfo(RenderPassCreateInfo &&another)
     : m_createInfo(another.m_createInfo),

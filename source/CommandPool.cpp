@@ -3,25 +3,24 @@
 #include "vkw/Device.hpp"
 
 namespace vkw {
-CommandPool::CommandPool(Device &device, VkCommandPoolCreateFlags flags,
-                         uint32_t queueFamily)
-    : m_device(device), m_queueFamily(queueFamily), m_createFlags(flags) {
 
+namespace {
+
+VkCommandPoolCreateInfo fillCreateInfo(VkCommandPoolCreateFlags flags,
+                                       uint32_t queueFamily) {
   VkCommandPoolCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   createInfo.pNext = nullptr;
   createInfo.queueFamilyIndex = queueFamily;
   createInfo.flags = flags;
 
-  VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateCommandPool(
-      m_device.get(), &createInfo, nullptr, &m_commandPool))
+  return createInfo;
 }
+} // namespace
+CommandPool::CommandPool(Device const &device, VkCommandPoolCreateFlags flags,
+                         uint32_t queueFamily)
+    : UniqueVulkanObject<VkCommandPool>(device,
+                                        fillCreateInfo(flags, queueFamily)),
+      m_queueFamily(queueFamily), m_createFlags(flags) {}
 
-CommandPool::~CommandPool() {
-  if (m_commandPool == VK_NULL_HANDLE)
-    return;
-
-  m_device.get().core<1, 0>().vkDestroyCommandPool(m_device.get(),
-                                                   m_commandPool, nullptr);
-}
 } // namespace vkw

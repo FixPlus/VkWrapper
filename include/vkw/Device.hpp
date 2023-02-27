@@ -1,11 +1,15 @@
 #ifndef VKRENDERER_DEVICE_HPP
 #define VKRENDERER_DEVICE_HPP
 
-#include "Exception.hpp"
-#include "Library.hpp"
-#include "PhysicalDevice.hpp"
-#include "SymbolTable.hpp"
+#include "vkw/Exception.hpp"
+#include "vkw/Library.hpp"
+#include "vkw/PhysicalDevice.hpp"
+#include "vkw/SymbolTable.hpp"
+#include <vkw/Instance.hpp>
+#include <vkw/UniqueVulkanObject.hpp>
+
 #include "vma/vk_mem_alloc.h"
+
 #include <boost/container/small_vector.hpp>
 #include <cstdint>
 #include <map>
@@ -13,9 +17,6 @@
 #include <set>
 #include <string>
 #include <unordered_map>
-#include <vkw/Instance.hpp>
-#include <vkw/ReferenceGuard.hpp>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 
@@ -25,17 +26,29 @@ class Queue;
 
 enum class ext;
 
-class Device : public ReferenceGuard {
+class DeviceInfo {
 public:
-  Instance const &getParent() const { return m_parent; };
+  explicit DeviceInfo(PhysicalDevice phDevice);
 
-  Device(Device const &another) = delete;
-  Device const &operator=(Device const &another) = delete;
-  Device(Device &&another);
-  Device &operator=(Device &&another) noexcept;
+  auto &info() const { return m_createInfo; }
 
-  Device(Instance &parent, PhysicalDevice phDevice);
-  virtual ~Device();
+  PhysicalDevice const &physicalDevice() const { return m_ph_device; }
+
+  auto &apiVersion() const { return m_apiVer; }
+
+private:
+  VkDeviceCreateInfo m_createInfo{};
+  boost::container::small_vector<VkDeviceQueueCreateInfo, 3> m_queueCreateInfo;
+  boost::container::small_vector<const char *, 8> m_enabledExtensionsRaw;
+
+  PhysicalDevice m_ph_device;
+  std::set<ext> m_enabledExtensions;
+  ApiVersion m_apiVer;
+};
+
+class Device : public DeviceInfo, public UniqueVulkanObject<VkDevice> {
+public:
+  Device(Instance const &parent, PhysicalDevice phDevice);
 
   std::unique_ptr<BufferBase>
   createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
@@ -53,18 +66,14 @@ public:
 
   Queue const &getSpecificQueue(QueueFamily::Type type) const;
 
-  operator VkDevice() const { return m_device; }
-
-  VmaAllocator getAllocator() const { return m_allocator; }
-
-  PhysicalDevice const &physicalDevice() const { return m_ph_device; }
+  VmaAllocator getAllocator() const { return m_allocator.get(); }
 
   template <uint32_t major, uint32_t minor>
   DeviceCore<major, minor> core() const {
-    if (m_apiVer < ApiVersion{major, minor, 0})
+    if (apiVersion() < ApiVersion{major, minor, 0})
       throw Error{"Cannot use core " + std::to_string(major) + "." +
-                  std::to_string(minor) +
-                  " vulkan symbols. Version loaded: " + std::string(m_apiVer)};
+                  std::to_string(minor) + " vulkan symbols. Version loaded: " +
+                  std::string(apiVersion())};
     return *static_cast<DeviceCore<major, minor> const *>(
         m_coreDeviceSymbols.get());
   }
@@ -72,12 +81,12 @@ public:
   void waitIdle();
 
 private:
-  StrongReference<Instance> m_parent;
-  VkDevice m_device;
-
-  VmaAllocator m_allocator;
-
-  PhysicalDevice m_ph_device;
+  VmaAllocator m_allocatorCreateImpl();
+  struct AllocatorDeleter {
+    void operator()(VmaAllocator a);
+  };
+  std::unique_ptr<std::remove_pointer_t<VmaAllocator>, AllocatorDeleter>
+      m_allocator;
 
   using InFamilyQueueContainerT =
       boost::container::small_vector<std::unique_ptr<Queue>, 3>;
@@ -87,9 +96,6 @@ private:
   FamilyContainerT m_queues;
 
   std::unique_ptr<DeviceCore<1, 0>> m_coreDeviceSymbols;
-  std::set<ext> m_enabledExtensions;
-
-  ApiVersion m_apiVer;
 };
 } // namespace vkw
 #endif // VKRENDERER_DEVICE_HPP

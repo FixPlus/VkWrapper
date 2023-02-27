@@ -6,6 +6,7 @@
 #include "vkw/Shader.hpp"
 #include "vkw/VertexBuffer.hpp"
 #include <vkw/RenderPass.hpp>
+#include <vkw/UniqueVulkanObject.hpp>
 
 #include <algorithm>
 #include <boost/container/small_vector.hpp>
@@ -86,21 +87,21 @@ private:
 
 /**
  *
- * @class PipelineLayout
+ * @class PipelineLayoutInfo
  *
- * @brief Represents vulkan's VkPipelineLayout structure.
+ * @brief Holds info needed for initialization of VkPipelineLayout
  *
  *
  */
 
-class PipelineLayout : public ReferenceGuard {
+class PipelineLayoutInfo {
 public:
-  PipelineLayout(Device &device, VkPipelineLayoutCreateFlags flags = 0);
+  explicit PipelineLayoutInfo(VkPipelineLayoutCreateFlags flags = 0);
   template <forward_range_of<DescriptorSetLayout const> T>
-  PipelineLayout(Device &device, T const &setLayouts,
-                 std::span<const VkPushConstantRange> pushConstants = {},
-                 VkPipelineLayoutCreateFlags flags = 0)
-      : m_device(device) {
+  explicit PipelineLayoutInfo(
+      T const &setLayouts,
+      std::span<const VkPushConstantRange> pushConstants = {},
+      VkPipelineLayoutCreateFlags flags = 0) {
     std::copy(pushConstants.begin(), pushConstants.end(),
               std::back_inserter(m_pushConstants));
     std::transform(setLayouts.begin(), setLayouts.end(),
@@ -109,43 +110,25 @@ public:
                      return StrongReference<DescriptorSetLayout const>(
                          layout.get());
                    });
-    m_init(flags);
+    m_fillInfo(flags);
   }
 
   // overload for 1 element case
-  PipelineLayout(Device &device, DescriptorSetLayout const &setLayout,
-                 std::span<const VkPushConstantRange> pushConstants = {},
-                 VkPipelineLayoutCreateFlags flags = 0)
-      : m_device(device) {
+  explicit PipelineLayoutInfo(
+      DescriptorSetLayout const &setLayout,
+      std::span<const VkPushConstantRange> pushConstants = {},
+      VkPipelineLayoutCreateFlags flags = 0) {
     std::copy(pushConstants.begin(), pushConstants.end(),
               std::back_inserter(m_pushConstants));
     m_descriptorLayouts.emplace_back(setLayout);
-    m_init(flags);
+    m_fillInfo(flags);
   }
 
-  PipelineLayout(PipelineLayout const &another) = delete;
-  PipelineLayout const &operator=(PipelineLayout const &another) = delete;
+  bool operator==(PipelineLayoutInfo const &rhs) const;
 
-  PipelineLayout(PipelineLayout &&another) noexcept
-      : m_device(another.m_device), m_layout(another.m_layout),
-        m_createInfo(another.m_createInfo),
-        m_descriptorLayouts(std::move(another.m_descriptorLayouts)),
-        m_pushConstants(std::move(another.m_pushConstants)) {
-    another.m_layout = VK_NULL_HANDLE;
+  bool operator!=(PipelineLayoutInfo const &rhs) const {
+    return !(*this == rhs);
   }
-  PipelineLayout &operator=(PipelineLayout &&another) noexcept {
-    m_device = another.m_device;
-    m_createInfo = another.m_createInfo;
-    m_layout = another.m_layout;
-    m_descriptorLayouts = std::move(another.m_descriptorLayouts);
-    m_pushConstants = std::move(another.m_pushConstants);
-    another.m_layout = VK_NULL_HANDLE;
-    return *this;
-  };
-
-  bool operator==(PipelineLayout const &rhs) const;
-
-  bool operator!=(PipelineLayout const &rhs) const { return !(*this == rhs); }
 
   auto begin() { return m_descriptorLayouts.begin(); }
 
@@ -155,19 +138,54 @@ public:
 
   auto end() const { return m_descriptorLayouts.begin(); }
 
-  operator VkPipelineLayout() const { return m_layout; }
-
-  virtual ~PipelineLayout();
+  auto &info() const { return m_createInfo; }
 
 private:
-  void m_init(VkPipelineLayoutCreateFlags flags);
+  void m_fillInfo(VkPipelineLayoutCreateFlags flags);
 
-  StrongReference<Device> m_device;
   boost::container::small_vector<StrongReference<DescriptorSetLayout const>, 4>
       m_descriptorLayouts{};
+  boost::container::small_vector<VkDescriptorSetLayout, 4> m_rawLayout{};
   boost::container::small_vector<VkPushConstantRange, 4> m_pushConstants{};
+
   VkPipelineLayoutCreateInfo m_createInfo{};
-  VkPipelineLayout m_layout{};
+};
+
+/**
+ *
+ * @class PipelineLayout
+ *
+ * @brief Represents vulkan's VkPipelineLayout structure.
+ *
+ *
+ */
+
+class PipelineLayout : public PipelineLayoutInfo,
+                       public UniqueVulkanObject<VkPipelineLayout> {
+public:
+  explicit PipelineLayout(Device const &device,
+                          VkPipelineLayoutCreateFlags flags = 0)
+      : PipelineLayoutInfo(flags), UniqueVulkanObject<VkPipelineLayout>(
+                                       device, info()) {}
+  template <forward_range_of<DescriptorSetLayout const> T>
+  PipelineLayout(Device const &device, T const &setLayouts,
+                 std::span<const VkPushConstantRange> pushConstants = {},
+                 VkPipelineLayoutCreateFlags flags = 0)
+      : PipelineLayoutInfo(setLayouts, pushConstants, flags),
+        UniqueVulkanObject<VkPipelineLayout>(device, info()) {}
+
+  // overload for 1 element case
+  PipelineLayout(Device const &device, DescriptorSetLayout const &setLayout,
+                 std::span<const VkPushConstantRange> pushConstants = {},
+                 VkPipelineLayoutCreateFlags flags = 0)
+      : PipelineLayoutInfo(setLayout, pushConstants, flags),
+        UniqueVulkanObject<VkPipelineLayout>(device, info()) {}
+
+  bool operator==(PipelineLayout const &rhs) const {
+    return PipelineLayoutInfo::operator==(rhs);
+  }
+
+  bool operator!=(PipelineLayout const &rhs) const { return !(*this == rhs); }
 };
 
 /*
