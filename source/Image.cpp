@@ -46,11 +46,12 @@ bool ImageViewBase::operator==(ImageViewBase const &another) const {
 
 AllocatedImage::AllocatedImage(VmaAllocator allocator,
                                VmaAllocationCreateInfo allocCreateInfo)
-    : Allocation(allocator), ImageInterface(){VK_CHECK_RESULT(vmaCreateImage(
-                                 m_allocator, &m_createInfo, &allocCreateInfo,
-                                 &m_image, &m_allocation, &m_allocInfo))}
+    : Allocation(allocator), ImageInterface() {
+  VK_CHECK_RESULT(vmaCreateImage(m_allocator, &m_createInfo, &allocCreateInfo,
+                                 &m_image, &m_allocation, &m_allocInfo));
+}
 
-      AllocatedImage::~AllocatedImage() {
+AllocatedImage::~AllocatedImage() {
   if (m_image == VK_NULL_HANDLE)
     return;
   unmap();

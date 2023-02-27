@@ -156,12 +156,6 @@ Queue const &Device::getSpecificQueue(QueueFamily::Type type) const {
      << std::hex << type.value;
   throw Error{ss.str()};
 }
-std::unique_ptr<BufferBase>
-Device::createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
-                     VkBufferCreateInfo const &createInfo) {
-  return std::make_unique<BufferBase>(
-      BufferBase(m_allocator.get(), createInfo, allocCreateInfo));
-}
 
 void Device::waitIdle(){
     VK_CHECK_RESULT(core<1, 0>().vkDeviceWaitIdle(handle()))}

@@ -145,7 +145,7 @@ public:
   ~AllocatedImage() override;
 
 private:
-  VkImage m_image;
+  VkImage m_image = VK_NULL_HANDLE;
 };
 
 class NonOwingImage : virtual public ImageInterface {

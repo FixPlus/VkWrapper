@@ -50,10 +50,6 @@ class Device : public DeviceInfo, public UniqueVulkanObject<VkDevice> {
 public:
   Device(Instance const &parent, PhysicalDevice phDevice);
 
-  std::unique_ptr<BufferBase>
-  createBuffer(VmaAllocationCreateInfo const &allocCreateInfo,
-               VkBufferCreateInfo const &createInfo);
-
   Queue const &getQueue(unsigned queueFamilyIndex, unsigned queueIndex) const {
     return *m_queues.at(queueFamilyIndex).at(queueIndex);
   }
