@@ -91,13 +91,14 @@ ImageViewCreator::~ImageViewCreator() {
   if (m_imageView == VK_NULL_HANDLE)
     return;
 
-  m_device.get().core<1, 0>().vkDestroyImageView(m_device.get(), m_imageView,
-                                                 nullptr);
+  m_device.get().core<1, 0>().vkDestroyImageView(
+      m_device.get(), m_imageView, m_device.get().hostAllocator().allocator());
 }
 
 ImageViewCreator::ImageViewCreator(Device const &device) : m_device(device) {
   VK_CHECK_RESULT(device.core<1, 0>().vkCreateImageView(
-      m_device.get(), &m_createInfo, nullptr, &m_imageView))
+      m_device.get(), &m_createInfo, device.hostAllocator().allocator(),
+      &m_imageView))
 }
 
 unsigned m_FormatRedBits(VkFormat format) {

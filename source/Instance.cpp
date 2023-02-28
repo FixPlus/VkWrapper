@@ -59,8 +59,8 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
   createInfo.enabledLayerCount = reqLayerNames.size();
   createInfo.ppEnabledLayerNames = reqLayerNames.data();
 
-  VK_CHECK_RESULT(
-      m_vulkanLib.get().vkCreateInstance(&createInfo, nullptr, &m_instance))
+  VK_CHECK_RESULT(m_vulkanLib.get().vkCreateInstance(
+      &createInfo, hostAllocator().allocator(), &m_instance))
 
   // TODO: add option to load specific Vulkan version symbols
   m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
@@ -120,7 +120,7 @@ Instance &Instance::operator=(Instance &&another) noexcept {
 Instance::~Instance() {
   if (m_instance == VK_NULL_HANDLE)
     return;
-  core<1, 0>().vkDestroyInstance(m_instance, nullptr);
+  core<1, 0>().vkDestroyInstance(m_instance, hostAllocator().allocator());
 }
 
 } // namespace vkw

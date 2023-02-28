@@ -79,6 +79,8 @@ public:
     return *ptr;
   }
 
+  auto &hostAllocator() const { return m_vulkanLib.get().hostAllocator(); }
+
   Library const &parent() const { return m_vulkanLib; }
 
 private:
