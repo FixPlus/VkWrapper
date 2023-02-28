@@ -6,7 +6,6 @@
 #include <cassert>
 #include <cstring>
 #include <sstream>
-#include <algorithm>
 
 namespace vkw {
 
@@ -29,7 +28,10 @@ private:
       "";
 #endif
 };
-Library::Library(VulkanLibraryLoader *loader) {
+
+Library::Library(VulkanLibraryLoader *loader, HostAllocator *allocator)
+    : m_default_allocator(allocator ? nullptr : new HostAllocator(false)),
+      m_allocator(allocator ? *allocator : *m_default_allocator) {
   if (loader == nullptr) {
     m_embedded_loader = std::make_unique<VulkanDefaultLoader>();
     loader = m_embedded_loader.get();

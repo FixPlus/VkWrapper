@@ -6,22 +6,30 @@
 
 namespace vkw {
 
-template <typename T, typename DeleterT>
+template <typename T, typename Parent, typename DeleterT>
 class UniqueVulkanObjectCommon
     : private std::unique_ptr<std::remove_pointer_t<T>, DeleterT>,
       public ReferenceGuard {
 public:
-  UniqueVulkanObjectCommon(T handle, DeleterT const &d)
-      : std::unique_ptr<std::remove_pointer_t<T>, DeleterT>(handle, d){};
+  UniqueVulkanObjectCommon(T handle, Parent const &parent, DeleterT const &d)
+      : std::unique_ptr<std::remove_pointer_t<T>, DeleterT>(handle, d),
+        m_parent(parent){};
 
   operator T() const {
     return std::unique_ptr<std::remove_pointer_t<T>, DeleterT>::get();
   }
 
+  auto &parent() const { return m_parent.get(); }
+
+  auto &hostAllocator() const { return parent().hostAllocator(); }
+
 protected:
   auto handle() const {
     return std::unique_ptr<std::remove_pointer_t<T>, DeleterT>::get();
   }
+
+private:
+  StrongReference<Parent const> m_parent;
 };
 
 template <typename T> class UniqueVulkanObjectCommonDeleter {
@@ -34,7 +42,7 @@ public:
 
   void operator()(T handle) {
     std::invoke(TypeTraits::getDestructor(m_creator.get()), m_creator.get(),
-                handle, nullptr);
+                handle, m_creator.get().hostAllocator().allocator());
   }
 
 private:
@@ -53,7 +61,9 @@ private:
  */
 template <typename T>
 class UniqueVulkanObject
-    : public UniqueVulkanObjectCommon<T, UniqueVulkanObjectCommonDeleter<T>> {
+    : public UniqueVulkanObjectCommon<T,
+                                      typename VulkanTypeTraits<T>::CreatorType,
+                                      UniqueVulkanObjectCommonDeleter<T>> {
 public:
   using TypeTraits = VulkanTypeTraits<T>;
 
@@ -63,22 +73,17 @@ private:
     // TODO: add checks here
     T ret;
     std::invoke(TypeTraits::getConstructor(creator), creator, &createInfo,
-                nullptr, &ret);
+                creator.hostAllocator().allocator(), &ret);
     return ret;
   }
 
 public:
   UniqueVulkanObject(typename TypeTraits::CreatorType const &creator,
                      typename TypeTraits::CreateInfoType const &createInfo)
-      : UniqueVulkanObjectCommon<T, UniqueVulkanObjectCommonDeleter<T>>(
-            m_createImpl(creator, createInfo),
-            UniqueVulkanObjectCommonDeleter<T>(creator)),
-        m_creator(creator) {}
-
-  auto &parent() const { return m_creator.get(); }
-
-private:
-  StrongReference<typename TypeTraits::CreatorType const> m_creator;
+      : UniqueVulkanObjectCommon<T, typename TypeTraits::CreatorType,
+                                 UniqueVulkanObjectCommonDeleter<T>>(
+            m_createImpl(creator, createInfo), creator,
+            UniqueVulkanObjectCommonDeleter<T>(creator)) {}
 };
 
 /**
@@ -93,7 +98,7 @@ public:
 
   void operator()(VkDevice handle) {
     std::invoke(VulkanTypeTraits<VkDevice>::getDestructor(m_instance), handle,
-                nullptr);
+                m_instance.get().hostAllocator().allocator());
   }
 
 private:
@@ -102,7 +107,7 @@ private:
 
 template <>
 class UniqueVulkanObject<VkDevice>
-    : public UniqueVulkanObjectCommon<VkDevice, DeviceDeleter> {
+    : public UniqueVulkanObjectCommon<VkDevice, vkw::Instance, DeviceDeleter> {
 public:
   using TypeTraits = VulkanTypeTraits<VkDevice>;
 
@@ -113,22 +118,16 @@ private:
     // TODO: add checks here
     VkDevice ret;
     std::invoke(TypeTraits::getConstructor(instance), phDevice, &createInfo,
-                nullptr, &ret);
+                instance.hostAllocator().allocator(), &ret);
     return ret;
   }
 
 public:
   UniqueVulkanObject(vkw::Instance const &instance, VkPhysicalDevice phDevice,
                      VkDeviceCreateInfo const &createInfo)
-      : UniqueVulkanObjectCommon<VkDevice, DeviceDeleter>(
-            m_createImpl(instance, phDevice, createInfo),
-            DeviceDeleter(instance)),
-        m_instance(instance) {}
-
-  auto &parent() const { return m_instance.get(); }
-
-private:
-  StrongReference<vkw::Instance const> m_instance;
+      : UniqueVulkanObjectCommon<VkDevice, vkw::Instance, DeviceDeleter>(
+            m_createImpl(instance, phDevice, createInfo), instance,
+            DeviceDeleter(instance)) {}
 };
 
 } // namespace vkw

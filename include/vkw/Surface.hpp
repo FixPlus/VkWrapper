@@ -34,7 +34,8 @@ public:
     createInfo.hwnd = hwnd;
 
     VK_CHECK_RESULT_(win32SurfaceExt.vkCreateWin32SurfaceKHR(
-        m_parent.get(), &createInfo, nullptr, &m_surface))
+        m_parent.get(), &createInfo, parent.hostAllocator().allocator(),
+        &m_surface))
   }
 #elif defined __linux__
 #ifdef VK_USE_PLATFORM_XLIB_KHR
@@ -49,7 +50,8 @@ public:
     createInfo.window = window;
 
     VK_CHECK_RESULT_(xlibSurfaceExt.vkCreateXlibSurfaceKHR(
-        m_parent.get(), &createInfo, nullptr, &m_surface))
+        m_parent.get(), &createInfo, parent.hostAllocator().allocator(),
+        &m_surface))
   };
 #elif defined VK_USE_PLATFORM_XCB_KHR
   Surface(Instance const &parent, xcb_connection_t *connection,
@@ -63,8 +65,8 @@ public:
     createInfo.connection = connection;
     createInfo.window = window;
 
-    VK_CHECK_RESULT_(xcbSurfaceExt.vkCreateXCBSurfaceKHR(m_parent, &createInfo,
-                                                         nullptr, &m_surface))
+    VK_CHECK_RESULT_(xcbSurfaceExt.vkCreateXCBSurfaceKHR(
+        m_parent, &createInfo, parent.hostAllocator().allocator(), &m_surface))
   };
 #elif defined VK_USE_PLATFORM_WAYLAND_KHR
   Surface(Instance const &parent, wl_display *display, wl_surface *surface)
@@ -78,7 +80,7 @@ public:
     createInfo.surface = surface;
 
     VK_CHECK_RESULT_(waylandSurfaceExt.vkCreateWaylandSurfaceKHR(
-        m_parent, &createInfo, nullptr, &m_surface))
+        m_parent, &createInfo, parent.hostAllocator().allocator(), &m_surface))
   };
 #endif
 #endif

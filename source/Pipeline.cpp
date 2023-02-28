@@ -40,14 +40,16 @@ Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkGraphicsPipelineCreateInfo const &CI = createInfo;
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateGraphicsPipelines(
-      device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
+      device, VK_NULL_HANDLE, 1, &CI, device.hostAllocator().allocator(),
+      &m_pipeline))
 }
 
 Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkComputePipelineCreateInfo const &CI = createInfo;
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateComputePipelines(
-      device, VK_NULL_HANDLE, 1, &CI, nullptr, &m_pipeline))
+      device, VK_NULL_HANDLE, 1, &CI, device.hostAllocator().allocator(),
+      &m_pipeline))
 }
 
 Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
@@ -55,7 +57,7 @@ Pipeline::Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkGraphicsPipelineCreateInfo const &CI = createInfo;
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateGraphicsPipelines(
-      device, cache, 1, &CI, nullptr, &m_pipeline))
+      device, cache, 1, &CI, device.hostAllocator().allocator(), &m_pipeline))
 }
 
 Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
@@ -63,15 +65,15 @@ Pipeline::Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
     : m_device(device), m_pipelineLayout(createInfo.layout()) {
   VkComputePipelineCreateInfo const &CI = createInfo;
   VK_CHECK_RESULT(m_device.get().core<1, 0>().vkCreateComputePipelines(
-      device, cache, 1, &CI, nullptr, &m_pipeline))
+      device, cache, 1, &CI, device.hostAllocator().allocator(), &m_pipeline))
 }
 
 Pipeline::~Pipeline() {
   if (m_pipeline == VK_NULL_HANDLE)
     return;
 
-  m_device.get().core<1, 0>().vkDestroyPipeline(m_device.get(), m_pipeline,
-                                                nullptr);
+  m_device.get().core<1, 0>().vkDestroyPipeline(
+      m_device.get(), m_pipeline, m_device.get().hostAllocator().allocator());
 }
 
 VertexInputStateCreateInfoBase::VertexInputStateCreateInfoBase(

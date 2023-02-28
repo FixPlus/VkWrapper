@@ -174,6 +174,7 @@ VmaAllocator Device::m_allocatorCreateImpl() {
       parent().core<1, 0>().vkGetDeviceProcAddr;
 
   allocatorInfo.pVulkanFunctions = &vmaVulkanFunctions;
+  allocatorInfo.pAllocationCallbacks = hostAllocator().allocator();
   VmaAllocator allocator;
 
   VK_CHECK_RESULT(vmaCreateAllocator(&allocatorInfo, &allocator))

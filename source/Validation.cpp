@@ -111,15 +111,16 @@ private:
         VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
         VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
     debugUtilsMessengerCI.pfnUserCallback = m_callback;
-    VK_CHECK_RESULT(
-        vkCreateDebugUtilsMessengerEXT(m_instance.get(), &debugUtilsMessengerCI,
-                                       nullptr, &m_debugUtilsMessenger))
+    VK_CHECK_RESULT(vkCreateDebugUtilsMessengerEXT(
+        m_instance.get(), &debugUtilsMessengerCI,
+        m_instance.get().hostAllocator().allocator(), &m_debugUtilsMessenger))
   }
 
   void m_free() {
     if (m_debugUtilsMessenger != VK_NULL_HANDLE) {
-      vkDestroyDebugUtilsMessengerEXT(m_instance.get(), m_debugUtilsMessenger,
-                                      nullptr);
+      vkDestroyDebugUtilsMessengerEXT(
+          m_instance.get(), m_debugUtilsMessenger,
+          m_instance.get().hostAllocator().allocator());
     }
 
     m_debugUtilsMessenger = VK_NULL_HANDLE;
@@ -208,4 +209,4 @@ Validation &Validation::operator=(Validation &&another) {
   register_callback_secondary(*this);
   return *this;
 }
-} // namespace vkw
+} // namespace vkw::debug

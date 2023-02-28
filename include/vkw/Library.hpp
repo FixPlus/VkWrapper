@@ -2,10 +2,11 @@
 #define VKWRAPPER_LIBRARY_HPP
 
 #include "SymbolTable.hpp"
+#include <vkw/HostAllocator.hpp>
+
 #include <memory>
 #include <sstream>
 #include <vector>
-#include <vkw/ReferenceGuard.hpp>
 #include <vulkan/vulkan.h>
 
 namespace vkw {
@@ -52,7 +53,8 @@ public:
    *    using interface VulkanLibraryLoader.
    *    Pass nullptr to use embedded loader.
    * */
-  Library(VulkanLibraryLoader *loader = nullptr);
+  Library(VulkanLibraryLoader *loader = nullptr,
+          HostAllocator *allocator = nullptr);
 
   ~Library();
 
@@ -81,8 +83,12 @@ public:
 
   static layer LayerId(std::string_view extensionName);
 
+  auto &hostAllocator() const { return m_allocator.get(); }
+
 private:
   std::unique_ptr<VulkanLibraryLoader> m_embedded_loader;
+  std::unique_ptr<HostAllocator> m_default_allocator;
+  StrongReference<HostAllocator> m_allocator;
   std::vector<VkLayerProperties> m_layer_properties;
   std::vector<VkExtensionProperties> m_instance_extension_properties;
 };

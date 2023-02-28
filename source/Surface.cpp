@@ -6,7 +6,8 @@ namespace vkw {
 
 Surface::~Surface() {
   if (m_surface != VK_NULL_HANDLE)
-    m_surface_ext.vkDestroySurfaceKHR(m_parent.get(), m_surface, nullptr);
+    m_surface_ext.vkDestroySurfaceKHR(
+        m_parent.get(), m_surface, m_parent.get().hostAllocator().allocator());
 }
 std::vector<VkPresentModeKHR>
 Surface::getAvailablePresentModes(VkPhysicalDevice device) const {

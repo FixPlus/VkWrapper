@@ -8,16 +8,18 @@
 namespace vkw {
 
 SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo)
-    : m_device(device), m_createInfo(createInfo),
-      m_swapchain_ext(device){
-          VK_CHECK_RESULT(m_swapchain_ext.vkCreateSwapchainKHR(
-              device, &createInfo, nullptr, &m_swapchain))
-              VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
-                  device, m_swapchain, &m_imageCount, nullptr))}
+    : m_device(device), m_createInfo(createInfo), m_swapchain_ext(device) {
+  VK_CHECK_RESULT(m_swapchain_ext.vkCreateSwapchainKHR(
+      device, &createInfo, device.hostAllocator().allocator(), &m_swapchain));
+  VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
+      device, m_swapchain, &m_imageCount, nullptr));
+}
 
-      SwapChain::~SwapChain() {
+SwapChain::~SwapChain() {
   if (m_swapchain != VK_NULL_HANDLE)
-    m_swapchain_ext.vkDestroySwapchainKHR(m_device.get(), m_swapchain, nullptr);
+    m_swapchain_ext.vkDestroySwapchainKHR(
+        m_device.get(), m_swapchain,
+        m_device.get().hostAllocator().allocator());
 }
 
 uint32_t SwapChain::currentImage() const {
