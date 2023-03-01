@@ -2,7 +2,6 @@
 #define VKRENDERER_COMMANDPOOL_HPP
 
 #include <vkw/Device.hpp>
-#include <vkw/UniqueVulkanObject.hpp>
 
 namespace vkw {
 

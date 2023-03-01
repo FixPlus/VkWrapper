@@ -1,14 +1,10 @@
 #ifndef VKRENDERER_SWAPCHAIN_HPP
 #define VKRENDERER_SWAPCHAIN_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/Extensions.hpp"
-#include "vkw/Image.hpp"
-#include <boost/container/small_vector.hpp>
-#include <memory>
+#include <vkw/Extensions.hpp>
+#include <vkw/Image.hpp>
+
 #include <optional>
-#include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

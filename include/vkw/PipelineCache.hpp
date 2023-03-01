@@ -1,8 +1,7 @@
 #ifndef VKWRAPPER_PIPELINECACHE_HPP
 #define VKWRAPPER_PIPELINECACHE_HPP
 
-#include "vkw/Device.hpp"
-#include <vkw/UniqueVulkanObject.hpp>
+#include <vkw/Device.hpp>
 
 namespace vkw {
 

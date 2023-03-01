@@ -1,8 +1,8 @@
 #ifndef VKWRAPPER_SAMPLER_HPP
 #define VKWRAPPER_SAMPLER_HPP
 
-#include "vkw/Device.hpp"
-#include <vkw/UniqueVulkanObject.hpp>
+#include <vkw/Device.hpp>
+
 namespace vkw {
 
 class Sampler : public UniqueVulkanObject<VkSampler> {

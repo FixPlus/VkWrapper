@@ -1,9 +1,8 @@
 #ifndef VKRENDERER_SURFACE_HPP
 #define VKRENDERER_SURFACE_HPP
 
-#include "vkw/Extensions.hpp"
-#include "vkw/Instance.hpp"
-#include <vector>
+#include <vkw/Extensions.hpp>
+#include <vkw/Instance.hpp>
 
 namespace vkw {
 

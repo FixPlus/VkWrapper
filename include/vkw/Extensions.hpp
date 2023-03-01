@@ -1,8 +1,8 @@
 #ifndef VKWRAPPER_EXTENSIONS_HPP
 #define VKWRAPPER_EXTENSIONS_HPP
 
-#include "Exception.hpp"
-#include "SymbolTable.hpp"
+#include <vkw/Exception.hpp>
+#include <vkw/SymbolTable.hpp>
 
 namespace vkw {
 

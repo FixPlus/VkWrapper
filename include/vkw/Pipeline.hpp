@@ -1,19 +1,15 @@
 #ifndef VKRENDERER_PIPELINE_HPP
 #define VKRENDERER_PIPELINE_HPP
 
-#include "vkw/DescriptorSet.hpp"
-#include "vkw/Device.hpp"
-#include "vkw/Shader.hpp"
-#include "vkw/VertexBuffer.hpp"
+#include <vkw/DescriptorSet.hpp>
 #include <vkw/RenderPass.hpp>
-#include <vkw/UniqueVulkanObject.hpp>
+#include <vkw/Shader.hpp>
+#include <vkw/VertexBuffer.hpp>
 
 #include <algorithm>
-#include <boost/container/small_vector.hpp>
 #include <functional>
 #include <optional>
 #include <span>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

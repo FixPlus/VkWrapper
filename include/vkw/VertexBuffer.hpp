@@ -1,7 +1,7 @@
 #ifndef VKRENDERER_VERTEXBUFFER_HPP
 #define VKRENDERER_VERTEXBUFFER_HPP
 
-#include "vkw/Buffer.hpp"
+#include <vkw/Buffer.hpp>
 
 namespace vkw {
 

@@ -1,14 +1,12 @@
 #ifndef VKRENDERER_QUEUE_HPP
 #define VKRENDERER_QUEUE_HPP
 
-#include "vkw/CommandBuffer.hpp"
-#include "vkw/PhysicalDevice.hpp"
-#include "vkw/Semaphore.hpp"
-#include "vkw/SwapChain.hpp"
-#include <boost/container/small_vector.hpp>
+#include <vkw/CommandBuffer.hpp>
+#include <vkw/Semaphore.hpp>
+#include <vkw/SwapChain.hpp>
+
 #include <cassert>
 #include <utility>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

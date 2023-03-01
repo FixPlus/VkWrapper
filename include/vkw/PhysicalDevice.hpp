@@ -1,12 +1,7 @@
 #ifndef VKWRAPPER_PHYSICALDEVICE_HPP
 #define VKWRAPPER_PHYSICALDEVICE_HPP
 
-#include "vkw/Exception.hpp"
-#include "vkw/Instance.hpp"
-#include <boost/container/small_vector.hpp>
-#include <sstream>
-#include <string>
-#include <vector>
+#include <vkw/Instance.hpp>
 
 namespace vkw {
 

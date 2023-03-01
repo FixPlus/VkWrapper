@@ -1,16 +1,13 @@
 #ifndef VKWRAPPER_DESCRIPTORSET_HPP
 #define VKWRAPPER_DESCRIPTORSET_HPP
 
-#include "vkw/DescriptorPool.hpp"
-#include "vkw/Device.hpp"
-#include "vkw/Image.hpp"
-#include "vkw/RangeConcepts.hpp"
-#include "vkw/Sampler.hpp"
-#include "vkw/UniformBuffer.hpp"
-#include "vkw/UniqueVulkanObject.hpp"
+#include <vkw/DescriptorPool.hpp>
+#include <vkw/Image.hpp>
+#include <vkw/RangeConcepts.hpp>
+#include <vkw/Sampler.hpp>
+#include <vkw/UniformBuffer.hpp>
 
 #include <algorithm>
-#include <boost/container/small_vector.hpp>
 #include <iterator>
 
 namespace vkw {
