@@ -16,30 +16,23 @@ namespace {
 class MessageCollector {
 public:
   void postMessage(spv_message_level_t messageLevel, std::string_view message) {
-    m_messages[messageLevel] = message;
-    m_last_message_severity = messageLevel;
+    m_messages.emplace_back(messageLevel, message);
   }
 
-  std::string_view getLastMessage(spv_message_level_t level) const {
-    return m_messages.at(level);
-  }
+  auto &messages() const { return m_messages; }
 
-  std::string_view getLastMessage() const {
-    return m_messages.at(m_last_message_severity);
-  }
+  void flushMessages() { m_messages.clear(); }
 
 private:
-  spv_message_level_t m_last_message_severity = SPV_MSG_ERROR;
-
-  std::unordered_map<spv_message_level_t, std::string> m_messages;
+  std::vector<std::pair<spv_message_level_t, std::string>> m_messages;
 };
 
 class SPIRVContext : public MessageCollector, public spvtools::Context {
 public:
   SPIRVContext()
       : spvtools::Context(SPV_ENV_VULKAN_1_0),
-        m_consumer([this](spv_message_level_t messageLevel, const char *message,
-                          const spv_position_t position, const char *) {
+        m_consumer([this](spv_message_level_t messageLevel, const char *input,
+                          const spv_position_t position, const char *message) {
           postMessage(messageLevel, message);
         }) {
     SetMessageConsumer(m_consumer);
@@ -71,12 +64,19 @@ void SPIRVModule::m_link(std::vector<unsigned int> &output,
     options.SetAllowPartialLinkage(true);
   }
 
+  context.flushMessages();
+
   auto result = spvtools::Link(context, codes.data(), codeSizes.data(),
                                codes.size(), &output, options);
 
   if (result != SPV_SUCCESS) {
     std::stringstream ss;
-    ss << "SPIRV-Link failed. Error message: " << context.getLastMessage();
+    ss << "SPIRV-Link failed. spirv-link log: \n";
+
+    for (auto &message : context.messages()) {
+      ss << message.second << std::endl;
+    }
+
     throw vkw::Error{ss.str(), ErrorCode::SPIRV_LINK_ERROR};
   }
 }
