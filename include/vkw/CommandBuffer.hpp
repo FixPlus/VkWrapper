@@ -1,14 +1,13 @@
 #ifndef VKRENDERER_COMMANDBUFFER_HPP
 #define VKRENDERER_COMMANDBUFFER_HPP
 
-#include "vkw/CommandPool.hpp"
-#include "vkw/DescriptorSet.hpp"
-#include "vkw/Device.hpp"
-#include "vkw/VertexBuffer.hpp"
+#include <vkw/CommandPool.hpp>
+#include <vkw/DescriptorSet.hpp>
+#include <vkw/RenderPass.hpp>
+#include <vkw/VertexBuffer.hpp>
+
 #include <boost/container/small_vector.hpp>
 #include <optional>
-#include <span>
-#include <vkw/RenderPass.hpp>
 
 namespace vkw {
 

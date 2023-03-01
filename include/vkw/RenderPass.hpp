@@ -1,12 +1,10 @@
 #ifndef VKRENDERER_RENDERPASS_HPP
 #define VKRENDERER_RENDERPASS_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/RangeConcepts.hpp"
-#include <vkw/UniqueVulkanObject.hpp>
+#include <vkw/Device.hpp>
+#include <vkw/RangeConcepts.hpp>
 
 #include <algorithm>
-#include <boost/container/small_vector.hpp>
 #include <optional>
 #include <vector>
 

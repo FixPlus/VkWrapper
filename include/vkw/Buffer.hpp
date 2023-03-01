@@ -1,8 +1,7 @@
 #ifndef VKRENDERER_BUFFER_HPP
 #define VKRENDERER_BUFFER_HPP
-#include "Allocation.hpp"
-#include <memory>
-#include <span>
+
+#include <vkw/Allocation.hpp>
 #include <vkw/Device.hpp>
 
 namespace vkw {

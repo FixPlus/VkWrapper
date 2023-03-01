@@ -1,14 +1,10 @@
 #ifndef VKRENDERER_FRAMEBUFFER_HPP
 #define VKRENDERER_FRAMEBUFFER_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/Image.hpp"
-#include "vkw/RenderPass.hpp"
-#include "vkw/UniqueVulkanObject.hpp"
+#include <vkw/Image.hpp>
+#include <vkw/RenderPass.hpp>
 
-#include <boost/container/small_vector.hpp>
 #include <span>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

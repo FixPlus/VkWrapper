@@ -1,21 +1,14 @@
 #ifndef VKRENDERER_DEVICE_HPP
 #define VKRENDERER_DEVICE_HPP
 
-#include "vkw/Exception.hpp"
-#include "vkw/Library.hpp"
-#include "vkw/PhysicalDevice.hpp"
-#include "vkw/SymbolTable.hpp"
-#include <vkw/Instance.hpp>
+#include <vkw/PhysicalDevice.hpp>
 #include <vkw/UniqueVulkanObject.hpp>
 
-#include "vma/vk_mem_alloc.h"
+#include <vma/vk_mem_alloc.h>
 
-#include <boost/container/small_vector.hpp>
 #include <cstdint>
 #include <map>
-#include <memory>
 #include <set>
-#include <string>
 #include <unordered_map>
 
 namespace vkw {

@@ -1,13 +1,12 @@
 #ifndef VKWRAPPER_LIBRARY_HPP
 #define VKWRAPPER_LIBRARY_HPP
 
-#include "SymbolTable.hpp"
 #include <vkw/HostAllocator.hpp>
+#include <vkw/SymbolTable.hpp>
 
 #include <memory>
 #include <sstream>
 #include <vector>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

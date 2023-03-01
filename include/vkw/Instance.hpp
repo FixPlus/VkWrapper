@@ -1,16 +1,13 @@
 #ifndef VKRENDERER_INSTANCE_HPP
 #define VKRENDERER_INSTANCE_HPP
 
+#include <vkw/Library.hpp>
+
 #include <boost/container/small_vector.hpp>
 #include <functional>
-#include <memory>
 #include <set>
 #include <unordered_map>
 #include <vector>
-#include <vkw/Exception.hpp>
-#include <vkw/Library.hpp>
-#include <vkw/SymbolTable.hpp>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 

@@ -1,11 +1,8 @@
 #ifndef VKRENDERER_FENCE_HPP
 #define VKRENDERER_FENCE_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/UniqueVulkanObject.hpp"
-#include <boost/container/small_vector.hpp>
 #include <concepts>
-#include <vulkan/vulkan.h>
+#include <vkw/Device.hpp>
 
 namespace vkw {
 

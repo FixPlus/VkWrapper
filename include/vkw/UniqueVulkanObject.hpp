@@ -4,6 +4,8 @@
 #include <vkw/ReferenceGuard.hpp>
 #include <vkw/VulkanTypeTraits.hpp>
 
+#include <memory>
+
 namespace vkw {
 
 template <typename T, typename Parent, typename DeleterT>

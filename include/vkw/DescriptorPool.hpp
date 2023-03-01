@@ -1,10 +1,8 @@
 #ifndef VKWRAPPER_DESCRIPTORPOOL_HPP
 #define VKWRAPPER_DESCRIPTORPOOL_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/UniqueVulkanObject.hpp"
+#include <vkw/Device.hpp>
 
-#include <boost/container/small_vector.hpp>
 #include <span>
 
 namespace vkw {

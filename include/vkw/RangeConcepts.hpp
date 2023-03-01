@@ -3,7 +3,6 @@
 
 #include <ranges>
 #include <vkw/ReferenceGuard.hpp>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 template <typename T, typename U>

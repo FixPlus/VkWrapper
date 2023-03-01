@@ -1,9 +1,8 @@
 #ifndef VKRENDERER_IMAGE_HPP
 #define VKRENDERER_IMAGE_HPP
 
-#include "vkw/Allocation.hpp"
-#include "vkw/Device.hpp"
-#include <memory>
+#include <vkw/Allocation.hpp>
+#include <vkw/Device.hpp>
 
 namespace vkw {
 

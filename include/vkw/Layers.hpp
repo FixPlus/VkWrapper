@@ -1,7 +1,8 @@
 #ifndef VKWRAPPER_LAYERS_HPP
 #define VKWRAPPER_LAYERS_HPP
 
-#include "Exception.hpp"
+#include <vkw/Exception.hpp>
+
 namespace vkw {
 
 enum class layer;

@@ -1,11 +1,10 @@
 #ifndef VKRENDERER_SHADER_HPP
 #define VKRENDERER_SHADER_HPP
 
-#include "vkw/Device.hpp"
-#include "vkw/SPIRVModule.hpp"
+#include <vkw/Device.hpp>
+#include <vkw/SPIRVModule.hpp>
+
 #include <functional>
-#include <vkw/UniqueVulkanObject.hpp>
-#include <vulkan/vulkan.h>
 
 namespace vkw {
 
