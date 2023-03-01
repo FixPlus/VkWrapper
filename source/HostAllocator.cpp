@@ -1,5 +1,6 @@
 #include <cstdlib>
 #include <vkw/HostAllocator.hpp>
+#include <cstring>
 
 namespace vkw {
 
@@ -21,7 +22,7 @@ void *HostAllocator::allocate(size_t size, size_t alignment,
 #if _WIN32
   return _aligned_malloc(size, alignment);
 #else
-  return std::aligned_malloc(size, alignment);
+  return std::aligned_alloc(alignment, size);
 #endif
 }
 
@@ -30,7 +31,13 @@ void *HostAllocator::reallocate(void *original, size_t size, size_t alignment,
 #if _WIN32
   return _aligned_realloc(original, size, alignment);
 #else
-  return std::realloc(original, size);
+  auto* newData = std::realloc(original, size);
+  if((uint64_t)newData % alignment == 0)
+    return newData;
+
+  auto* alignedData = std::aligned_alloc(alignment, size);
+  memcpy(alignedData, newData, size);
+  return alignedData;
 #endif
 }
 

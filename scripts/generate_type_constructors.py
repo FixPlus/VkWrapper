@@ -10,7 +10,7 @@ class TypeDesc:
         self.destructor = ''
         self.createInfoType = ''
 
-    def print(self):
+    def generate(self):
         print('#ifdef VKW_GENERATE_TYPE_DEFINITIONS')
         print('template<>')
         print('struct VulkanTypeTraits<' + self.type + '> {')
@@ -80,4 +80,4 @@ if __name__ == '__main__':
             if core_command.attrib.get('name') == t.constructor:
                 for core_type in root.find('feature').iter('type'):
                     if core_type.attrib.get('name') == t.type:
-                        t.print()
+                        t.generate()
