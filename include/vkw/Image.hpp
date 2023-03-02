@@ -8,13 +8,7 @@ namespace vkw {
 
 class ImageInterface : public ReferenceGuard {
 public:
-  explicit ImageInterface(VkImageUsageFlags usage = 0) {
-    m_createInfo.usage = usage;
-    m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-    m_createInfo.pNext = nullptr;
-    m_createInfo.arrayLayers =
-        1; // default parameter, maybe overridden by child classes
-  };
+  explicit ImageInterface(VkImageUsageFlags usage = 0);
 
   ImageInterface(ImageInterface &&another) = default;
   ImageInterface(ImageInterface const &another) = delete;

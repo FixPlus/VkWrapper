@@ -5,6 +5,14 @@
 
 namespace vkw {
 
+ImageInterface::ImageInterface(VkImageUsageFlags usage) {
+  m_createInfo.usage = usage;
+  m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+  m_createInfo.pNext = nullptr;
+  m_createInfo.arrayLayers =
+      1; // default parameter, maybe overridden by child classes
+};
+
 ImageViewBase::ImageViewBase(ImageInterface const *image, VkFormat format,
                              uint32_t baseMipLevel, uint32_t levelCount,
                              VkComponentMapping componentMapping,
