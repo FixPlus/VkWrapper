@@ -13,6 +13,17 @@ SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo)
       device, &createInfo, device.hostAllocator().allocator(), &m_swapchain));
   VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
       device, m_swapchain, &m_imageCount, nullptr));
+
+  boost::container::small_vector<VkImage, 3> images(m_imageCount);
+  VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
+      m_device.get(), m_swapchain, &m_imageCount, images.data()))
+
+  for (auto const &image : images) {
+    m_images.push_back(SwapChainImage{
+        image, m_createInfo.imageFormat, m_createInfo.imageExtent.width,
+        m_createInfo.imageExtent.height, m_createInfo.imageArrayLayers,
+        m_createInfo.imageUsage});
+  }
 }
 
 SwapChain::~SwapChain() {
@@ -63,21 +74,4 @@ bool SwapChain::acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
   }
 }
 
-boost::container::small_vector<SwapChainImage, 3> SwapChain::retrieveImages() {
-
-  boost::container::small_vector<VkImage, 3> images(m_imageCount);
-  VK_CHECK_RESULT(m_swapchain_ext.vkGetSwapchainImagesKHR(
-      m_device.get(), m_swapchain, &m_imageCount, images.data()))
-
-  boost::container::small_vector<SwapChainImage, 3> ret{};
-
-  for (auto const &image : images) {
-    ret.push_back(SwapChainImage{
-        image, m_createInfo.imageFormat, m_createInfo.imageExtent.width,
-        m_createInfo.imageExtent.height, m_createInfo.imageArrayLayers,
-        m_createInfo.imageUsage});
-  }
-
-  return ret;
-}
 } // namespace vkw
