@@ -12,6 +12,30 @@
 
 namespace vkw {
 
+void PresentInfo::m_fill_info() {
+  m_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+  m_info.pNext = nullptr;
+  m_info.waitSemaphoreCount = m_wait_semaphores.size();
+  m_info.pWaitSemaphores = m_wait_semaphores.data();
+  m_info.swapchainCount = m_swapChains.size();
+  m_info.pSwapchains = m_swapChains.data();
+  m_info.pImageIndices = m_images.data();
+  m_info.pResults = nullptr;
+}
+
+void SubmitInfo::m_fill_info() {
+  assert(m_wait_stage.size() == m_wait_semaphores.size() &&
+         "Count of dst stage masks must be equal to count of wait semaphores");
+  m_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  m_info.pNext = nullptr;
+  m_info.commandBufferCount = m_cmd_buffers.size();
+  m_info.pCommandBuffers = m_cmd_buffers.data();
+  m_info.signalSemaphoreCount = m_signal_semaphores.size();
+  m_info.pSignalSemaphores = m_signal_semaphores.data();
+  m_info.waitSemaphoreCount = m_wait_semaphores.size();
+  m_info.pWaitSemaphores = m_wait_semaphores.data();
+  m_info.pWaitDstStageMask = m_wait_stage.data();
+}
 Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
     : m_parent(parent), m_familyIndex(queueFamilyIndex),
       m_queueIndex(queueIndex) {
