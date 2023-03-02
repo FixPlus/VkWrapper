@@ -69,6 +69,8 @@ public:
 
   void waitIdle();
 
+  ~Device() override;
+
 private:
   VmaAllocator m_allocatorCreateImpl();
   struct AllocatorDeleter {

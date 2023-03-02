@@ -10,8 +10,6 @@
 
 namespace vkw {
 
-class DynamicLoader;
-
 struct ApiVersion {
   uint32_t major;
   uint32_t minor;
