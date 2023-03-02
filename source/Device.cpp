@@ -185,4 +185,6 @@ VmaAllocator Device::m_allocatorCreateImpl() {
 void Device::AllocatorDeleter::operator()(VmaAllocator a) {
   vmaDestroyAllocator(a);
 }
+
+Device::~Device() {}
 } // namespace vkw

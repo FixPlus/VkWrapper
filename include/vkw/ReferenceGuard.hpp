@@ -112,8 +112,7 @@ public:
 
   StrongReference(StrongReference &&another) noexcept
       : std::reference_wrapper<T>(another) {
-    std::invoke(&TBase::add_reference,
-                static_cast<TBase &>(std::reference_wrapper<T>::get()));
+    another.m_moved_out = true;
   }
 
   StrongReference(StrongReference const &another)
@@ -125,6 +124,9 @@ public:
   StrongReference &operator=(StrongReference &&another) noexcept {
     if (this == &another)
       return *this;
+    another.m_moved_out = true;
+    std::invoke(&TBase::remove_reference,
+                static_cast<TBase &>(std::reference_wrapper<T>::get()));
     std::swap(static_cast<std::reference_wrapper<T> &>(*this),
               static_cast<std::reference_wrapper<T> &>(another));
     return *this;
@@ -139,9 +141,14 @@ public:
   }
 
   ~StrongReference() {
+    if (m_moved_out)
+      return;
     std::invoke(&TBase::remove_reference,
                 static_cast<TBase &>(std::reference_wrapper<T>::get()));
   }
+
+private:
+  bool m_moved_out = false;
 };
 #else
 
