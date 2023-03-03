@@ -12,13 +12,13 @@ class DescriptorSet;
 
 class DescriptorPoolInfo {
 public:
-  DescriptorPoolInfo(uint32_t maxSets,
-                     std::span<const VkDescriptorPoolSize> poolSizes,
-                     VkDescriptorPoolCreateFlags flags = 0);
+  DescriptorPoolInfo(
+      uint32_t maxSets, std::span<const VkDescriptorPoolSize> poolSizes,
+      VkDescriptorPoolCreateFlags flags = 0) noexcept(ExceptionsDisabled);
 
-  uint32_t maxSets() const { return m_createInfo.maxSets; }
+  uint32_t maxSets() const noexcept { return m_createInfo.maxSets; }
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
 private:
   boost::container::small_vector<VkDescriptorPoolSize, 3> m_poolSizes;
@@ -28,18 +28,20 @@ private:
 class DescriptorPool : public DescriptorPoolInfo,
                        public UniqueVulkanObject<VkDescriptorPool> {
 public:
-  DescriptorPool(Device const &device, uint32_t maxSets,
-                 std::span<const VkDescriptorPoolSize> poolSizes,
-                 VkDescriptorPoolCreateFlags flags = 0)
+  DescriptorPool(
+      Device const &device, uint32_t maxSets,
+      std::span<const VkDescriptorPoolSize> poolSizes,
+      VkDescriptorPoolCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : DescriptorPoolInfo(maxSets, poolSizes, flags),
         UniqueVulkanObject<VkDescriptorPool>(device, info()) {}
 
-  uint32_t currentSetsCount() const { return m_setCount; }
+  uint32_t currentSetsCount() const noexcept { return m_setCount; }
 
 private:
-  VkDescriptorSet allocateSet(DescriptorSetLayout const &layout);
+  VkDescriptorSet
+  allocateSet(DescriptorSetLayout const &layout) noexcept(ExceptionsDisabled);
 
-  void freeSet(DescriptorSet const &set);
+  void freeSet(DescriptorSet const &set) noexcept;
 
   uint32_t m_setCount = 0;
 

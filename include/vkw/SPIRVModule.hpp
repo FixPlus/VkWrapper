@@ -6,19 +6,21 @@
 #include <ranges>
 #include <span>
 #include <vector>
-#include <algorithm>
+#include <vkw/Exception.hpp>
 
 namespace vkw {
 
 class SPIRVModule {
 public:
-  explicit SPIRVModule(std::span<const unsigned> code);
+  explicit SPIRVModule(std::span<const unsigned> code) noexcept(
+      ExceptionsDisabled);
 
   template <std::ranges::range Modules>
   requires std::same_as<
       typename std::remove_cv<std::ranges::range_value_t<Modules>>::type,
       SPIRVModule>
-  explicit SPIRVModule(Modules const &modules, bool linkLibrary = false) {
+  explicit SPIRVModule(Modules const &modules,
+                       bool linkLibrary = false) noexcept(ExceptionsDisabled) {
 #ifndef __linux__
     boost::container::small_vector<std::span<const unsigned>, 3> input;
 #else
@@ -30,14 +32,14 @@ public:
            linkLibrary);
   }
 
-  std::span<const unsigned> code() const { return m_code; }
+  std::span<const unsigned> code() const noexcept { return m_code; }
 
   virtual ~SPIRVModule() = default;
 
 private:
   static void m_link(std::vector<unsigned> &output,
                      std::span<const std::span<const unsigned>> input,
-                     bool linkLibrary);
+                     bool linkLibrary) noexcept(ExceptionsDisabled);
   std::vector<unsigned> m_code;
 };
 

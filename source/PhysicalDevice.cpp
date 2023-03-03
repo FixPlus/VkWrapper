@@ -8,15 +8,16 @@ namespace vkw {
 
 namespace {
 
-VkPhysicalDevice enumerateAndGet(Instance const &instance, uint32_t id) {
+VkPhysicalDevice enumerateAndGet(Instance const &instance,
+                                 uint32_t id) noexcept(ExceptionsDisabled) {
   uint32_t device_count{};
   VK_CHECK_RESULT(instance.core<1, 0>().vkEnumeratePhysicalDevices(
       instance, &device_count, nullptr))
 
   if (device_count < id)
-    throw Error("Failed to retrieve device info for #" + std::to_string(id) +
-                ": Vulkan has only " + std::to_string(device_count) +
-                " devices available");
+    postError(Error("Failed to retrieve device info for #" +
+                    std::to_string(id) + ": Vulkan has only " +
+                    std::to_string(device_count) + " devices available"));
 
   std::vector<VkPhysicalDevice> m_all_devs{device_count};
 
@@ -28,10 +29,12 @@ VkPhysicalDevice enumerateAndGet(Instance const &instance, uint32_t id) {
 
 } // namespace
 
-PhysicalDevice::PhysicalDevice(Instance const &instance, uint32_t id)
-    : PhysicalDevice(instance, enumerateAndGet(instance, id)) {}
 PhysicalDevice::PhysicalDevice(Instance const &instance,
-                               VkPhysicalDevice device)
+                               uint32_t id) noexcept(ExceptionsDisabled)
+    : PhysicalDevice(instance, enumerateAndGet(instance, id)) {}
+PhysicalDevice::PhysicalDevice(
+    Instance const &instance,
+    VkPhysicalDevice device) noexcept(ExceptionsDisabled)
     : m_instance(instance), m_physicalDevice(device) {
 
   // Store Properties features, limits and properties of the physical device for
@@ -71,26 +74,12 @@ PhysicalDevice::PhysicalDevice(Instance const &instance,
             m_physicalDevice, nullptr, &extCount, &extensions.front()) ==
         VK_SUCCESS) {
 
-      /*
-       *
-       * If there are no corresponding entry in extension map
-       * (which throws Error("Bad extension name")),
-       * do not list it as supported
-       *
-       */
-      auto newEnd =
-          std::remove_if(extensions.begin(), extensions.end(),
-                         [this](VkExtensionProperties const &props) {
-                           try {
-                             m_supportedExtensions.emplace_back(
-                                 Library::ExtensionId(props.extensionName));
-                             return false;
-                           } catch (Error &e) {
-                             return true;
-                           }
-                         });
-
-      extensions.erase(newEnd, extensions.end());
+      for (auto &props : extensions) {
+        if (!Library::ValidExtensionName(props.extensionName))
+          continue;
+        m_supportedExtensions.emplace_back(
+            Library::ExtensionId(props.extensionName));
+      }
     }
   }
 }
@@ -100,7 +89,7 @@ namespace {
 void unhandledFeatureEntry(PhysicalDevice::feature feature) {
   std::stringstream ss;
   ss << "Unhandled feature entry: " << static_cast<unsigned>(feature);
-  throw Error(ss.view());
+  postError(Error(ss.view()));
 }
 const char *featureNameMap(PhysicalDevice::feature feature) {
   switch (feature) {
@@ -116,7 +105,8 @@ const char *featureNameMap(PhysicalDevice::feature feature) {
 }
 } // namespace
 
-bool PhysicalDevice::isFeatureSupported(feature feature) const {
+bool PhysicalDevice::isFeatureSupported(feature feature) const
+    noexcept(ExceptionsDisabled) {
   switch (feature) {
 #define VKW_FEATURE_ENTRY(X)                                                   \
   case PhysicalDevice::feature::X:                                             \
@@ -129,9 +119,10 @@ bool PhysicalDevice::isFeatureSupported(feature feature) const {
   }
 }
 
-void PhysicalDevice::enableFeature(feature feature) {
+void PhysicalDevice::enableFeature(feature feature) noexcept(
+    ExceptionsDisabled) {
   if (!isFeatureSupported(feature))
-    throw FeatureUnsupported(feature, featureNameMap(feature));
+    postError(FeatureUnsupported(feature, featureNameMap(feature)));
 
   switch (feature) {
 #define VKW_FEATURE_ENTRY(X)                                                   \
@@ -145,15 +136,17 @@ void PhysicalDevice::enableFeature(feature feature) {
   };
 }
 
-bool PhysicalDevice::extensionSupported(ext extension) const {
+bool PhysicalDevice::extensionSupported(ext extension) const
+    noexcept(ExceptionsDisabled) {
   return std::find(m_supportedExtensions.begin(), m_supportedExtensions.end(),
                    extension) != m_supportedExtensions.end();
 }
 
-void PhysicalDevice::enableExtension(ext extension) {
+void PhysicalDevice::enableExtension(ext extension) noexcept(
+    ExceptionsDisabled) {
   if (!extensionSupported(extension))
-    throw ExtensionUnsupported(
-        extension, m_instance.get().parent().ExtensionName(extension));
+    postError(ExtensionUnsupported(
+        extension, m_instance.get().parent().ExtensionName(extension)));
 
   if (std::find(m_enabledExtensions.begin(), m_enabledExtensions.end(),
                 extension) != m_enabledExtensions.end())

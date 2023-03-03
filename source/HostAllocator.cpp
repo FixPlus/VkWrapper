@@ -1,10 +1,10 @@
 #include <cstdlib>
-#include <vkw/HostAllocator.hpp>
 #include <cstring>
+#include <vkw/HostAllocator.hpp>
 
 namespace vkw {
 
-HostAllocator::HostAllocator(bool enabled) {
+HostAllocator::HostAllocator(bool enabled) noexcept(ExceptionsDisabled) {
   if (!enabled)
     return;
   m_allocator = std::make_unique<VkAllocationCallbacks>();
@@ -18,7 +18,7 @@ HostAllocator::HostAllocator(bool enabled) {
 }
 
 void *HostAllocator::allocate(size_t size, size_t alignment,
-                              VkSystemAllocationScope scope) {
+                              VkSystemAllocationScope scope) noexcept {
 #if _WIN32
   return _aligned_malloc(size, alignment);
 #else
@@ -27,21 +27,21 @@ void *HostAllocator::allocate(size_t size, size_t alignment,
 }
 
 void *HostAllocator::reallocate(void *original, size_t size, size_t alignment,
-                                VkSystemAllocationScope scope) {
+                                VkSystemAllocationScope scope) noexcept {
 #if _WIN32
   return _aligned_realloc(original, size, alignment);
 #else
-  auto* newData = std::realloc(original, size);
-  if((uint64_t)newData % alignment == 0)
+  auto *newData = std::realloc(original, size);
+  if ((uint64_t)newData % alignment == 0)
     return newData;
 
-  auto* alignedData = std::aligned_alloc(alignment, size);
+  auto *alignedData = std::aligned_alloc(alignment, size);
   memcpy(alignedData, newData, size);
   return alignedData;
 #endif
 }
 
-void HostAllocator::free(void *memory) {
+void HostAllocator::free(void *memory) noexcept {
 #if _WIN32
   return _aligned_free(memory);
 #else
@@ -50,32 +50,32 @@ void HostAllocator::free(void *memory) {
 }
 
 void *HostAllocator::m_allocate(void *m_this, size_t size, size_t alignment,
-                                VkSystemAllocationScope scope) {
+                                VkSystemAllocationScope scope) noexcept {
   return reinterpret_cast<HostAllocator *>(m_this)->allocate(size, alignment,
                                                              scope);
 }
 
 void *HostAllocator::m_reallocate(void *m_this, void *original, size_t size,
                                   size_t alignment,
-                                  VkSystemAllocationScope scope) {
+                                  VkSystemAllocationScope scope) noexcept {
   return reinterpret_cast<HostAllocator *>(m_this)->reallocate(
       original, size, alignment, scope);
 }
 
-void HostAllocator::m_free(void *m_this, void *memory) {
+void HostAllocator::m_free(void *m_this, void *memory) noexcept {
   return reinterpret_cast<HostAllocator *>(m_this)->free(memory);
 }
 
 void HostAllocator::m_internalAllocNotify(
     void *m_this, size_t size, VkInternalAllocationType allocationType,
-    VkSystemAllocationScope allocationScope) {
+    VkSystemAllocationScope allocationScope) noexcept {
   reinterpret_cast<HostAllocator *>(m_this)->internalAllocNotify(
       size, allocationType, allocationScope);
 }
 
 void HostAllocator::m_internalFreeNotify(
     void *m_this, size_t size, VkInternalAllocationType allocationType,
-    VkSystemAllocationScope allocationScope) {
+    VkSystemAllocationScope allocationScope) noexcept {
   reinterpret_cast<HostAllocator *>(m_this)->internalFreeNotify(
       size, allocationType, allocationScope);
 }

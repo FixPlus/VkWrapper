@@ -6,7 +6,16 @@ namespace {
 std::vector<std::function<void(Error &)>> errorCallbacks;
 
 }
-[[noreturn]] void irrecoverableError(Error &e) {
+
+[[noreturn]] void postError(Error &&e) {
+#ifdef VKW_ENABLE_EXCEPTIONS
+  throw e;
+#else
+  irrecoverableError(std::move(e));
+#endif
+}
+
+[[noreturn]] void irrecoverableError(Error &&e) noexcept {
   for (auto &callback : errorCallbacks)
     callback(e);
 

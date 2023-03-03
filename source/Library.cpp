@@ -29,7 +29,8 @@ private:
 #endif
 };
 
-Library::Library(VulkanLibraryLoader *loader, HostAllocator *allocator)
+Library::Library(VulkanLibraryLoader *loader,
+                 HostAllocator *allocator) noexcept(ExceptionsDisabled)
     : m_default_allocator(allocator ? nullptr : new HostAllocator(false)),
       m_allocator(allocator ? *allocator : *m_default_allocator) {
   if (loader == nullptr) {
@@ -86,7 +87,7 @@ ApiVersion::ApiVersion(uint32_t encoded)
     : major(VK_API_VERSION_MAJOR(encoded)),
       minor(VK_API_VERSION_MINOR(encoded)),
       revision(VK_API_VERSION_PATCH(encoded)) {}
-ApiVersion Library::instanceAPIVersion() const {
+ApiVersion Library::instanceAPIVersion() const noexcept {
   if (this->vkEnumerateInstanceVersion == nullptr)
     return {1, 0, 0};
 
@@ -95,7 +96,8 @@ ApiVersion Library::instanceAPIVersion() const {
   return ApiVersion{encoded};
 }
 Library::~Library() {}
-VkLayerProperties Library::layerProperties(layer layerId) const {
+VkLayerProperties Library::layerProperties(layer layerId) const
+    noexcept(ExceptionsDisabled) {
   std::string_view layerName = LayerName(layerId);
   auto found =
       std::find_if(m_layer_properties.begin(), m_layer_properties.end(),
@@ -104,19 +106,20 @@ VkLayerProperties Library::layerProperties(layer layerId) const {
                    });
 
   if (found == m_layer_properties.end())
-    throw vkw::Error(std::string(layerName) + " is missing");
+    postError(vkw::Error(std::string(layerName) + " is missing"));
 
   return *found;
 }
 
-bool Library::hasLayer(layer layerId) const {
+bool Library::hasLayer(layer layerId) const noexcept(ExceptionsDisabled) {
   std::string_view layerName = LayerName(layerId);
   return std::any_of(m_layer_properties.begin(), m_layer_properties.end(),
                      [&layerName](VkLayerProperties const &layer) {
                        return !layerName.compare(layer.layerName);
                      });
 }
-bool Library::hasInstanceExtension(ext extensionId) const {
+bool Library::hasInstanceExtension(ext extensionId) const
+    noexcept(ExceptionsDisabled) {
 
   std::string_view name = ExtensionName(extensionId);
 
@@ -127,7 +130,8 @@ bool Library::hasInstanceExtension(ext extensionId) const {
                      });
 }
 VkExtensionProperties
-Library::instanceExtensionProperties(ext extensionId) const {
+Library::instanceExtensionProperties(ext extensionId) const
+    noexcept(ExceptionsDisabled) {
   std::string_view name = ExtensionName(extensionId);
 
   auto found = std::find_if(m_instance_extension_properties.begin(),
@@ -137,7 +141,7 @@ Library::instanceExtensionProperties(ext extensionId) const {
                             });
 
   if (found == m_instance_extension_properties.end())
-    throw vkw::ExtensionMissing(extensionId, name);
+    postError(vkw::ExtensionMissing(extensionId, name));
 
   return *found;
 }
@@ -160,17 +164,28 @@ constexpr const char *LayerNames[] = {
 
 } // namespace
 
-const char *Library::ExtensionName(ext id) {
+const char *Library::ExtensionName(ext id) noexcept(ExceptionsDisabled) {
   auto index = static_cast<unsigned>(id);
   if (index >= sizeof(ExtensionNames) / sizeof(const char *)) {
     std::stringstream ss;
     ss << "Unhandled extension ID: vkw::ext::" << index;
-    throw vkw::Error(ss.str());
+    postError(vkw::Error(ss.str()));
   }
   return ExtensionNames[static_cast<unsigned>(id)];
 }
 
-ext Library::ExtensionId(std::string_view extensionName) {
+bool Library::ValidExtensionName(std::string_view extensionName) noexcept {
+  auto *begin = ExtensionNames;
+  auto *end = ExtensionNames + (sizeof(ExtensionNames) / sizeof(const char *));
+  auto *found = std::find_if(begin, end, [extensionName](const char *entry) {
+    return !extensionName.compare(entry);
+  });
+
+  return found != end;
+}
+
+ext Library::ExtensionId(std::string_view extensionName) noexcept(
+    ExceptionsDisabled) {
   auto *begin = ExtensionNames;
   auto *end = ExtensionNames + (sizeof(ExtensionNames) / sizeof(const char *));
   auto *found = std::find_if(begin, end, [extensionName](const char *entry) {
@@ -179,21 +194,33 @@ ext Library::ExtensionId(std::string_view extensionName) {
   if (found == end) {
     std::stringstream ss;
     ss << "Bad extension name: " << extensionName;
-    throw Error(ss.str());
+    postError(Error(ss.str()));
   }
 
   return static_cast<ext>(found - begin);
 }
-const char *Library::LayerName(layer id) {
+
+bool Library::ValidLayerName(std::string_view layerName) noexcept {
+  auto *begin = LayerNames;
+  auto *end = LayerNames + (sizeof(LayerNames) / sizeof(const char *));
+  auto *found = std::find_if(begin, end, [layerName](const char *entry) {
+    return !layerName.compare(entry);
+  });
+
+  return found != end;
+}
+
+const char *Library::LayerName(layer id) noexcept(ExceptionsDisabled) {
   auto index = static_cast<unsigned>(id);
   if (index >= sizeof(LayerNames) / sizeof(const char *)) {
     std::stringstream ss;
     ss << "Unhandled layer ID: vkw::ext::" << index;
-    throw vkw::Error(ss.str());
+    postError(vkw::Error(ss.str()));
   }
   return LayerNames[static_cast<unsigned>(id)];
 }
-layer Library::LayerId(std::string_view layerName) {
+layer Library::LayerId(std::string_view layerName) noexcept(
+    ExceptionsDisabled) {
   auto *begin = LayerNames;
   auto *end = LayerNames + (sizeof(LayerNames) / sizeof(const char *));
   auto *found = std::find_if(begin, end, [layerName](const char *entry) {
@@ -202,15 +229,19 @@ layer Library::LayerId(std::string_view layerName) {
   if (found == end) {
     std::stringstream ss;
     ss << "Bad extension name: " << layerName;
-    throw Error(ss.str());
+    postError(Error(ss.str()));
   }
 
   return static_cast<layer>(found - begin);
 }
 
 namespace internal {
-const char *ext_name(ext id) { return Library::ExtensionName(id); }
-const char *layer_name(layer id) { return Library::LayerName(id); }
+const char *ext_name(ext id) noexcept(ExceptionsDisabled) {
+  return Library::ExtensionName(id);
+}
+const char *layer_name(layer id) noexcept(ExceptionsDisabled) {
+  return Library::LayerName(id);
+}
 } // namespace internal
 
 } // namespace vkw

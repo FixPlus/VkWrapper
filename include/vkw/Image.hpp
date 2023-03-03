@@ -8,7 +8,7 @@ namespace vkw {
 
 class ImageInterface : public ReferenceGuard {
 public:
-  explicit ImageInterface(VkImageUsageFlags usage = 0);
+  explicit ImageInterface(VkImageUsageFlags usage = 0) noexcept;
 
   ImageInterface(ImageInterface &&another) = default;
   ImageInterface(ImageInterface const &another) = delete;
@@ -18,23 +18,23 @@ public:
 
   virtual ~ImageInterface() = default;
 
-  VkImageUsageFlags usage() const { return m_createInfo.usage; }
+  VkImageUsageFlags usage() const noexcept { return m_createInfo.usage; }
 
-  VkFormat format() const { return m_createInfo.format; }
+  VkFormat format() const noexcept { return m_createInfo.format; }
 
-  VkExtent3D rawExtents() const { return m_createInfo.extent; }
+  VkExtent3D rawExtents() const noexcept { return m_createInfo.extent; }
 
-  VkImageType type() const { return m_createInfo.imageType; }
+  VkImageType type() const noexcept { return m_createInfo.imageType; }
 
-  uint32_t mipLevels() const { return m_createInfo.mipLevels; }
+  uint32_t mipLevels() const noexcept { return m_createInfo.mipLevels; }
 
-  VkImageSubresourceRange completeSubresourceRange() const;
+  VkImageSubresourceRange completeSubresourceRange() const noexcept;
 
-  virtual operator VkImage() const = 0;
+  virtual operator VkImage() const noexcept = 0;
 
-  static bool isDepthFormat(VkFormat format);
+  static bool isDepthFormat(VkFormat format) noexcept;
 
-  static bool isColorFormat(VkFormat format);
+  static bool isColorFormat(VkFormat format) noexcept;
 
 protected:
   VkImageCreateInfo m_createInfo{};
@@ -42,9 +42,9 @@ protected:
 
 class ImageViewBase : public ReferenceGuard {
 public:
-  bool operator==(ImageViewBase const &another) const;
+  bool operator==(ImageViewBase const &another) const noexcept;
 
-  ImageInterface const *image() const { return &m_parent.get(); }
+  ImageInterface const *image() const noexcept { return &m_parent.get(); }
 
   ImageViewBase(ImageViewBase &&another) noexcept
       : ReferenceGuard(std::move(another)),
@@ -63,9 +63,9 @@ public:
   }
   ImageViewBase &operator=(ImageViewBase const &another) = delete;
 
-  virtual operator VkImageView() const = 0;
+  virtual operator VkImageView() const noexcept = 0;
 
-  VkFormat format() const { return m_createInfo.format; };
+  VkFormat format() const noexcept { return m_createInfo.format; };
 
   virtual ~ImageViewBase() = default;
 
@@ -74,9 +74,9 @@ protected:
                          VkFormat format = VK_FORMAT_MAX_ENUM,
                          uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
                          VkComponentMapping componentMapping = {},
-                         VkImageViewCreateFlags flags = 0);
+                         VkImageViewCreateFlags flags = 0) noexcept;
   VkImageViewCreateInfo m_createInfo{};
-  auto isMovedOut() const { return m_moved_out; }
+  auto isMovedOut() const noexcept { return m_moved_out; }
 
 private:
   bool m_moved_out = false;
@@ -88,7 +88,7 @@ public:
   ~ImageViewCreator() override;
 
 protected:
-  explicit ImageViewCreator(Device const &device);
+  explicit ImageViewCreator(Device const &device) noexcept(ExceptionsDisabled);
 
 public:
   ImageViewCreator(ImageViewCreator const &another) = delete;
@@ -108,7 +108,7 @@ public:
     return *this;
   }
 
-  operator VkImageView() const override { return m_imageView; };
+  operator VkImageView() const noexcept override { return m_imageView; };
 
 private:
   VkImageView m_imageView{};
@@ -117,8 +117,9 @@ private:
 
 class AllocatedImage : public Allocation, virtual public ImageInterface {
 public:
-  AllocatedImage(VmaAllocator allocator,
-                 VmaAllocationCreateInfo allocCreateInfo);
+  AllocatedImage(
+      VmaAllocator allocator,
+      VmaAllocationCreateInfo allocCreateInfo) noexcept(ExceptionsDisabled);
   AllocatedImage(AllocatedImage &&another) noexcept
       : Allocation(std::move(another)), ImageInterface(std::move(another)),
         m_image(another.m_image) {
@@ -133,7 +134,7 @@ public:
     return *this;
   }
 
-  operator VkImage() const override { return m_image; }
+  operator VkImage() const noexcept override { return m_image; }
 
   ~AllocatedImage() override;
 
@@ -151,10 +152,10 @@ public:
     return *this;
   }
 
-  operator VkImage() const override { return m_image; }
+  operator VkImage() const noexcept override { return m_image; }
 
 protected:
-  explicit NonOwingImage(VkImage image) : m_image(image) {}
+  explicit NonOwingImage(VkImage image) noexcept : m_image(image) {}
 
 private:
   VkImage m_image;
@@ -162,7 +163,9 @@ private:
 
 class ImageArray : virtual public ImageInterface {
 public:
-  ImageArray(unsigned arrayLayers) { m_createInfo.arrayLayers = arrayLayers; }
+  ImageArray(unsigned arrayLayers) noexcept {
+    m_createInfo.arrayLayers = arrayLayers;
+  }
 
   ImageArray(ImageArray &&another) noexcept
       : ImageInterface(std::move(another)) {}
@@ -171,12 +174,14 @@ public:
     return *this;
   }
 
-  unsigned layers() const { return m_createInfo.arrayLayers; }
+  unsigned layers() const noexcept { return m_createInfo.arrayLayers; }
 };
 
 class ImageSingle : virtual public ImageInterface {
 public:
-  ImageSingle(unsigned arrayLayers = 1) { m_createInfo.arrayLayers = 1; }
+  ImageSingle(unsigned arrayLayers = 1) noexcept {
+    m_createInfo.arrayLayers = 1;
+  }
 
   ImageSingle(ImageSingle &&another) noexcept
       : ImageInterface(std::move(another)) {}
@@ -309,7 +314,7 @@ public:
   }
 
 protected:
-  ImageViewIPT(VkFormat format) {
+  ImageViewIPT(VkFormat format) noexcept {
     m_createInfo.subresourceRange.aspectMask = ImageAspectVal<ptype>::value;
     m_createInfo.format = format;
   }
@@ -327,13 +332,17 @@ public:
       ImageViewBase::operator=(std::move(another));
     return *this;
   }
-  unsigned layers() const { return m_createInfo.subresourceRange.layerCount; }
-  unsigned baseLayer() const {
+  unsigned layers() const noexcept {
+    return m_createInfo.subresourceRange.layerCount;
+  }
+  unsigned baseLayer() const noexcept {
     return m_createInfo.subresourceRange.baseArrayLayer;
   }
 
 protected:
-  ImageViewVT() { m_createInfo.viewType = ImageViewTypeVal<vtype>::value; }
+  ImageViewVT() noexcept {
+    m_createInfo.viewType = ImageViewTypeVal<vtype>::value;
+  }
 };
 
 class ImageViewSubRange : virtual public ImageViewBase {
@@ -350,7 +359,7 @@ public:
 
 protected:
   ImageViewSubRange(unsigned baseLayer, unsigned layerCount,
-                    unsigned baseMipLevel, unsigned mipLevelCount) {
+                    unsigned baseMipLevel, unsigned mipLevelCount) noexcept {
     m_createInfo.subresourceRange.baseArrayLayer = baseLayer;
     m_createInfo.subresourceRange.layerCount = layerCount;
     m_createInfo.subresourceRange.baseMipLevel = baseMipLevel;
@@ -367,15 +376,15 @@ public:
   }
 
 protected:
-  ImageIPT(VkFormat format) { m_createInfo.format = format; }
+  ImageIPT(VkFormat format) noexcept { m_createInfo.format = format; }
 };
 
-unsigned m_FormatRedBits(VkFormat);
-unsigned m_FormatGreenBits(VkFormat);
-unsigned m_FormatBlueBits(VkFormat);
-unsigned m_FormatAlphaBits(VkFormat);
-unsigned m_FormatDepthBits(VkFormat);
-unsigned m_FormatStencilBits(VkFormat);
+unsigned m_FormatRedBits(VkFormat) noexcept;
+unsigned m_FormatGreenBits(VkFormat) noexcept;
+unsigned m_FormatBlueBits(VkFormat) noexcept;
+unsigned m_FormatAlphaBits(VkFormat) noexcept;
+unsigned m_FormatDepthBits(VkFormat) noexcept;
+unsigned m_FormatStencilBits(VkFormat) noexcept;
 
 template <> class ImageIPT<COLOR> : virtual public ImageInterface {
 public:
@@ -385,13 +394,21 @@ public:
     return *this;
   }
 
-  unsigned redBits() const { return m_FormatRedBits(m_createInfo.format); }
-  unsigned greenBits() const { return m_FormatGreenBits(m_createInfo.format); }
-  unsigned blueBits() const { return m_FormatBlueBits(m_createInfo.format); }
-  unsigned alphaBits() const { return m_FormatAlphaBits(m_createInfo.format); }
+  unsigned redBits() const noexcept {
+    return m_FormatRedBits(m_createInfo.format);
+  }
+  unsigned greenBits() const noexcept {
+    return m_FormatGreenBits(m_createInfo.format);
+  }
+  unsigned blueBits() const noexcept {
+    return m_FormatBlueBits(m_createInfo.format);
+  }
+  unsigned alphaBits() const noexcept {
+    return m_FormatAlphaBits(m_createInfo.format);
+  }
 
 protected:
-  ImageIPT(VkFormat format) { m_createInfo.format = format; }
+  ImageIPT(VkFormat format) noexcept { m_createInfo.format = format; }
 };
 
 template <> class ImageIPT<DEPTH> : virtual public ImageInterface {
@@ -402,10 +419,12 @@ public:
     return *this;
   }
 
-  unsigned dBits() const { return m_FormatDepthBits(m_createInfo.format); }
+  unsigned dBits() const noexcept {
+    return m_FormatDepthBits(m_createInfo.format);
+  }
 
 protected:
-  ImageIPT(VkFormat format) { m_createInfo.format = format; }
+  ImageIPT(VkFormat format) noexcept { m_createInfo.format = format; }
 };
 
 template <> class ImageIPT<DEPTH_STENCIL> : virtual public ImageInterface {
@@ -416,11 +435,15 @@ public:
     return *this;
   }
 
-  unsigned dBits() const { return m_FormatDepthBits(m_createInfo.format); }
-  unsigned sBits() const { return m_FormatStencilBits(m_createInfo.format); }
+  unsigned dBits() const noexcept {
+    return m_FormatDepthBits(m_createInfo.format);
+  }
+  unsigned sBits() const noexcept {
+    return m_FormatStencilBits(m_createInfo.format);
+  }
 
 protected:
-  ImageIPT(VkFormat format) { m_createInfo.format = format; }
+  ImageIPT(VkFormat format) noexcept { m_createInfo.format = format; }
 };
 
 template <ImageType itype> class ImageIT : virtual public ImageInterface {
@@ -431,7 +454,7 @@ public:
     return *this;
   }
 
-  ImageIT() { m_createInfo.imageType = ImageTypeVal<itype>::value; }
+  ImageIT() noexcept { m_createInfo.imageType = ImageTypeVal<itype>::value; }
 };
 
 template <> class ImageIT<I1D> : virtual public ImageInterface {
@@ -442,14 +465,14 @@ public:
     return *this;
   }
 
-  ImageIT(unsigned width, unsigned = 0, unsigned = 0) {
+  ImageIT(unsigned width, unsigned = 0, unsigned = 0) noexcept {
     m_createInfo.imageType = ImageTypeVal<I1D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = 1;
     m_createInfo.extent.depth = 1;
   }
 
-  unsigned width() const { return m_createInfo.extent.width; }
+  unsigned width() const noexcept { return m_createInfo.extent.width; }
 };
 
 template <> class ImageIT<I2D> : virtual public ImageInterface {
@@ -460,16 +483,16 @@ public:
     return *this;
   }
 
-  ImageIT(unsigned width, unsigned height, unsigned = 0) {
+  ImageIT(unsigned width, unsigned height, unsigned = 0) noexcept {
     m_createInfo.imageType = ImageTypeVal<I2D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = height;
     m_createInfo.extent.depth = 1;
   }
 
-  unsigned width() const { return m_createInfo.extent.width; }
+  unsigned width() const noexcept { return m_createInfo.extent.width; }
 
-  unsigned height() const { return m_createInfo.extent.height; }
+  unsigned height() const noexcept { return m_createInfo.extent.height; }
 };
 
 template <> class ImageIT<I3D> : virtual public ImageInterface {
@@ -480,25 +503,25 @@ public:
     return *this;
   }
 
-  ImageIT(unsigned width, unsigned height, unsigned depth) {
+  ImageIT(unsigned width, unsigned height, unsigned depth) noexcept {
     m_createInfo.imageType = ImageTypeVal<I3D>::value;
     m_createInfo.extent.width = width;
     m_createInfo.extent.height = height;
     m_createInfo.extent.depth = depth;
   }
 
-  unsigned width() const { return m_createInfo.extent.width; }
+  unsigned width() const noexcept { return m_createInfo.extent.width; }
 
-  unsigned height() const { return m_createInfo.extent.height; }
+  unsigned height() const noexcept { return m_createInfo.extent.height; }
 
-  unsigned depth() const { return m_createInfo.extent.depth; }
+  unsigned depth() const noexcept { return m_createInfo.extent.depth; }
 };
 
 template <ImagePixelType ptype, ImageType itype>
 class ImageTypeInterface : public ImageIPT<ptype>, public ImageIT<itype> {
 public:
   ImageTypeInterface(VkFormat format, unsigned width, unsigned height,
-                     unsigned depth)
+                     unsigned depth) noexcept
       : ImageIPT<ptype>(format), ImageIT<itype>(width, height, depth) {}
 };
 
@@ -507,7 +530,7 @@ class BasicImage : public ImageTypeInterface<ptype, itype>,
                    public ImageArraynessT<iarr>::Type {
 public:
   BasicImage(VkFormat format, unsigned width, unsigned height, unsigned depth,
-             unsigned layers)
+             unsigned layers) noexcept
       : ImageTypeInterface<ptype, itype>(format, width, height, depth),
         ImageArraynessT<iarr>::Type(layers) {}
 };
@@ -531,6 +554,7 @@ public:
                     .a = VK_COMPONENT_SWIZZLE_IDENTITY,
                 },
             VkImageViewCreateFlags flags = 0)
+  noexcept(ExceptionsDisabled)
       : ImageViewBase(&image, format, 0, 0, mapping, flags),
         ImageViewIPT<ptype>(format),
         ImageViewSubRange(baseLayer, layerCount, baseMipLevel, mipLevels),
@@ -548,6 +572,7 @@ public:
                     .a = VK_COMPONENT_SWIZZLE_IDENTITY,
                 },
             VkImageViewCreateFlags flags = 0)
+  noexcept(ExceptionsDisabled)
       : ImageViewBase(&image, format, 0, 0, mapping, flags),
         ImageViewIPT<ptype>(format),
         ImageViewSubRange(0, 1, baseMipLevel, mipLevels), ImageViewVT<vtype>(),
@@ -568,7 +593,7 @@ protected:
                      VkImageUsageFlags usage, VkImageCreateFlags flags,
                      VkImageLayout initialLayout, VkImageTiling tiling,
                      VkSharingMode sharingMode, uint32_t queueFamilyIndexCount,
-                     uint32_t const *pQueueFamilyIndices) {
+                     uint32_t const *pQueueFamilyIndices) noexcept {
     m_createInfo.usage = usage;
     m_createInfo.flags = flags;
     m_createInfo.initialLayout = initialLayout;
@@ -595,7 +620,8 @@ public:
 private:
   friend class SwapChain;
   SwapChainImage(VkImage swapChainImage, VkFormat surfaceFormat, uint32_t width,
-                 uint32_t height, uint32_t layers, VkImageUsageFlags usage)
+                 uint32_t height, uint32_t layers,
+                 VkImageUsageFlags usage) noexcept
       : ImageInterface(), BasicImage<COLOR, I2D, ARRAY>(surfaceFormat, width,
                                                         height, 1, layers),
         NonOwingImage(swapChainImage) {
@@ -621,7 +647,7 @@ class StagingImage : public BasicImage<COLOR, I2D, SINGLE>,
                      private AllocatedImage {
 public:
   StagingImage(VmaAllocator allocator, VkFormat colorFormat, uint32_t width,
-               uint32_t height)
+               uint32_t height) noexcept(ExceptionsDisabled)
       : BasicImage<COLOR, I2D, SINGLE>(colorFormat, width, height, 1, 1),
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, 1,
                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
@@ -634,13 +660,17 @@ public:
                         .requiredFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT}) {
   }
 
-  std::span<unsigned char> mapped() {
+  std::span<unsigned char> mapped() noexcept {
     return AllocatedImage::mapped<unsigned char>();
   }
 
-  void flush() { AllocatedImage::flush(0, VK_WHOLE_SIZE); }
+  void flush() noexcept(ExceptionsDisabled) {
+    AllocatedImage::flush(0, VK_WHOLE_SIZE);
+  }
 
-  void invalidate() { AllocatedImage::invalidate(0, VK_WHOLE_SIZE); }
+  void invalidate() noexcept(ExceptionsDisabled) {
+    AllocatedImage::invalidate(0, VK_WHOLE_SIZE);
+  }
 };
 
 template <ImagePixelType ptype, ImageType itype, ImageArrayness iarr = SINGLE>
@@ -651,7 +681,7 @@ public:
   Image(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo,
         VkFormat format, uint32_t width, uint32_t height, uint32_t depth,
         uint32_t layers, uint32_t mipLevels, VkImageUsageFlags usage,
-        VkImageCreateFlags flags = 0)
+        VkImageCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : BasicImage<ptype, itype, iarr>(format, width, height, depth, layers),
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,

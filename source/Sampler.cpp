@@ -4,7 +4,8 @@
 
 namespace vkw {
 
-Sampler::Sampler(Device const &device, VkSamplerCreateInfo createInfo)
+Sampler::Sampler(Device const &device,
+                 VkSamplerCreateInfo createInfo) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkSampler>(device, createInfo),
       m_createInfo(createInfo) {}
 

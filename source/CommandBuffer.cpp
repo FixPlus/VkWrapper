@@ -11,8 +11,9 @@
 
 namespace vkw {
 
-CommandBuffer::CommandBuffer(CommandPool &pool,
-                             VkCommandBufferLevel bufferLevel)
+CommandBuffer::CommandBuffer(
+    CommandPool &pool,
+    VkCommandBufferLevel bufferLevel) noexcept(ExceptionsDisabled)
     : m_pool(pool), m_device(pool.parent()) {
   VkCommandBufferAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -24,13 +25,13 @@ CommandBuffer::CommandBuffer(CommandPool &pool,
       m_device.get(), &allocInfo, &m_commandBuffer))
 }
 
-uint32_t CommandBuffer::queueFamily() const {
+uint32_t CommandBuffer::queueFamily() const noexcept {
   return m_pool.get().queueFamilyIndex();
 }
 
-void CommandBuffer::m_begin(
-    VkCommandBufferUsageFlags flags,
-    const VkCommandBufferInheritanceInfo *inheritanceInfo) {
+void CommandBuffer::m_begin(VkCommandBufferUsageFlags flags,
+                            const VkCommandBufferInheritanceInfo
+                                *inheritanceInfo) noexcept(ExceptionsDisabled) {
   VkCommandBufferBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
   beginInfo.flags = flags;
@@ -43,32 +44,31 @@ void CommandBuffer::m_begin(
   m_recording = true;
 }
 
-void CommandBuffer::end() {
+void CommandBuffer::end() noexcept(ExceptionsDisabled) {
   VK_CHECK_RESULT(
       m_device.get().core<1, 0>().vkEndCommandBuffer(m_commandBuffer))
   m_recording = false;
   m_executable = true;
 }
 
-void CommandBuffer::copyBufferToBuffer(const BufferBase &src,
-                                       const BufferBase &dst,
-                                       std::span<const VkBufferCopy> regions) {
+void CommandBuffer::copyBufferToBuffer(
+    const BufferBase &src, const BufferBase &dst,
+    std::span<const VkBufferCopy> regions) noexcept {
   m_device.get().core<1, 0>().vkCmdCopyBuffer(m_commandBuffer, src, dst,
                                               regions.size(), regions.data());
 }
 
 void CommandBuffer::copyBufferToImage(
     const BufferBase &src, const AllocatedImage &dst, VkImageLayout layout,
-    std::span<const VkBufferImageCopy> regions) {
+    std::span<const VkBufferImageCopy> regions) noexcept {
   m_device.get().core<1, 0>().vkCmdCopyBufferToImage(
       m_commandBuffer, src, dst, layout, regions.size(), regions.data());
 }
 
-void CommandBuffer::copyImageToImage(AllocatedImage const &src,
-                                     VkImageLayout srcLayout,
-                                     AllocatedImage const &dst,
-                                     VkImageLayout dstLayout,
-                                     std::span<const VkImageCopy> regions) {
+void CommandBuffer::copyImageToImage(
+    AllocatedImage const &src, VkImageLayout srcLayout,
+    AllocatedImage const &dst, VkImageLayout dstLayout,
+    std::span<const VkImageCopy> regions) noexcept {
   m_device.get().core<1, 0>().vkCmdCopyImage(m_commandBuffer, src, srcLayout,
                                              dst, dstLayout, regions.size(),
                                              regions.data());
@@ -79,7 +79,7 @@ void CommandBuffer::pipelineBarrier(
     std::span<const VkMemoryBarrier> memBarriers,
     std::span<const VkImageMemoryBarrier> imageMemoryBarrier,
     std::span<const VkBufferMemoryBarrier> bufferMemoryBarrier,
-    VkDependencyFlags flags) {
+    VkDependencyFlags flags) noexcept {
   m_device.get().core<1, 0>().vkCmdPipelineBarrier(
       m_commandBuffer, srcStage, dstStage, flags, memBarriers.size(),
       memBarriers.data(), bufferMemoryBarrier.size(),
@@ -88,74 +88,75 @@ void CommandBuffer::pipelineBarrier(
 }
 
 void CommandBuffer::m_bindVertexBuffer(VkBuffer buffer, uint32_t binding,
-                                       VkDeviceSize offset) {
+                                       VkDeviceSize offset) noexcept {
   m_device.get().core<1, 0>().vkCmdBindVertexBuffers(m_commandBuffer, binding,
                                                      1, &buffer, &offset);
 }
 
 void CommandBuffer::m_bindIndexBuffer(VkBuffer buffer, VkIndexType type,
-                                      VkDeviceSize offset) {
+                                      VkDeviceSize offset) noexcept {
   m_device.get().core<1, 0>().vkCmdBindIndexBuffer(m_commandBuffer, buffer,
                                                    offset, type);
 }
 
 void CommandBuffer::draw(uint32_t vertexCount, uint32_t instanceCount,
-                         uint32_t firstVertex, uint32_t firstInstance) {
+                         uint32_t firstVertex,
+                         uint32_t firstInstance) noexcept {
   m_device.get().core<1, 0>().vkCmdDraw(
       m_commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void CommandBuffer::drawIndexed(uint32_t indexCount, uint32_t instanceCount,
                                 uint32_t firstIndex, int32_t vertexOffset,
-                                uint32_t firstInstance) {
+                                uint32_t firstInstance) noexcept {
   m_device.get().core<1, 0>().vkCmdDrawIndexed(m_commandBuffer, indexCount,
                                                instanceCount, firstIndex,
                                                vertexOffset, firstInstance);
 }
 
 void CommandBuffer::dispatch(uint32_t groupCountX, uint32_t groupCountY,
-                             uint32_t groupCountZ) {
+                             uint32_t groupCountZ) noexcept {
   m_device.get().core<1, 0>().vkCmdDispatch(m_commandBuffer, groupCountX,
                                             groupCountY, groupCountZ);
 }
 
-void CommandBuffer::bindGraphicsPipeline(GraphicsPipeline const &pipeline) {
+void CommandBuffer::bindGraphicsPipeline(
+    GraphicsPipeline const &pipeline) noexcept {
   m_device.get().core<1, 0>().vkCmdBindPipeline(
       m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 }
 
-void CommandBuffer::bindComputePipeline(ComputePipeline const &pipeline) {
+void CommandBuffer::bindComputePipeline(
+    ComputePipeline const &pipeline) noexcept {
   m_device.get().core<1, 0>().vkCmdBindPipeline(
       m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline);
 }
-void CommandBuffer::copyImageToBuffer(AllocatedImage const &src,
-                                      VkImageLayout layout,
-                                      BufferBase const &dst,
-                                      std::span<VkBufferImageCopy> regions) {
+void CommandBuffer::copyImageToBuffer(
+    AllocatedImage const &src, VkImageLayout layout, BufferBase const &dst,
+    std::span<VkBufferImageCopy> regions) noexcept {
   m_device.get().core<1, 0>().vkCmdCopyImageToBuffer(
       m_commandBuffer, src, layout, dst, regions.size(), regions.data());
 }
 void CommandBuffer::setScissors(std::span<const VkRect2D> scissors,
-                                uint32_t firstScissor) {
+                                uint32_t firstScissor) noexcept {
   m_device.get().core<1, 0>().vkCmdSetScissor(m_commandBuffer, firstScissor,
                                               scissors.size(), scissors.data());
 }
 void CommandBuffer::setViewports(std::span<const VkViewport> viewports,
-                                 uint32_t firstViewport) {
+                                 uint32_t firstViewport) noexcept {
   m_device.get().core<1, 0>().vkCmdSetViewport(
       m_commandBuffer, firstViewport, viewports.size(), viewports.data());
 }
 
-void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
-                                           const FrameBuffer &frameBuffer,
-                                           VkRect2D renderArea,
-                                           bool useSecondary,
-                                           uint32_t clearValuesCount,
-                                           VkClearValue *pClearValues) {
+void PrimaryCommandBuffer::beginRenderPass(
+    const RenderPass &renderPass, const FrameBuffer &frameBuffer,
+    VkRect2D renderArea, bool useSecondary, uint32_t clearValuesCount,
+    VkClearValue *pClearValues) noexcept(ExceptionsDisabled) {
 #ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (m_currentPass.has_value())
-    throw Error("CommandBuffer record failed: called beginRenderPass() while "
-                "having another RenderPass active");
+    postError(
+        Error("CommandBuffer record failed: called beginRenderPass() while "
+              "having another RenderPass active"));
 #endif
   VkRenderPassBeginInfo beginInfo{};
   beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
@@ -176,14 +177,15 @@ void PrimaryCommandBuffer::beginRenderPass(const RenderPass &renderPass,
 #endif
 }
 
-void PrimaryCommandBuffer::nextSubpass(bool useSecondary) {
+void PrimaryCommandBuffer::nextSubpass(bool useSecondary) noexcept(
+    ExceptionsDisabled) {
 #ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (!m_currentPass.has_value())
-    throw Error("CommandBuffer record failed: called nextSubpass() while "
-                "having no RenderPass active");
+    postError(Error("CommandBuffer record failed: called nextSubpass() while "
+                    "having no RenderPass active"));
   if (m_currentPass.value().get().info().subpassCount() == m_currentSubpass)
-    throw Error("CommandBuffer record failed: call to nextSubpass() caused "
-                "subpass overflow");
+    postError(Error("CommandBuffer record failed: call to nextSubpass() caused "
+                    "subpass overflow"));
 #endif
   m_device.get().core<1, 0>().vkCmdNextSubpass(
       m_commandBuffer, useSecondary
@@ -194,11 +196,11 @@ void PrimaryCommandBuffer::nextSubpass(bool useSecondary) {
 #endif
 }
 
-void PrimaryCommandBuffer::endRenderPass() {
+void PrimaryCommandBuffer::endRenderPass() noexcept(ExceptionsDisabled) {
 #ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (!m_currentPass.has_value())
-    throw Error("CommandBuffer record failed: called endRenderPass() while "
-                "having no RenderPass active");
+    postError(Error("CommandBuffer record failed: called endRenderPass() while "
+                    "having no RenderPass active"));
 #endif
   m_device.get().core<1, 0>().vkCmdEndRenderPass(m_commandBuffer);
 #ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
@@ -206,8 +208,8 @@ void PrimaryCommandBuffer::endRenderPass() {
 #endif
 }
 
-void PrimaryCommandBuffer::m_executeCommands(size_t nbufs,
-                                             const VkCommandBuffer *buffers) {
+void PrimaryCommandBuffer::m_executeCommands(
+    size_t nbufs, const VkCommandBuffer *buffers) noexcept {
   m_device.get().core<1, 0>().vkCmdExecuteCommands(m_commandBuffer, nbufs,
                                                    buffers);
 }
@@ -215,13 +217,13 @@ void PrimaryCommandBuffer::m_executeCommands(size_t nbufs,
 void CommandBuffer::m_pushConstants(PipelineLayout const &layout,
                                     VkShaderStageFlagBits shaderStage,
                                     uint32_t offset, uint32_t size,
-                                    const void *data) {
+                                    const void *data) noexcept {
   m_device.get().core<1, 0>().vkCmdPushConstants(
       m_commandBuffer, layout, shaderStage, offset, size, data);
 }
 void CommandBuffer::blitImage(const AllocatedImage &targetImage,
                               VkImageBlit blit, bool usingGeneralLayout,
-                              VkFilter filter) {
+                              VkFilter filter) noexcept {
   auto srcLayout = usingGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL
                                       : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
   auto dstLayout = usingGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL
@@ -236,7 +238,7 @@ void CommandBuffer::m_bindDescriptorSets(const PipelineLayout &layout,
                                          size_t firstSet,
                                          VkDescriptorSet const *sets,
                                          size_t nsets, uint32_t *dynOffsets,
-                                         size_t ndynOffsets) {
+                                         size_t ndynOffsets) noexcept {
   m_device.get().core<1, 0>().vkCmdBindDescriptorSets(
       m_commandBuffer, bindPoint, layout, firstSet, nsets, sets, ndynOffsets,
       dynOffsets);

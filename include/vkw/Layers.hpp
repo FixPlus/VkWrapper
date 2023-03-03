@@ -8,15 +8,15 @@ namespace vkw {
 enum class layer;
 
 namespace internal {
-bool isLayerEnabled(Instance const &instance, layer layer);
-const char *layer_name(layer id);
+bool isLayerEnabled(Instance const &instance, layer layer) noexcept;
+const char *layer_name(layer id) noexcept(ExceptionsDisabled);
 } // namespace internal
 
 template <layer id> class Layer {
 public:
-  explicit Layer(Instance const &instance) {
+  explicit Layer(Instance const &instance) noexcept(ExceptionsDisabled) {
     if (!internal::isLayerEnabled(instance, id))
-      throw LayerMissing(id, internal::layer_name(id));
+      postError(LayerMissing(id, internal::layer_name(id)));
   }
 };
 

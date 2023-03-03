@@ -7,7 +7,7 @@ namespace vkw {
 namespace {
 
 VkCommandPoolCreateInfo fillCreateInfo(VkCommandPoolCreateFlags flags,
-                                       uint32_t queueFamily) {
+                                       uint32_t queueFamily) noexcept {
   VkCommandPoolCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
   createInfo.pNext = nullptr;
@@ -18,7 +18,7 @@ VkCommandPoolCreateInfo fillCreateInfo(VkCommandPoolCreateFlags flags,
 }
 } // namespace
 CommandPool::CommandPool(Device const &device, VkCommandPoolCreateFlags flags,
-                         uint32_t queueFamily)
+                         uint32_t queueFamily) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkCommandPool>(device,
                                         fillCreateInfo(flags, queueFamily)),
       m_queueFamily(queueFamily), m_createFlags(flags) {}

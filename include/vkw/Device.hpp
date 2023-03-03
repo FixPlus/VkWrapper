@@ -21,13 +21,13 @@ enum class ext;
 
 class DeviceInfo {
 public:
-  explicit DeviceInfo(PhysicalDevice phDevice);
+  explicit DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled);
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
-  PhysicalDevice const &physicalDevice() const { return m_ph_device; }
+  PhysicalDevice const &physicalDevice() const noexcept { return m_ph_device; }
 
-  auto &apiVersion() const { return m_apiVer; }
+  auto &apiVersion() const noexcept { return m_apiVer; }
 
 private:
   VkDeviceCreateInfo m_createInfo{};
@@ -41,38 +41,42 @@ private:
 
 class Device : public DeviceInfo, public UniqueVulkanObject<VkDevice> {
 public:
-  Device(Instance const &parent, PhysicalDevice phDevice);
+  Device(Instance const &parent,
+         PhysicalDevice phDevice) noexcept(ExceptionsDisabled);
 
-  Queue const &getQueue(unsigned queueFamilyIndex, unsigned queueIndex) const {
+  Queue const &getQueue(unsigned queueFamilyIndex, unsigned queueIndex) const
+      noexcept(ExceptionsDisabled) {
     return *m_queues.at(queueFamilyIndex).at(queueIndex);
   }
 
-  Queue const &anyGraphicsQueue() const;
+  Queue const &anyGraphicsQueue() const noexcept(ExceptionsDisabled);
 
-  Queue const &anyComputeQueue() const;
+  Queue const &anyComputeQueue() const noexcept(ExceptionsDisabled);
 
-  Queue const &anyTransferQueue() const;
+  Queue const &anyTransferQueue() const noexcept(ExceptionsDisabled);
 
-  Queue const &getSpecificQueue(QueueFamily::Type type) const;
+  Queue const &getSpecificQueue(QueueFamily::Type type) const
+      noexcept(ExceptionsDisabled);
 
-  VmaAllocator getAllocator() const { return m_allocator.get(); }
+  VmaAllocator getAllocator() const noexcept { return m_allocator.get(); }
 
   template <uint32_t major, uint32_t minor>
-  DeviceCore<major, minor> core() const {
+  DeviceCore<major, minor> core() const noexcept(ExceptionsDisabled) {
     if (apiVersion() < ApiVersion{major, minor, 0})
-      throw Error{"Cannot use core " + std::to_string(major) + "." +
-                  std::to_string(minor) + " vulkan symbols. Version loaded: " +
-                  std::string(apiVersion())};
+      postError(Error{
+          "Cannot use core " + std::to_string(major) + "." +
+          std::to_string(minor) +
+          " vulkan symbols. Version loaded: " + std::string(apiVersion())});
     return *static_cast<DeviceCore<major, minor> const *>(
         m_coreDeviceSymbols.get());
   }
 
-  void waitIdle();
+  void waitIdle() noexcept(ExceptionsDisabled);
 
   ~Device() override;
 
 private:
-  VmaAllocator m_allocatorCreateImpl();
+  VmaAllocator m_allocatorCreateImpl() noexcept(ExceptionsDisabled);
   struct AllocatorDeleter {
     void operator()(VmaAllocator a);
   };

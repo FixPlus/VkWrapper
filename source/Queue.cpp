@@ -12,7 +12,7 @@
 
 namespace vkw {
 
-void PresentInfo::m_fill_info() {
+void PresentInfo::m_fill_info() noexcept {
   m_info.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
   m_info.pNext = nullptr;
   m_info.waitSemaphoreCount = m_wait_semaphores.size();
@@ -23,7 +23,7 @@ void PresentInfo::m_fill_info() {
   m_info.pResults = nullptr;
 }
 
-void SubmitInfo::m_fill_info() {
+void SubmitInfo::m_fill_info() noexcept {
   assert(m_wait_stage.size() == m_wait_semaphores.size() &&
          "Count of dst stage masks must be equal to count of wait semaphores");
   m_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
@@ -36,26 +36,29 @@ void SubmitInfo::m_fill_info() {
   m_info.pWaitSemaphores = m_wait_semaphores.data();
   m_info.pWaitDstStageMask = m_wait_stage.data();
 }
-Queue::Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex)
+Queue::Queue(Device &parent, uint32_t queueFamilyIndex,
+             uint32_t queueIndex) noexcept(ExceptionsDisabled)
     : m_parent(parent), m_familyIndex(queueFamilyIndex),
       m_queueIndex(queueIndex) {
   m_parent.get().core<1, 0>().vkGetDeviceQueue(parent, queueFamilyIndex,
                                                queueIndex, &m_queue);
 }
 
-bool Queue::supportsPresenting(Surface const &surface) const {
+bool Queue::supportsPresenting(Surface const &surface) const
+    noexcept(ExceptionsDisabled) {
   VkBool32 ret;
   VK_CHECK_RESULT(surface.ext().vkGetPhysicalDeviceSurfaceSupportKHR(
       m_parent.get().physicalDevice(), m_familyIndex, surface, &ret))
   return ret;
 }
 
-void Queue::waitIdle() const {
+void Queue::waitIdle() const noexcept(ExceptionsDisabled) {
   VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueWaitIdle(m_queue))
 }
 
-static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
-                         VkQueue queue, VkPresentInfoKHR const *pPresentInfo) {
+static bool queuePresent(
+    PFN_vkQueuePresentKHR p_vkQueuePresentKHR, VkQueue queue,
+    VkPresentInfoKHR const *pPresentInfo) noexcept(ExceptionsDisabled) {
   auto result = p_vkQueuePresentKHR(queue, pPresentInfo);
 
   if (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR) {
@@ -70,19 +73,20 @@ static bool queuePresent(PFN_vkQueuePresentKHR p_vkQueuePresentKHR,
   return false;
 }
 
-bool Queue::present(PresentInfo const &presentInfo) const {
+bool Queue::present(PresentInfo const &presentInfo) const
+    noexcept(ExceptionsDisabled) {
   VkPresentInfoKHR info = presentInfo;
   return queuePresent(presentInfo.swapChainExtension().vkQueuePresentKHR,
                       m_queue, &info);
 }
 void Queue::m_submit(const VkSubmitInfo *info, size_t infoCount,
-                     Fence const *fence) const {
+                     Fence const *fence) const noexcept(ExceptionsDisabled){
 
     VK_CHECK_RESULT(m_parent.get().core<1, 0>().vkQueueSubmit(
         m_queue, infoCount, info,
         fence ? fence->operator VkFence_T *() : VK_NULL_HANDLE))}
 
-QueueFamily const &Queue::family() const {
+QueueFamily const &Queue::family() const noexcept(ExceptionsDisabled) {
   return m_parent.get().physicalDevice().queueFamilies().at(m_familyIndex);
 }
 } // namespace vkw

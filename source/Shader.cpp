@@ -5,9 +5,9 @@
 namespace vkw {
 namespace {
 
-VkShaderModuleCreateInfo fillCreateInfo(SPIRVModule const &module,
-                                        VkShaderStageFlagBits stage,
-                                        VkShaderModuleCreateFlags flags) {
+VkShaderModuleCreateInfo
+fillCreateInfo(SPIRVModule const &module, VkShaderStageFlagBits stage,
+               VkShaderModuleCreateFlags flags) noexcept {
   VkShaderModuleCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
   createInfo.pNext = nullptr;
@@ -18,9 +18,10 @@ VkShaderModuleCreateInfo fillCreateInfo(SPIRVModule const &module,
 }
 
 } // namespace
-ShaderBase::ShaderBase(Device const &device, SPIRVModule const &module,
-                       VkShaderStageFlagBits stage,
-                       VkShaderModuleCreateFlags flags)
+ShaderBase::ShaderBase(
+    Device const &device, SPIRVModule const &module,
+    VkShaderStageFlagBits stage,
+    VkShaderModuleCreateFlags flags) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkShaderModule>(device,
                                          fillCreateInfo(module, stage, flags)),
       m_stage(stage) {}

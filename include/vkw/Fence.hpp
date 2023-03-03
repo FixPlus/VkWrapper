@@ -14,9 +14,10 @@ concept FenceIterator = std::forward_iterator<T> && requires(T a) {
 
 class Fence : public UniqueVulkanObject<VkFence> {
 public:
-  Fence(Device const &device, bool createSignaled = false);
+  Fence(Device const &device,
+        bool createSignaled = false) noexcept(ExceptionsDisabled);
 
-  void reset();
+  void reset() noexcept(ExceptionsDisabled);
 
   // returns true if fence condition satisfied before timeout
 
@@ -25,10 +26,12 @@ public:
     return wait_impl(parent(), &h, 1, true, timeout);
   }
 
-  bool signaled() const;
+  bool signaled() const noexcept(ExceptionsDisabled);
 
   template <FenceIterator Iter>
-  static bool wait_any(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
+  static bool
+  wait_any(Iter begin, Iter end,
+           uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled) {
     boost::container::small_vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
       fences.push_back((*it).m_fence);
@@ -38,7 +41,9 @@ public:
   }
 
   template <FenceIterator Iter>
-  static bool wait_all(Iter begin, Iter end, uint64_t timeout = UINT64_MAX) {
+  static bool
+  wait_all(Iter begin, Iter end,
+           uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled) {
     boost::container::small_vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
       fences.push_back((*it).m_fence);
@@ -49,7 +54,8 @@ public:
 
 private:
   static bool wait_impl(Device const &device, VkFence const *pFences,
-                        uint32_t fenceCount, bool waitAll, uint64_t timeout);
+                        uint32_t fenceCount, bool waitAll,
+                        uint64_t timeout) noexcept(ExceptionsDisabled);
 };
 
 } // namespace vkw

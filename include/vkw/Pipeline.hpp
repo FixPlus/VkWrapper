@@ -33,7 +33,8 @@ public:
     m_info.pMapEntries = m_entries.data();
     m_info.pData = m_data.data();
   };
-  SpecializationConstants(SpecializationConstants const &another)
+  SpecializationConstants(SpecializationConstants const &another) noexcept(
+      ExceptionsDisabled)
       : m_entries(another.m_entries), m_data(another.m_data),
         m_info(another.m_info) {
     m_info.pMapEntries = m_entries.data();
@@ -50,7 +51,8 @@ public:
     return *this;
   }
 
-  SpecializationConstants &operator=(SpecializationConstants const &another) {
+  SpecializationConstants &operator=(
+      SpecializationConstants const &another) noexcept(ExceptionsDisabled) {
     m_entries = another.m_entries;
     m_data = another.m_data;
     m_info = another.m_info;
@@ -59,9 +61,11 @@ public:
     return *this;
   }
 
-  bool empty() const { return m_entries.empty(); }
+  bool empty() const noexcept { return m_entries.empty(); }
 
-  template <typename T> void addConstant(T const &constant, uint32_t id) {
+  template <typename T>
+  void addConstant(T const &constant,
+                   uint32_t id) noexcept(ExceptionsDisabled) {
     m_addConstant(&constant, sizeof(constant), id);
   }
 
@@ -71,10 +75,11 @@ public:
     m_info.mapEntryCount = 0;
   }
 
-  operator VkSpecializationInfo const &() const { return m_info; }
+  operator VkSpecializationInfo const &() const noexcept { return m_info; }
 
 private:
-  void m_addConstant(const void *constant, size_t size, uint32_t id);
+  void m_addConstant(const void *constant, size_t size,
+                     uint32_t id) noexcept(ExceptionsDisabled);
 
   boost::container::small_vector<VkSpecializationMapEntry, 3> m_entries;
   boost::container::small_vector<unsigned char, 64> m_data;
@@ -92,12 +97,15 @@ private:
 
 class PipelineLayoutInfo {
 public:
-  explicit PipelineLayoutInfo(VkPipelineLayoutCreateFlags flags = 0);
+  explicit PipelineLayoutInfo(VkPipelineLayoutCreateFlags flags = 0) noexcept(
+      ExceptionsDisabled) {
+    m_fillInfo(flags);
+  }
   template <forward_range_of<DescriptorSetLayout const> T>
   explicit PipelineLayoutInfo(
       T const &setLayouts,
       std::span<const VkPushConstantRange> pushConstants = {},
-      VkPipelineLayoutCreateFlags flags = 0) {
+      VkPipelineLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled) {
     std::copy(pushConstants.begin(), pushConstants.end(),
               std::back_inserter(m_pushConstants));
     std::transform(setLayouts.begin(), setLayouts.end(),
@@ -113,31 +121,32 @@ public:
   explicit PipelineLayoutInfo(
       DescriptorSetLayout const &setLayout,
       std::span<const VkPushConstantRange> pushConstants = {},
-      VkPipelineLayoutCreateFlags flags = 0) {
+      VkPipelineLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled) {
     std::copy(pushConstants.begin(), pushConstants.end(),
               std::back_inserter(m_pushConstants));
     m_descriptorLayouts.emplace_back(setLayout);
     m_fillInfo(flags);
   }
 
-  bool operator==(PipelineLayoutInfo const &rhs) const;
+  bool operator==(PipelineLayoutInfo const &rhs) const noexcept;
 
-  bool operator!=(PipelineLayoutInfo const &rhs) const {
+  bool operator!=(PipelineLayoutInfo const &rhs) const noexcept {
     return !(*this == rhs);
   }
 
-  auto begin() { return m_descriptorLayouts.begin(); }
+  auto begin() noexcept { return m_descriptorLayouts.begin(); }
 
-  auto end() { return m_descriptorLayouts.begin(); }
+  auto end() noexcept { return m_descriptorLayouts.begin(); }
 
-  auto begin() const { return m_descriptorLayouts.begin(); }
+  auto begin() const noexcept { return m_descriptorLayouts.begin(); }
 
-  auto end() const { return m_descriptorLayouts.begin(); }
+  auto end() const noexcept { return m_descriptorLayouts.begin(); }
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
 private:
-  void m_fillInfo(VkPipelineLayoutCreateFlags flags);
+  void
+  m_fillInfo(VkPipelineLayoutCreateFlags flags) noexcept(ExceptionsDisabled);
 
   boost::container::small_vector<StrongReference<DescriptorSetLayout const>, 4>
       m_descriptorLayouts{};
@@ -159,29 +168,34 @@ private:
 class PipelineLayout : public PipelineLayoutInfo,
                        public UniqueVulkanObject<VkPipelineLayout> {
 public:
-  explicit PipelineLayout(Device const &device,
-                          VkPipelineLayoutCreateFlags flags = 0)
+  explicit PipelineLayout(
+      Device const &device,
+      VkPipelineLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : PipelineLayoutInfo(flags), UniqueVulkanObject<VkPipelineLayout>(
                                        device, info()) {}
   template <forward_range_of<DescriptorSetLayout const> T>
-  PipelineLayout(Device const &device, T const &setLayouts,
-                 std::span<const VkPushConstantRange> pushConstants = {},
-                 VkPipelineLayoutCreateFlags flags = 0)
+  PipelineLayout(
+      Device const &device, T const &setLayouts,
+      std::span<const VkPushConstantRange> pushConstants = {},
+      VkPipelineLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : PipelineLayoutInfo(setLayouts, pushConstants, flags),
         UniqueVulkanObject<VkPipelineLayout>(device, info()) {}
 
   // overload for 1 element case
-  PipelineLayout(Device const &device, DescriptorSetLayout const &setLayout,
-                 std::span<const VkPushConstantRange> pushConstants = {},
-                 VkPipelineLayoutCreateFlags flags = 0)
+  PipelineLayout(
+      Device const &device, DescriptorSetLayout const &setLayout,
+      std::span<const VkPushConstantRange> pushConstants = {},
+      VkPipelineLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : PipelineLayoutInfo(setLayout, pushConstants, flags),
         UniqueVulkanObject<VkPipelineLayout>(device, info()) {}
 
-  bool operator==(PipelineLayout const &rhs) const {
+  bool operator==(PipelineLayout const &rhs) const noexcept {
     return PipelineLayoutInfo::operator==(rhs);
   }
 
-  bool operator!=(PipelineLayout const &rhs) const { return !(*this == rhs); }
+  bool operator!=(PipelineLayout const &rhs) const noexcept {
+    return !(*this == rhs);
+  }
 };
 
 /*
@@ -214,21 +228,23 @@ public:
       VkVertexInputAttributeDescription const *pAttributeDesc,
       uint32_t bindingDescCount,
       VkVertexInputBindingDescription const *pBindingDesc,
-      VkPipelineVertexInputStateCreateFlags flags = 0);
+      VkPipelineVertexInputStateCreateFlags flags = 0) noexcept;
 
-  operator VkPipelineVertexInputStateCreateInfo const &() const {
+  operator VkPipelineVertexInputStateCreateInfo const &() const noexcept {
     return m_createInfo;
   }
 
-  uint32_t totalAttributes() const {
+  uint32_t totalAttributes() const noexcept {
     return m_createInfo.vertexAttributeDescriptionCount;
   }
-  VkVertexInputAttributeDescription attribute(uint32_t index) const;
+  VkVertexInputAttributeDescription attribute(uint32_t index) const
+      noexcept(ExceptionsDisabled);
 
-  uint32_t totalBindings() const {
+  uint32_t totalBindings() const noexcept {
     return m_createInfo.vertexBindingDescriptionCount;
   }
-  VkVertexInputBindingDescription binding(uint32_t index) const;
+  VkVertexInputBindingDescription binding(uint32_t index) const
+      noexcept(ExceptionsDisabled);
 
   virtual ~VertexInputStateCreateInfoBase() = default;
 
@@ -250,10 +266,10 @@ public:
   /**
    * @return reference to statically created NullVertexInputState object
    */
-  static NullVertexInputState &get();
+  static NullVertexInputState &get() noexcept;
 
 private:
-  NullVertexInputState()
+  NullVertexInputState() noexcept
       : VertexInputStateCreateInfoBase(0, nullptr, 0, nullptr, 0){};
 };
 
@@ -365,7 +381,7 @@ private:
     template <BindingPointDescriptionLike M_binding,
               BindingPointDescriptionLike M_dummy,
               BindingPointDescriptionLike... M_bindings>
-    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) {
+    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) noexcept {
       uint32_t offset = 0u;
       for (uint32_t i = initIndex;
            i < initIndex + M_binding::Attributes::count(); ++i) {
@@ -382,7 +398,7 @@ private:
     }
 
     template <BindingPointDescriptionLike M_binding>
-    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) {
+    void m_init_array(uint32_t initIndex = 0, uint32_t location = 0) noexcept {
       uint32_t offset = 0u;
       for (uint32_t i = initIndex;
            i < initIndex + M_binding::Attributes::count(); ++i) {
@@ -421,15 +437,17 @@ class InputAssemblyStateCreateInfo {
 public:
   InputAssemblyStateCreateInfo(
       VkPrimitiveTopology topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-      VkBool32 restartEnable = false);
+      VkBool32 restartEnable = false) noexcept;
 
-  operator VkPipelineInputAssemblyStateCreateInfo const &() const {
+  operator VkPipelineInputAssemblyStateCreateInfo const &() const noexcept {
     return m_createInfo;
   }
 
-  VkPrimitiveTopology topology() const { return m_createInfo.topology; }
+  VkPrimitiveTopology topology() const noexcept {
+    return m_createInfo.topology;
+  }
 
-  bool isPrimitivesRestartEnabled() const {
+  bool isPrimitivesRestartEnabled() const noexcept {
     return m_createInfo.primitiveRestartEnable;
   }
 
@@ -457,11 +475,11 @@ public:
       VkFrontFace frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
       VkBool32 depthBiasEnable = false, float depthBiasConstantFactor = 0,
       float depthBiasClamp = 0, float depthBiasSlopeFactor = 0,
-      float lineWidth = 1.0f);
+      float lineWidth = 1.0f) noexcept;
 
   virtual ~RasterizationStateCreateInfo() = default;
 
-  operator VkPipelineRasterizationStateCreateInfo const &() const {
+  operator VkPipelineRasterizationStateCreateInfo const &() const noexcept {
     return m_createInfo;
   }
 
@@ -480,13 +498,14 @@ private:
 class DepthTestStateCreateInfo {
 public:
   DepthTestStateCreateInfo(VkCompareOp compareOp, bool writeEnable,
-                           float minDepth = 0.0f, float maxDepth = 1.0f) {
+                           float minDepth = 0.0f,
+                           float maxDepth = 1.0f) noexcept {
     m_createInfo.depthCompareOp = compareOp;
     m_createInfo.depthWriteEnable = writeEnable;
     m_createInfo.minDepthBounds = minDepth;
     m_createInfo.maxDepthBounds = maxDepth;
   }
-  operator VkPipelineDepthStencilStateCreateInfo const &() const {
+  operator VkPipelineDepthStencilStateCreateInfo const &() const noexcept {
     return m_createInfo;
   }
 
@@ -505,53 +524,57 @@ private:
 
 class GraphicsPipelineCreateInfo {
 public:
-  GraphicsPipelineCreateInfo(RenderPass const &renderPass, uint32_t subpass,
-                             PipelineLayout const &layout);
+  GraphicsPipelineCreateInfo(
+      RenderPass const &renderPass, uint32_t subpass,
+      PipelineLayout const &layout) noexcept(ExceptionsDisabled);
 
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo &&another) noexcept;
   GraphicsPipelineCreateInfo(GraphicsPipelineCreateInfo const &another);
 
   GraphicsPipelineCreateInfo &
-  addDepthTestState(DepthTestStateCreateInfo depthTest);
+  addDepthTestState(DepthTestStateCreateInfo depthTest) noexcept;
   GraphicsPipelineCreateInfo &
   addVertexShader(VertexShader const &shader,
-                  SpecializationConstants const &constants = {});
+                  SpecializationConstants const &constants = {}) noexcept;
   GraphicsPipelineCreateInfo &
   addFragmentShader(FragmentShader const &shader,
-                    SpecializationConstants const &constants = {});
+                    SpecializationConstants const &constants = {}) noexcept;
+  GraphicsPipelineCreateInfo &addVertexInputState(
+      VertexInputStateCreateInfoBase const &vertexInputState) noexcept;
+  GraphicsPipelineCreateInfo &addInputAssemblyState(
+      InputAssemblyStateCreateInfo const &inputAssemblyState) noexcept;
+  GraphicsPipelineCreateInfo &addRasterizationState(
+      RasterizationStateCreateInfo const &rasterizationState) noexcept;
   GraphicsPipelineCreateInfo &
-  addVertexInputState(VertexInputStateCreateInfoBase const &vertexInputState);
-  GraphicsPipelineCreateInfo &
-  addInputAssemblyState(InputAssemblyStateCreateInfo const &inputAssemblyState);
-  GraphicsPipelineCreateInfo &
-  addRasterizationState(RasterizationStateCreateInfo const &rasterizationState);
-  GraphicsPipelineCreateInfo &
-  addBlendState(VkPipelineColorBlendAttachmentState state, uint32_t attachment);
-  GraphicsPipelineCreateInfo &addDynamicState(VkDynamicState state);
+  addBlendState(VkPipelineColorBlendAttachmentState state,
+                uint32_t attachment) noexcept;
+  GraphicsPipelineCreateInfo &addDynamicState(VkDynamicState state) noexcept;
 
-  operator VkGraphicsPipelineCreateInfo const &() const { return m_createInfo; }
+  operator VkGraphicsPipelineCreateInfo const &() const noexcept {
+    return m_createInfo;
+  }
 
-  VertexInputStateCreateInfoBase const &vertexInputState() const {
+  VertexInputStateCreateInfoBase const &vertexInputState() const noexcept {
     return m_vertexInputStateCreateInfo;
   }
 
-  VkPipelineInputAssemblyStateCreateInfo inputAssemblyState() const {
+  VkPipelineInputAssemblyStateCreateInfo inputAssemblyState() const noexcept {
     return m_inputAssemblyStateCreateInfo;
   }
 
-  VkPipelineRasterizationStateCreateInfo rasterizationState() const {
+  VkPipelineRasterizationStateCreateInfo rasterizationState() const noexcept {
     return m_rasterizationStateCreateInfo;
   }
 
-  PipelineLayout const &layout() const { return m_layout; }
+  PipelineLayout const &layout() const noexcept { return m_layout; }
 
-  RenderPass const &pass() const { return m_renderPass; }
+  RenderPass const &pass() const noexcept { return m_renderPass; }
 
-  uint32_t subpass() const { return m_createInfo.subpass; }
+  uint32_t subpass() const noexcept { return m_createInfo.subpass; }
 
-  auto vertexShader() const { return m_vertexShader; }
+  auto vertexShader() const noexcept { return m_vertexShader; }
 
-  auto fragmentShader() const { return m_fragmentShader; }
+  auto fragmentShader() const noexcept { return m_fragmentShader; }
 
 private:
   StrongReference<RenderPass const> m_renderPass;
@@ -602,11 +625,13 @@ class ComputePipelineCreateInfo {
 public:
   ComputePipelineCreateInfo(PipelineLayout const &layout,
                             ComputeShader const &shader,
-                            SpecializationConstants constants = {});
+                            SpecializationConstants constants = {}) noexcept;
 
-  operator VkComputePipelineCreateInfo const &() const { return m_createInfo; }
+  operator VkComputePipelineCreateInfo const &() const noexcept {
+    return m_createInfo;
+  }
 
-  auto &layout() const { return m_layout.get(); }
+  auto &layout() const noexcept { return m_layout.get(); }
 
 private:
   StrongReference<PipelineLayout const> m_layout;
@@ -626,13 +651,16 @@ private:
 
 class Pipeline : public ReferenceGuard {
 public:
-  Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo);
-  Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo);
+  Pipeline(Device &device, GraphicsPipelineCreateInfo const
+                               &createInfo) noexcept(ExceptionsDisabled);
+  Pipeline(
+      Device &device,
+      ComputePipelineCreateInfo const &createInfo) noexcept(ExceptionsDisabled);
 
   Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
-           PipelineCache const &cache);
+           PipelineCache const &cache) noexcept(ExceptionsDisabled);
   Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
-           PipelineCache const &cache);
+           PipelineCache const &cache) noexcept(ExceptionsDisabled);
 
   Pipeline(Pipeline &&another) noexcept
       : m_device(another.m_device), m_pipeline(another.m_pipeline),
@@ -648,11 +676,11 @@ public:
     return *this;
   }
 
-  PipelineLayout const &layout() const { return m_pipelineLayout; }
+  PipelineLayout const &layout() const noexcept { return m_pipelineLayout; }
 
   virtual ~Pipeline();
 
-  operator VkPipeline() const { return m_pipeline; }
+  operator VkPipeline() const noexcept { return m_pipeline; }
 
 private:
   StrongReference<Device> m_device;
@@ -671,11 +699,13 @@ private:
 
 class GraphicsPipeline : public Pipeline {
 public:
-  GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo)
+  GraphicsPipeline(
+      Device &device,
+      GraphicsPipelineCreateInfo const &createInfo) noexcept(ExceptionsDisabled)
       : Pipeline(device, createInfo), m_createInfo(createInfo) {}
 
   GraphicsPipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
-                   PipelineCache const &cache)
+                   PipelineCache const &cache) noexcept(ExceptionsDisabled)
       : Pipeline(device, createInfo, cache), m_createInfo(createInfo) {}
 
   GraphicsPipelineCreateInfo const &info() const { return m_createInfo; }
@@ -695,11 +725,13 @@ private:
 
 class ComputePipeline : public Pipeline {
 public:
-  ComputePipeline(Device &device, ComputePipelineCreateInfo const &createInfo)
+  ComputePipeline(
+      Device &device,
+      ComputePipelineCreateInfo const &createInfo) noexcept(ExceptionsDisabled)
       : Pipeline(device, createInfo), m_createInfo(createInfo){};
 
   ComputePipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
-                  PipelineCache const &cache)
+                  PipelineCache const &cache) noexcept(ExceptionsDisabled)
       : Pipeline(device, createInfo, cache), m_createInfo(createInfo){};
   ComputePipelineCreateInfo const &info() const { return m_createInfo; }
 

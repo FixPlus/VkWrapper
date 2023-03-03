@@ -64,14 +64,16 @@ public:
 private:
   void m_check_ref_count() {
     if (m_ref_count != 0) {
-      auto error = ReferenceGuardError(m_ref_count.load());
-      irrecoverableError(error);
+      irrecoverableError(ReferenceGuardError(m_ref_count.load()));
     }
   }
   mutable std::atomic<int> m_ref_count = 0;
 };
 #else
-class ReferenceGuard {};
+class ReferenceGuard {
+public:
+  virtual ~ReferenceGuard() = default;
+};
 #endif
 /**
  *

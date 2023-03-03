@@ -7,9 +7,10 @@ namespace vkw {
 
 class Sampler : public UniqueVulkanObject<VkSampler> {
 public:
-  Sampler(Device const &device, VkSamplerCreateInfo createInfo);
+  Sampler(Device const &device,
+          VkSamplerCreateInfo createInfo) noexcept(ExceptionsDisabled);
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
 private:
   VkSamplerCreateInfo m_createInfo{};

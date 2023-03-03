@@ -9,7 +9,7 @@ namespace vkw {
   {                                                                            \
     VkResult res = (__VA_ARGS__);                                              \
     if (res != VK_SUCCESS)                                                     \
-      throw VulkanError(res, __FILE__, __LINE__);                              \
+      postError(VulkanError(res, __FILE__, __LINE__));                         \
   }
 
 } // namespace vkw

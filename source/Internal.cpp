@@ -19,10 +19,12 @@ using PFN_getProcAddr =
 
 namespace vkw::internal {
 
-bool isExtensionEnabled(Instance const &instance, const char *extName) {
+bool isExtensionEnabled(Instance const &instance,
+                        const char *extName) noexcept(ExceptionsDisabled) {
   return instance.isExtensionEnabled(instance.parent().ExtensionId(extName));
 }
-bool isExtensionEnabled(Device const &device, const char *extName) {
+bool isExtensionEnabled(Device const &device,
+                        const char *extName) noexcept(ExceptionsDisabled) {
   auto extId = device.parent().parent().ExtensionId(extName);
   auto &enabledExtensions = device.physicalDevice().enabledExtensions();
   return std::any_of(enabledExtensions.begin(), enabledExtensions.end(),
@@ -33,17 +35,20 @@ bool isLayerEnabled(Instance const &instance, layer layer) {
   return instance.isLayerEnabled(layer);
 }
 
-template <typename T> PFN_getProcAddr<T> getProcAddrOf(T const &instance);
+template <typename T>
+PFN_getProcAddr<T> getProcAddrOf(T const &instance) noexcept;
 
-template <> PFN_getProcAddr<Device> getProcAddrOf(Device const &device) {
+template <>
+PFN_getProcAddr<Device> getProcAddrOf(Device const &device) noexcept {
   return device.parent().core<1, 0>().vkGetDeviceProcAddr;
 }
 
-template <> PFN_getProcAddr<Instance> getProcAddrOf(Instance const &instance) {
+template <>
+PFN_getProcAddr<Instance> getProcAddrOf(Instance const &instance) noexcept {
   return instance.parent().vkGetInstanceProcAddr;
 }
 
-VkInstance handleOf(Instance const &instance) { return instance; }
-VkDevice handleOf(Device const &device) { return device; }
+VkInstance handleOf(Instance const &instance) noexcept { return instance; }
+VkDevice handleOf(Device const &device) noexcept { return device; }
 
 } // namespace vkw::internal

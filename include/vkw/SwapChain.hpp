@@ -13,9 +13,9 @@ class Fence;
 
 class SwapChain : public ReferenceGuard {
 public:
-  SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo);
+  SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo) noexcept(ExceptionsDisabled);
 
-  SwapChain(SwapChain &&another)
+  SwapChain(SwapChain &&another) noexcept
       : m_device(another.m_device), m_createInfo(another.m_createInfo),
         m_swapchain(another.m_swapchain), m_imageCount(another.m_imageCount),
         m_currentImage(another.m_currentImage),
@@ -34,30 +34,38 @@ public:
     return *this;
   }
 
-  bool acquireNextImage(Semaphore const &signalSemaphore,
-                        Fence const &signalFence,
-                        uint64_t timeout = UINT64_MAX);
-  bool acquireNextImage(Semaphore const &signalSemaphore,
-                        uint64_t timeout = UINT64_MAX);
-  bool acquireNextImage(Fence const &signalFence,
-                        uint64_t timeout = UINT64_MAX);
+  enum AcquireStatus {
+    SUCCESSFUL,
+    SUBOPTIMAL,
+    NOT_READY,
+    TIMEOUT,
+    OUT_OF_DATE
+  };
 
-  auto &images() const { return m_images; }
-  uint32_t currentImage() const;
-  uint32_t imageCount() const { return m_imageCount; }
+  AcquireStatus acquireNextImage(Semaphore const &signalSemaphore,
+                                 Fence const &signalFence,
+                                 uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled);
+  AcquireStatus acquireNextImage(Semaphore const &signalSemaphore,
+                                 uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled);
+  AcquireStatus acquireNextImage(Fence const &signalFence,
+                                 uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled);
+
+  auto &images() const noexcept{ return m_images; }
+  uint32_t currentImage() const noexcept(ExceptionsDisabled);
+  uint32_t imageCount() const noexcept{ return m_imageCount; }
 
   virtual ~SwapChain();
 
-  Extension<ext::KHR_swapchain> const &extension() const {
+  Extension<ext::KHR_swapchain> const &extension() const noexcept{
     return m_swapchain_ext;
   }
 
-  operator VkSwapchainKHR() const { return m_swapchain; }
+  operator VkSwapchainKHR() const noexcept{ return m_swapchain; }
 
 private:
   uint32_t m_imageCount{};
-  bool acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
-                            uint64_t timeout);
+  AcquireStatus acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
+                                     uint64_t timeout) noexcept(ExceptionsDisabled);
   std::optional<uint32_t> m_currentImage{};
   StrongReference<Device> m_device;
   Extension<ext::KHR_swapchain> m_swapchain_ext;
