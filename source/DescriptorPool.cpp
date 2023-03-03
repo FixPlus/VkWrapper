@@ -7,7 +7,7 @@ namespace vkw {
 
 DescriptorPoolInfo::DescriptorPoolInfo(
     uint32_t maxSets, std::span<const VkDescriptorPoolSize> poolSizes,
-    VkDescriptorPoolCreateFlags flags) {
+    VkDescriptorPoolCreateFlags flags) noexcept(ExceptionsDisabled) {
   std::copy(poolSizes.begin(), poolSizes.end(),
             std::back_inserter(m_poolSizes));
   m_createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -18,7 +18,8 @@ DescriptorPoolInfo::DescriptorPoolInfo(
   m_createInfo.pPoolSizes = m_poolSizes.data();
 }
 
-VkDescriptorSet DescriptorPool::allocateSet(const DescriptorSetLayout &layout) {
+VkDescriptorSet DescriptorPool::allocateSet(
+    const DescriptorSetLayout &layout) noexcept(ExceptionsDisabled) {
   VkDescriptorSetAllocateInfo allocateInfo{};
   allocateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
   allocateInfo.pNext = nullptr;
@@ -36,7 +37,7 @@ VkDescriptorSet DescriptorPool::allocateSet(const DescriptorSetLayout &layout) {
   return set;
 }
 
-void DescriptorPool::freeSet(const DescriptorSet &set) {
+void DescriptorPool::freeSet(const DescriptorSet &set) noexcept {
   if (!(info().flags & VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT))
     return;
   VkDescriptorSet vSet = set;
@@ -48,7 +49,7 @@ void DescriptorPool::freeSet(const DescriptorSet &set) {
     VK_CHECK_RESULT(parent().core<1, 0>().vkFreeDescriptorSets(
         parent(), handle(), 1, &vSet))
   } catch (VulkanError &e) {
-    irrecoverableError(e);
+    irrecoverableError(std::move(e));
   }
   m_setCount--;
 }

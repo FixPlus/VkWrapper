@@ -7,7 +7,7 @@ namespace vkw {
 
 class Semaphore : public UniqueVulkanObject<VkSemaphore> {
 public:
-  Semaphore(Device const &device);
+  Semaphore(Device const &device) noexcept(ExceptionsDisabled);
 };
 
 } // namespace vkw

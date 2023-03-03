@@ -52,12 +52,12 @@ public:
     std::string_view what;
   };
 
-  explicit Validation(Instance const &instance);
+  explicit Validation(Instance const &instance) noexcept(ExceptionsDisabled);
 
-  Validation(Validation const &another);
+  Validation(Validation const &another) noexcept(ExceptionsDisabled);
   Validation(Validation &&another) noexcept;
-  Validation &operator=(Validation const &another);
-  Validation &operator=(Validation &&another);
+  Validation &operator=(Validation const &another) noexcept(ExceptionsDisabled);
+  Validation &operator=(Validation &&another) noexcept;
 
   virtual void onValidationMessage(MsgSeverity severity,
                                    Message const &message) {}

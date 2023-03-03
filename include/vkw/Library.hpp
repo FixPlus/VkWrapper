@@ -51,17 +51,19 @@ public:
    *    Pass nullptr to use embedded loader.
    * */
   Library(VulkanLibraryLoader *loader = nullptr,
-          HostAllocator *allocator = nullptr);
+          HostAllocator *allocator = nullptr) noexcept(ExceptionsDisabled);
 
   ~Library();
 
-  bool hasLayer(layer layerName) const;
+  bool hasLayer(layer layerName) const noexcept(ExceptionsDisabled);
 
-  VkLayerProperties layerProperties(layer layerName) const;
+  VkLayerProperties layerProperties(layer layerName) const
+      noexcept(ExceptionsDisabled);
 
-  bool hasInstanceExtension(ext extensionId) const;
+  bool hasInstanceExtension(ext extensionId) const noexcept(ExceptionsDisabled);
 
-  VkExtensionProperties instanceExtensionProperties(ext extensionId) const;
+  VkExtensionProperties instanceExtensionProperties(ext extensionId) const
+      noexcept(ExceptionsDisabled);
 
   PFN_vkCreateInstance vkCreateInstance;
   PFN_vkEnumerateInstanceExtensionProperties
@@ -70,17 +72,22 @@ public:
   PFN_vkGetInstanceProcAddr vkGetInstanceProcAddr;
   PFN_vkEnumerateInstanceVersion vkEnumerateInstanceVersion;
 
-  ApiVersion instanceAPIVersion() const;
+  ApiVersion instanceAPIVersion() const noexcept;
 
-  static const char *ExtensionName(ext id);
+  static const char *ExtensionName(ext id) noexcept(ExceptionsDisabled);
 
-  static ext ExtensionId(std::string_view extensionName);
+  static ext
+  ExtensionId(std::string_view extensionName) noexcept(ExceptionsDisabled);
 
-  static const char *LayerName(layer id);
+  static bool ValidExtensionName(std::string_view extensionName) noexcept;
 
-  static layer LayerId(std::string_view extensionName);
+  static const char *LayerName(layer id) noexcept(ExceptionsDisabled);
 
-  auto &hostAllocator() const { return m_allocator.get(); }
+  static layer LayerId(std::string_view layerName) noexcept(ExceptionsDisabled);
+
+  static bool ValidLayerName(std::string_view layerName) noexcept;
+
+  auto &hostAllocator() const noexcept { return m_allocator.get(); }
 
 private:
   std::unique_ptr<VulkanLibraryLoader> m_embedded_loader;

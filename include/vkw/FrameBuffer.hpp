@@ -14,29 +14,30 @@ class FrameBufferInfo {
 public:
   FrameBufferInfo(RenderPass const &renderPass, VkExtent2D extents,
                   std::span<ImageViewVT<V2DA> const *> views,
-                  uint32_t layers = 1);
+                  uint32_t layers = 1) noexcept(ExceptionsDisabled);
 
-  FrameBufferInfo(RenderPass const &renderPass, VkExtent2D extents,
-                  std::span<ImageViewVT<V2D> const *> views);
+  FrameBufferInfo(
+      RenderPass const &renderPass, VkExtent2D extents,
+      std::span<ImageViewVT<V2D> const *> views) noexcept(ExceptionsDisabled);
 
   template <typename T>
   using ViewsContainer = boost::container::small_vector<T, 5>;
 
-  VkExtent2D extents() const {
+  VkExtent2D extents() const noexcept {
     return {m_createInfo.width, m_createInfo.height};
   }
 
-  VkRect2D getFullRenderArea() const { return {{0, 0}, extents()}; }
+  VkRect2D getFullRenderArea() const noexcept { return {{0, 0}, extents()}; }
 
-  uint32_t layers() const { return m_createInfo.layers; }
+  uint32_t layers() const noexcept { return m_createInfo.layers; }
 
-  auto &attachments() { return m_views; }
+  auto &attachments() noexcept { return m_views; }
 
-  auto const &attachments() const { return m_views; }
+  auto const &attachments() const noexcept { return m_views; }
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
-  auto &pass() const { return m_parent.get(); }
+  auto &pass() const noexcept { return m_parent.get(); }
 
 private:
   StrongReference<RenderPass const> m_parent;
@@ -50,12 +51,13 @@ class FrameBuffer : public FrameBufferInfo,
 public:
   FrameBuffer(Device const &device, RenderPass const &renderPass,
               VkExtent2D extents, std::span<ImageViewVT<V2DA> const *> views,
-              uint32_t layers = 1)
+              uint32_t layers = 1) noexcept(ExceptionsDisabled)
       : FrameBufferInfo(renderPass, extents, views, layers),
         UniqueVulkanObject<VkFramebuffer>(device, info()) {}
 
-  FrameBuffer(Device const &device, RenderPass const &renderPass,
-              VkExtent2D extents, std::span<ImageViewVT<V2D> const *> views)
+  FrameBuffer(
+      Device const &device, RenderPass const &renderPass, VkExtent2D extents,
+      std::span<ImageViewVT<V2D> const *> views) noexcept(ExceptionsDisabled)
       : FrameBufferInfo(renderPass, extents, views),
         UniqueVulkanObject<VkFramebuffer>(device, info()) {}
 };

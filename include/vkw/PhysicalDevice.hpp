@@ -12,13 +12,13 @@ public:
   enum { GRAPHICS = 0x1, TRANSFER = 0x2, COMPUTE = 0x4 };
   struct Type {
     unsigned value : 3;
-    Type(unsigned val) : value(val) {}
+    Type(unsigned val) noexcept : value(val) {}
   };
 
-  QueueFamily(VkQueueFamilyProperties family, unsigned index)
+  QueueFamily(VkQueueFamilyProperties family, unsigned index) noexcept
       : m_family(family), m_index(index) {}
 
-  bool strictly(Type type) const {
+  bool strictly(Type type) const noexcept {
     VkQueueFlags flags = 0;
     if (type.value & GRAPHICS)
       flags |= VK_QUEUE_GRAPHICS_BIT;
@@ -32,28 +32,42 @@ public:
            !(result & VK_QUEUE_TRANSFER_BIT) &&
            !(result & VK_QUEUE_COMPUTE_BIT);
   }
-  bool graphics() const { return m_family.queueFlags & VK_QUEUE_GRAPHICS_BIT; }
+  bool graphics() const noexcept {
+    return m_family.queueFlags & VK_QUEUE_GRAPHICS_BIT;
+  }
 
-  bool transfer() const { return m_family.queueFlags & VK_QUEUE_TRANSFER_BIT; }
+  bool transfer() const noexcept {
+    return m_family.queueFlags & VK_QUEUE_TRANSFER_BIT;
+  }
 
-  bool compute() const { return m_family.queueFlags & VK_QUEUE_COMPUTE_BIT; }
+  bool compute() const noexcept {
+    return m_family.queueFlags & VK_QUEUE_COMPUTE_BIT;
+  }
 
-  unsigned queueCount() const { return m_family.queueCount; }
-  unsigned queueRequestedCount() const { return m_queuesRequested.size(); }
-  float queuePriority(unsigned id) const { return m_queuesRequested.at(id); }
+  unsigned queueCount() const noexcept { return m_family.queueCount; }
+  unsigned queueRequestedCount() const noexcept {
+    return m_queuesRequested.size();
+  }
+  float queuePriority(unsigned id) const noexcept(ExceptionsDisabled) {
+    return m_queuesRequested.at(id);
+  }
 
-  bool hasRequestedQueues() const { return !m_queuesRequested.empty(); }
-  float const *queuePrioritiesRaw() const { return m_queuesRequested.data(); }
+  bool hasRequestedQueues() const noexcept {
+    return !m_queuesRequested.empty();
+  }
+  float const *queuePrioritiesRaw() const noexcept {
+    return m_queuesRequested.data();
+  }
 
-  unsigned index() const { return m_index; }
+  unsigned index() const noexcept { return m_index; }
 
-  void requestQueue(float priority = 0.0f) {
+  void requestQueue(float priority = 0.0f) noexcept(ExceptionsDisabled) {
     if (m_queuesRequested.size() == m_family.queueCount) {
       std::stringstream ss;
       ss << "Requested for " << (m_family.queueCount + 1)
          << " queues in queue family index " << m_index
          << ", when it only supports at max " << m_family.queueCount;
-      throw Error(ss.str());
+      postError(Error(ss.str()));
     }
     m_queuesRequested.emplace_back(priority);
   }
@@ -72,49 +86,55 @@ public:
 #undef VKW_FEATURE_ENTRY
   };
 
-  PhysicalDevice(Instance const &instance, uint32_t id);
-  PhysicalDevice(Instance const &instance, VkPhysicalDevice device);
+  PhysicalDevice(Instance const &instance,
+                 uint32_t id) noexcept(ExceptionsDisabled);
+  PhysicalDevice(Instance const &instance,
+                 VkPhysicalDevice device) noexcept(ExceptionsDisabled);
   PhysicalDevice(PhysicalDevice const &another) = default;
   PhysicalDevice(PhysicalDevice &&another) noexcept = default;
   PhysicalDevice &operator=(PhysicalDevice const &another) = default;
   PhysicalDevice &operator=(PhysicalDevice &&another) noexcept = default;
   virtual ~PhysicalDevice() = default;
 
-  operator VkPhysicalDevice() const { return m_physicalDevice; }
+  operator VkPhysicalDevice() const noexcept { return m_physicalDevice; }
 
-  VkPhysicalDeviceProperties const &properties() const { return m_properties; }
+  VkPhysicalDeviceProperties const &properties() const noexcept {
+    return m_properties;
+  }
 
-  VkPhysicalDeviceMemoryProperties const &memoryProperties() const {
+  VkPhysicalDeviceMemoryProperties const &memoryProperties() const noexcept {
     return m_memoryProperties;
   }
 
-  VkPhysicalDeviceFeatures const &supportedFeatures() const {
+  VkPhysicalDeviceFeatures const &supportedFeatures() const noexcept {
     return m_features;
   }
 
-  VkPhysicalDeviceFeatures const &enabledFeatures() const {
+  VkPhysicalDeviceFeatures const &enabledFeatures() const noexcept {
     return m_enabledFeatures;
   }
 
-  std::vector<ext> const &supportedExtensions() const {
+  std::vector<ext> const &supportedExtensions() const noexcept {
     return m_supportedExtensions;
   }
 
-  std::vector<ext> const &enabledExtensions() const {
+  std::vector<ext> const &enabledExtensions() const noexcept {
     return m_enabledExtensions;
   }
 
-  bool isFeatureSupported(feature feature) const;
+  bool isFeatureSupported(feature feature) const noexcept(ExceptionsDisabled);
 
-  void enableFeature(feature feature);
+  void enableFeature(feature feature) noexcept(ExceptionsDisabled);
 
-  bool extensionSupported(ext extension) const;
+  bool extensionSupported(ext extension) const noexcept(ExceptionsDisabled);
 
-  void enableExtension(ext extension);
+  void enableExtension(ext extension) noexcept(ExceptionsDisabled);
 
-  QueueFamilyContainerT &queueFamilies() { return m_queueFamilyProperties; }
+  QueueFamilyContainerT &queueFamilies() noexcept {
+    return m_queueFamilyProperties;
+  }
 
-  QueueFamilyContainerT const &queueFamilies() const {
+  QueueFamilyContainerT const &queueFamilies() const noexcept {
     return m_queueFamilyProperties;
   }
 
@@ -143,13 +163,13 @@ protected:
 class FeatureUnsupported : public Error {
 public:
   FeatureUnsupported(PhysicalDevice::feature feature,
-                     std::string_view featureName)
+                     std::string_view featureName) noexcept
       : Error(std::string("Feature ")
                   .append(featureName)
                   .append(" is unsupported"),
               ErrorCode::FEATURE_UNSUPPORTED),
         m_feature(feature) {}
-  PhysicalDevice::feature feature() const { return m_feature; }
+  PhysicalDevice::feature feature() const noexcept { return m_feature; }
 
 private:
   PhysicalDevice::feature m_feature;

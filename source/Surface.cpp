@@ -5,7 +5,8 @@
 namespace vkw {
 
 #ifdef VK_USE_PLATFORM_WIN32_KHR
-Surface::Surface(Instance const &parent, HINSTANCE hinstance, HWND hwnd)
+Surface::Surface(Instance const &parent, HINSTANCE hinstance,
+                 HWND hwnd) noexcept(ExceptionsDisabled)
     : m_parent(parent), m_surface_ext(parent) {
   Extension<ext::KHR_win32_surface> win32SurfaceExt{parent};
 
@@ -22,7 +23,8 @@ Surface::Surface(Instance const &parent, HINSTANCE hinstance, HWND hwnd)
       &m_surface))
 }
 #elif VK_USE_PLATFORM_XLIB_KHR
-Surface::Surface(Instance const &parent, Display *display, Window window)
+Surface::Surface(Instance const &parent, Display *display,
+                 Window window) noexcept(ExceptionsDisabled)
     : m_parent(parent), m_surface_ext(parent) {
   Extension<ext::KHR_xlib_surface> xlibSurfaceExt{parent};
 
@@ -38,7 +40,7 @@ Surface::Surface(Instance const &parent, Display *display, Window window)
 };
 #elif defined VK_USE_PLATFORM_XCB_KHR
 Surface::Surface(Instance const &parent, xcb_connection_t *connection,
-                 xcb_window_t window)
+                 xcb_window_t window) noexcept(ExceptionsDisabled)
     : m_parent(parent), m_surface_ext(parent) {
   Extension<ext::KHR_xcb_surface> xcbSurfaceExt{parent};
 
@@ -53,7 +55,7 @@ Surface::Surface(Instance const &parent, xcb_connection_t *connection,
 };
 #elif defined VK_USE_PLATFORM_WAYLAND_KHR
 Surface::Surface(Instance const &parent, wl_display *display,
-                 wl_surface *surface)
+                 wl_surface *surface) noexcept(ExceptionsDisabled)
     : m_parent(parent), m_surface_ext(parent) {
   Extension<ext::KHR_wayland_surface> waylandSurfaceExt{parent};
 
@@ -74,7 +76,8 @@ Surface::~Surface() {
         m_parent.get(), m_surface, m_parent.get().hostAllocator().allocator());
 }
 std::vector<VkPresentModeKHR>
-Surface::getAvailablePresentModes(VkPhysicalDevice device) const {
+Surface::getAvailablePresentModes(VkPhysicalDevice device) const
+    noexcept(ExceptionsDisabled) {
   uint32_t modeCount = 0;
 
   std::vector<VkPresentModeKHR> ret{};
@@ -92,7 +95,8 @@ Surface::getAvailablePresentModes(VkPhysicalDevice device) const {
 }
 
 std::vector<VkSurfaceFormatKHR>
-Surface::getAvailableFormats(VkPhysicalDevice device) const {
+Surface::getAvailableFormats(VkPhysicalDevice device) const
+    noexcept(ExceptionsDisabled) {
   uint32_t modeCount = 0;
 
   std::vector<VkSurfaceFormatKHR> ret{};
@@ -110,7 +114,8 @@ Surface::getAvailableFormats(VkPhysicalDevice device) const {
 }
 
 VkSurfaceCapabilitiesKHR
-Surface::getSurfaceCapabilities(VkPhysicalDevice device) const {
+Surface::getSurfaceCapabilities(VkPhysicalDevice device) const
+    noexcept(ExceptionsDisabled) {
   VkSurfaceCapabilitiesKHR ret{};
   VK_CHECK_RESULT(m_surface_ext.vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
       device, m_surface, &ret))
@@ -118,7 +123,7 @@ Surface::getSurfaceCapabilities(VkPhysicalDevice device) const {
 }
 
 std::vector<uint32_t> Surface::getQueueFamilyIndicesThatSupportPresenting(
-    VkPhysicalDevice device) const {
+    VkPhysicalDevice device) const noexcept(ExceptionsDisabled) {
   uint32_t queueFamilyCount;
   m_parent.get().core<1, 0>().vkGetPhysicalDeviceQueueFamilyProperties(
       device, &queueFamilyCount, nullptr);

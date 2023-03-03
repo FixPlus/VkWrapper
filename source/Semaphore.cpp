@@ -6,7 +6,7 @@ namespace vkw {
 
 namespace {
 
-VkSemaphoreCreateInfo fillCreateInfo() {
+VkSemaphoreCreateInfo fillCreateInfo() noexcept {
   VkSemaphoreCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
   createInfo.pNext = nullptr;
@@ -14,7 +14,7 @@ VkSemaphoreCreateInfo fillCreateInfo() {
   return createInfo;
 }
 } // namespace
-Semaphore::Semaphore(Device const &device)
+Semaphore::Semaphore(Device const &device) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkSemaphore>(device, fillCreateInfo()) {}
 
 } // namespace vkw

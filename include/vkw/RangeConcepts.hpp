@@ -25,15 +25,17 @@ namespace ranges {
   template <typename T, typename U>
   requires derived_or_reference_wrapped<T, U>
   struct raw_ref {
-    constexpr static U &get(T &a) { return a; }
+    constexpr static U &get(T &a) noexcept { return a; }
   };
 
   template <typename U> struct raw_ref<std::reference_wrapper<U>, U> {
-    constexpr static U &get(std::reference_wrapper<U> a) { return a.get(); }
+    constexpr static U &get(std::reference_wrapper<U> a) noexcept {
+      return a.get();
+    }
   };
 
   template <typename U> struct raw_ref<std::reference_wrapper<const U>, U> {
-    constexpr static U const &get(std::reference_wrapper<const U> a) {
+    constexpr static U const &get(std::reference_wrapper<const U> a) noexcept {
       return a.get();
     }
   };
@@ -46,14 +48,14 @@ namespace ranges {
     using iterator = decltype(std::ranges::begin(std::declval<R const &>()));
     using value_type = std::ranges::range_value_t<R>;
 
-    subrange(R const &r)
+    subrange(R const &r) noexcept
         : m_begin(std::ranges::begin(r)), m_end(std::ranges::end(r)) {}
 
-    auto begin() { return m_begin; }
+    auto begin() noexcept { return m_begin; }
 
-    auto end() { return m_end; }
+    auto end() noexcept { return m_end; }
 
-    static constexpr Base const &get(value_type const &v) {
+    static constexpr Base const &get(value_type const &v) noexcept {
       return raw_ref<value_type const, Base const>::get(v);
     }
 

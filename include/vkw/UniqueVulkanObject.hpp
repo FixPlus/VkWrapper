@@ -13,20 +13,21 @@ class UniqueVulkanObjectCommon
     : private std::unique_ptr<std::remove_pointer_t<T>, DeleterT>,
       public ReferenceGuard {
 public:
-  UniqueVulkanObjectCommon(T handle, Parent const &parent, DeleterT const &d)
+  UniqueVulkanObjectCommon(T handle, Parent const &parent,
+                           DeleterT const &d) noexcept(ExceptionsDisabled)
       : std::unique_ptr<std::remove_pointer_t<T>, DeleterT>(handle, d),
         m_parent(parent){};
 
-  operator T() const {
+  operator T() const noexcept {
     return std::unique_ptr<std::remove_pointer_t<T>, DeleterT>::get();
   }
 
-  auto &parent() const { return m_parent.get(); }
+  auto &parent() const noexcept { return m_parent.get(); }
 
-  auto &hostAllocator() const { return parent().hostAllocator(); }
+  auto &hostAllocator() const noexcept { return parent().hostAllocator(); }
 
 protected:
-  auto handle() const {
+  auto handle() const noexcept {
     return std::unique_ptr<std::remove_pointer_t<T>, DeleterT>::get();
   }
 
@@ -38,11 +39,11 @@ template <typename T> class UniqueVulkanObjectCommonDeleter {
 public:
   using TypeTraits = VulkanTypeTraits<T>;
 
-  UniqueVulkanObjectCommonDeleter(
-      typename TypeTraits::CreatorType const &creator)
+  UniqueVulkanObjectCommonDeleter(typename TypeTraits::CreatorType const
+                                      &creator) noexcept(ExceptionsDisabled)
       : m_creator(creator){};
 
-  void operator()(T handle) {
+  void operator()(T handle) noexcept {
     std::invoke(TypeTraits::getDestructor(m_creator.get()), m_creator.get(),
                 handle, m_creator.get().hostAllocator().allocator());
   }
@@ -71,7 +72,8 @@ public:
 
 private:
   static T m_createImpl(typename TypeTraits::CreatorType const &creator,
-                        typename TypeTraits::CreateInfoType const &createInfo) {
+                        typename TypeTraits::CreateInfoType const
+                            &createInfo) noexcept(ExceptionsDisabled) {
     // TODO: add checks here
     T ret;
     std::invoke(TypeTraits::getConstructor(creator), creator, &createInfo,
@@ -81,7 +83,8 @@ private:
 
 public:
   UniqueVulkanObject(typename TypeTraits::CreatorType const &creator,
-                     typename TypeTraits::CreateInfoType const &createInfo)
+                     typename TypeTraits::CreateInfoType const
+                         &createInfo) noexcept(ExceptionsDisabled)
       : UniqueVulkanObjectCommon<T, typename TypeTraits::CreatorType,
                                  UniqueVulkanObjectCommonDeleter<T>>(
             m_createImpl(creator, createInfo), creator,
@@ -96,9 +99,10 @@ public:
 
 class DeviceDeleter {
 public:
-  DeviceDeleter(vkw::Instance const &instance) : m_instance(instance) {}
+  DeviceDeleter(vkw::Instance const &instance) noexcept
+      : m_instance(instance) {}
 
-  void operator()(VkDevice handle) {
+  void operator()(VkDevice handle) noexcept {
     std::invoke(VulkanTypeTraits<VkDevice>::getDestructor(m_instance), handle,
                 m_instance.get().hostAllocator().allocator());
   }
@@ -114,9 +118,9 @@ public:
   using TypeTraits = VulkanTypeTraits<VkDevice>;
 
 private:
-  static VkDevice m_createImpl(vkw::Instance const &instance,
-                               VkPhysicalDevice phDevice,
-                               VkDeviceCreateInfo const &createInfo) {
+  static VkDevice m_createImpl(
+      vkw::Instance const &instance, VkPhysicalDevice phDevice,
+      VkDeviceCreateInfo const &createInfo) noexcept(ExceptionsDisabled) {
     // TODO: add checks here
     VkDevice ret;
     std::invoke(TypeTraits::getConstructor(instance), phDevice, &createInfo,
@@ -125,8 +129,9 @@ private:
   }
 
 public:
-  UniqueVulkanObject(vkw::Instance const &instance, VkPhysicalDevice phDevice,
-                     VkDeviceCreateInfo const &createInfo)
+  UniqueVulkanObject(
+      vkw::Instance const &instance, VkPhysicalDevice phDevice,
+      VkDeviceCreateInfo const &createInfo) noexcept(ExceptionsDisabled)
       : UniqueVulkanObjectCommon<VkDevice, vkw::Instance, DeviceDeleter>(
             m_createImpl(instance, phDevice, createInfo), instance,
             DeviceDeleter(instance)) {}

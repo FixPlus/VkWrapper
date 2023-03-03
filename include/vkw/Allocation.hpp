@@ -3,6 +3,7 @@
 
 #include "vma/vk_mem_alloc.h"
 #include <span>
+#include <vkw/Exception.hpp>
 
 namespace vkw {
 
@@ -10,25 +11,28 @@ class Device;
 
 class Allocation {
 public:
-  bool mappable() const;
+  bool mappable() const noexcept;
 
-  bool coherent() const;
+  bool coherent() const noexcept;
 
-  auto allocationSize() const { return m_allocInfo.size; }
+  auto allocationSize() const noexcept { return m_allocInfo.size; }
 
-  template <typename T> std::span<T> mapped() const {
+  template <typename T> std::span<T> mapped() const noexcept {
     auto *ptr = reinterpret_cast<T *>(m_allocInfo.pMappedData);
     auto count = m_allocInfo.pMappedData ? m_allocInfo.size / sizeof(T) : 0;
     return {ptr, ptr + count};
   }
 
-  void map();
+  void map() noexcept(ExceptionsDisabled);
 
   void unmap();
 
-  void flush(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+  void flush(VkDeviceSize offset = 0,
+             VkDeviceSize size = VK_WHOLE_SIZE) noexcept(ExceptionsDisabled);
 
-  void invalidate(VkDeviceSize offset = 0, VkDeviceSize size = VK_WHOLE_SIZE);
+  void
+  invalidate(VkDeviceSize offset = 0,
+             VkDeviceSize size = VK_WHOLE_SIZE) noexcept(ExceptionsDisabled);
 
   Allocation(Allocation &&another) noexcept
       : m_allocator(another.m_allocator), m_allocation(another.m_allocation),
@@ -48,7 +52,7 @@ public:
   virtual ~Allocation() = default;
 
 protected:
-  explicit Allocation(VmaAllocator parent) : m_allocator(parent){};
+  explicit Allocation(VmaAllocator parent) noexcept : m_allocator(parent){};
 
   VmaAllocator m_allocator;
   VmaAllocation m_allocation = VK_NULL_HANDLE;

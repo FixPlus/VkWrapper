@@ -9,7 +9,8 @@
 
 namespace vkw {
 
-Device::Device(Instance const &instance, PhysicalDevice phDevice)
+Device::Device(Instance const &instance,
+               PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
     : DeviceInfo(std::move(phDevice)), UniqueVulkanObject<VkDevice>(
                                            instance, physicalDevice(), info()),
       m_allocator(m_allocatorCreateImpl()) {
@@ -33,7 +34,7 @@ Device::Device(Instance const &instance, PhysicalDevice phDevice)
                  });
 }
 
-DeviceInfo::DeviceInfo(PhysicalDevice phDevice)
+DeviceInfo::DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
     : m_ph_device(std::move(phDevice)) {
 
   auto const &queueFamilies = m_ph_device.queueFamilies();
@@ -75,7 +76,7 @@ DeviceInfo::DeviceInfo(PhysicalDevice phDevice)
   m_apiVer = {1, 0, 0};
 }
 
-Queue const &Device::anyGraphicsQueue() const {
+Queue const &Device::anyGraphicsQueue() const noexcept(ExceptionsDisabled) {
   auto graphicsFamilyPred = [](QueueFamily const &family) {
     return family.graphics();
   };
@@ -92,10 +93,10 @@ Queue const &Device::anyGraphicsQueue() const {
                      graphicsFamilyPred);
   }
 
-  throw Error{"Device does not have any queues supporting graphics"};
+  postError(Error{"Device does not have any queues supporting graphics"});
 }
 
-Queue const &Device::anyComputeQueue() const {
+Queue const &Device::anyComputeQueue() const noexcept(ExceptionsDisabled) {
   auto computeFamilyPred = [](QueueFamily const &family) {
     return family.compute();
   };
@@ -112,10 +113,10 @@ Queue const &Device::anyComputeQueue() const {
                      computeFamilyPred);
   }
 
-  throw Error{"Device does not have any queues supporting compute"};
+  postError(Error{"Device does not have any queues supporting compute"});
 }
 
-Queue const &Device::anyTransferQueue() const {
+Queue const &Device::anyTransferQueue() const noexcept(ExceptionsDisabled) {
   auto transferFamilyPred = [](QueueFamily const &family) {
     return family.transfer();
   };
@@ -132,10 +133,11 @@ Queue const &Device::anyTransferQueue() const {
                      transferFamilyPred);
   }
 
-  throw Error{"Device does not have any queues supporting transfer"};
+  postError(Error{"Device does not have any queues supporting transfer"});
 }
 
-Queue const &Device::getSpecificQueue(QueueFamily::Type type) const {
+Queue const &Device::getSpecificQueue(QueueFamily::Type type) const
+    noexcept(ExceptionsDisabled) {
   auto specificFamilyPred = [type](QueueFamily const &family) {
     return family.strictly(type);
   };
@@ -154,13 +156,13 @@ Queue const &Device::getSpecificQueue(QueueFamily::Type type) const {
   std::stringstream ss;
   ss << "Device does not have any specified queues of QueueFamily::Type = 0x"
      << std::hex << type.value;
-  throw Error{ss.str()};
+  postError(Error{ss.str()});
 }
 
-void Device::waitIdle(){
+void Device::waitIdle() noexcept(ExceptionsDisabled){
     VK_CHECK_RESULT(core<1, 0>().vkDeviceWaitIdle(handle()))}
 
-VmaAllocator Device::m_allocatorCreateImpl() {
+VmaAllocator Device::m_allocatorCreateImpl() noexcept(ExceptionsDisabled) {
   VmaAllocatorCreateInfo allocatorInfo = {};
   allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
   allocatorInfo.physicalDevice = physicalDevice();

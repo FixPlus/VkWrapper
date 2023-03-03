@@ -7,7 +7,7 @@
 
 namespace vkw {
 
-SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo)
+SwapChain::SwapChain(Device &device, VkSwapchainCreateInfoKHR createInfo) noexcept(ExceptionsDisabled)
     : m_device(device), m_createInfo(createInfo), m_swapchain_ext(device) {
   VK_CHECK_RESULT(m_swapchain_ext.vkCreateSwapchainKHR(
       device, &createInfo, device.hostAllocator().allocator(), &m_swapchain));
@@ -33,44 +33,54 @@ SwapChain::~SwapChain() {
         m_device.get().hostAllocator().allocator());
 }
 
-uint32_t SwapChain::currentImage() const {
+uint32_t SwapChain::currentImage() const noexcept(ExceptionsDisabled){
   if (!m_currentImage) {
-    throw Error("No image has been acquired yet");
+    postError(Error("No image has been acquired yet"));
   }
 
   return m_currentImage.value();
 }
 
-bool SwapChain::acquireNextImage(const Semaphore &signalSemaphore,
-                                 const Fence &signalFence, uint64_t timeout) {
+SwapChain::AcquireStatus
+SwapChain::acquireNextImage(const Semaphore &signalSemaphore,
+                            const Fence &signalFence, uint64_t timeout) noexcept(ExceptionsDisabled){
   return acquireNextImageImpl(signalSemaphore, signalFence, timeout);
 }
 
-bool SwapChain::acquireNextImage(const Semaphore &signalSemaphore,
-                                 uint64_t timeout) {
+SwapChain::AcquireStatus
+SwapChain::acquireNextImage(const Semaphore &signalSemaphore,
+                            uint64_t timeout) noexcept(ExceptionsDisabled){
   return acquireNextImageImpl(signalSemaphore, VK_NULL_HANDLE, timeout);
 }
 
-bool SwapChain::acquireNextImage(const Fence &signalFence, uint64_t timeout) {
+SwapChain::AcquireStatus SwapChain::acquireNextImage(const Fence &signalFence,
+                                                     uint64_t timeout) noexcept(ExceptionsDisabled){
   return acquireNextImageImpl(VK_NULL_HANDLE, signalFence, timeout);
 }
 
-bool SwapChain::acquireNextImageImpl(VkSemaphore semaphore, VkFence fence,
-                                     uint64_t timeout) {
+SwapChain::AcquireStatus SwapChain::acquireNextImageImpl(VkSemaphore semaphore,
+                                                         VkFence fence,
+                                                         uint64_t timeout) noexcept(ExceptionsDisabled){
   uint32_t imageIndex;
   auto result = m_swapchain_ext.vkAcquireNextImageKHR(
       m_device.get(), m_swapchain, timeout, semaphore, fence, &imageIndex);
 
   switch (result) {
   case VK_SUBOPTIMAL_KHR:
+    m_currentImage = imageIndex;
+    return AcquireStatus::SUBOPTIMAL;
   case VK_SUCCESS:
     m_currentImage = imageIndex;
-    return true;
+    return AcquireStatus::SUCCESSFUL;
   case VK_NOT_READY:
+    return AcquireStatus::NOT_READY;
   case VK_TIMEOUT:
-    return false;
+    return AcquireStatus::TIMEOUT;
+  case VK_ERROR_OUT_OF_DATE_KHR:
+    return AcquireStatus::OUT_OF_DATE;
   default:
-    VK_CHECK_RESULT(result) return false;
+    VK_CHECK_RESULT(result)
+    return AcquireStatus::OUT_OF_DATE;
   }
 }
 

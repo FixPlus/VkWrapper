@@ -12,7 +12,8 @@
 
 namespace vkw {
 
-Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
+Instance::Instance(Library const &library,
+                   InstanceCreateInfo const &CI) noexcept(ExceptionsDisabled)
     : m_vulkanLib(library), m_apiVer(CI.requestedApiVersion()) {
   VkApplicationInfo appInfo{};
 
@@ -35,14 +36,15 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
   std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
                 [&library](layer id) {
                   if (!library.hasLayer(id))
-                    throw LayerUnsupported{id, Library::LayerName(id)};
+                    postError(LayerUnsupported{id, Library::LayerName(id)});
                 });
 
-  std::for_each(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
-                [&library](ext id) {
-                  if (!library.hasInstanceExtension(id))
-                    throw ExtensionUnsupported{id, Library::ExtensionName(id)};
-                });
+  std::for_each(
+      CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+      [&library](ext id) {
+        if (!library.hasInstanceExtension(id))
+          postError(ExtensionUnsupported{id, Library::ExtensionName(id)});
+      });
 
   std::vector<const char *> reqExtensionsNames{};
   std::vector<const char *> reqLayerNames{};
@@ -73,7 +75,7 @@ Instance::Instance(Library const &library, InstanceCreateInfo const &CI)
 }
 
 boost::container::small_vector<std::unique_ptr<PhysicalDevice>, 3>
-Instance::enumerateAvailableDevices() const {
+Instance::enumerateAvailableDevices() const noexcept(ExceptionsDisabled) {
   boost::container::small_vector<VkPhysicalDevice, 3> devs;
   uint32_t deviceCount = 0;
   core<1, 0>().vkEnumeratePhysicalDevices(m_instance, &deviceCount, nullptr);

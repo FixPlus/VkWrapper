@@ -29,6 +29,9 @@ file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.c
 if (VKW_ENABLE_REFERENCE_GUARD)
     file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake" "\nadd_definitions(-DVKW_ENABLE_REFERENCE_GUARD)")
 endif ()
+if (VKW_ENABLE_EXCEPTIONS)
+    file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}/${PROJECT_NAME}Config.cmake" "\nadd_definitions(-DVKW_ENABLE_EXCEPTIONS)")
+endif ()
 set(ConfigPackageLocation lib/cmake/${PROJECT_NAME})
 
 install(EXPORT ${PROJECT_NAME}Targets

@@ -128,7 +128,7 @@ template <AttributeArray T> class VertexBuffer : public Buffer<T> {
 public:
   VertexBuffer(Device &device, uint64_t count,
                VmaAllocationCreateInfo const &createInfo,
-               VkBufferUsageFlags usage = 0)
+               VkBufferUsageFlags usage = 0) noexcept(ExceptionsDisabled)
       : Buffer<T>(device, count, usage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                   createInfo) {}
 
@@ -155,7 +155,7 @@ class IndexBuffer : public Buffer<typename vkr_index_type<type>::Type> {
 public:
   IndexBuffer(Device &device, uint64_t count,
               VmaAllocationCreateInfo const &createInfo,
-              VkBufferUsageFlags usage = 0)
+              VkBufferUsageFlags usage = 0) noexcept(ExceptionsDisabled)
       : Buffer<typename vkr_index_type<type>::Type>(
             device, count, usage | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
             createInfo) {}

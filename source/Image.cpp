@@ -5,7 +5,7 @@
 
 namespace vkw {
 
-ImageInterface::ImageInterface(VkImageUsageFlags usage) {
+ImageInterface::ImageInterface(VkImageUsageFlags usage) noexcept {
   m_createInfo.usage = usage;
   m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   m_createInfo.pNext = nullptr;
@@ -16,7 +16,7 @@ ImageInterface::ImageInterface(VkImageUsageFlags usage) {
 ImageViewBase::ImageViewBase(ImageInterface const *image, VkFormat format,
                              uint32_t baseMipLevel, uint32_t levelCount,
                              VkComponentMapping componentMapping,
-                             VkImageViewCreateFlags flags)
+                             VkImageViewCreateFlags flags) noexcept
     : m_parent(*image) {
   m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
   m_createInfo.pNext = nullptr;
@@ -29,31 +29,33 @@ ImageViewBase::ImageViewBase(ImageInterface const *image, VkFormat format,
 }
 
 bool operator==(VkImageSubresourceRange const &lhs,
-                VkImageSubresourceRange const &rhs) {
+                VkImageSubresourceRange const &rhs) noexcept {
   return lhs.levelCount == rhs.levelCount && lhs.layerCount == rhs.layerCount &&
          lhs.baseMipLevel == rhs.baseMipLevel &&
          lhs.baseArrayLayer == rhs.baseArrayLayer &&
          lhs.aspectMask == rhs.aspectMask;
 }
 
-bool operator==(VkComponentMapping const &lhs, VkComponentMapping const &rhs) {
+bool operator==(VkComponentMapping const &lhs,
+                VkComponentMapping const &rhs) noexcept {
   return lhs.r == rhs.r && lhs.g == rhs.g && lhs.b == rhs.b && lhs.a == rhs.a;
 }
 
 bool operator==(VkImageViewCreateInfo const &lhs,
-                VkImageViewCreateInfo const &rhs) {
+                VkImageViewCreateInfo const &rhs) noexcept {
   return lhs.image == rhs.image &&
          lhs.subresourceRange == rhs.subresourceRange &&
          lhs.flags == rhs.flags && lhs.format == rhs.format &&
          lhs.viewType == rhs.viewType && lhs.components == rhs.components;
 }
 
-bool ImageViewBase::operator==(ImageViewBase const &another) const {
+bool ImageViewBase::operator==(ImageViewBase const &another) const noexcept {
   return m_createInfo == another.m_createInfo;
 }
 
-AllocatedImage::AllocatedImage(VmaAllocator allocator,
-                               VmaAllocationCreateInfo allocCreateInfo)
+AllocatedImage::AllocatedImage(
+    VmaAllocator allocator,
+    VmaAllocationCreateInfo allocCreateInfo) noexcept(ExceptionsDisabled)
     : Allocation(allocator), ImageInterface() {
   VK_CHECK_RESULT(vmaCreateImage(m_allocator, &m_createInfo, &allocCreateInfo,
                                  &m_image, &m_allocation, &m_allocInfo));
@@ -66,7 +68,7 @@ AllocatedImage::~AllocatedImage() {
   vmaDestroyImage(m_allocator, m_image, m_allocation);
 }
 
-bool ImageInterface::isDepthFormat(VkFormat format) {
+bool ImageInterface::isDepthFormat(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_D16_UNORM:
   case VK_FORMAT_D16_UNORM_S8_UINT:
@@ -81,10 +83,11 @@ bool ImageInterface::isDepthFormat(VkFormat format) {
   }
 }
 
-bool ImageInterface::isColorFormat(VkFormat format) {
+bool ImageInterface::isColorFormat(VkFormat format) noexcept {
   return !isDepthFormat(format);
 }
-VkImageSubresourceRange ImageInterface::completeSubresourceRange() const {
+VkImageSubresourceRange
+ImageInterface::completeSubresourceRange() const noexcept {
   VkImageSubresourceRange ret{};
   ret.baseMipLevel = 0;
   ret.levelCount = m_createInfo.mipLevels;
@@ -103,13 +106,15 @@ ImageViewCreator::~ImageViewCreator() {
       m_device.get(), m_imageView, m_device.get().hostAllocator().allocator());
 }
 
-ImageViewCreator::ImageViewCreator(Device const &device) : m_device(device) {
+ImageViewCreator::ImageViewCreator(Device const &device) noexcept(
+    ExceptionsDisabled)
+    : m_device(device) {
   VK_CHECK_RESULT(device.core<1, 0>().vkCreateImageView(
       m_device.get(), &m_createInfo, device.hostAllocator().allocator(),
       &m_imageView))
 }
 
-unsigned m_FormatRedBits(VkFormat format) {
+unsigned m_FormatRedBits(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
@@ -172,7 +177,7 @@ unsigned m_FormatRedBits(VkFormat format) {
   }
   return 0;
 }
-unsigned m_FormatGreenBits(VkFormat format) {
+unsigned m_FormatGreenBits(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
@@ -237,7 +242,7 @@ unsigned m_FormatGreenBits(VkFormat format) {
   }
   return 0;
 }
-unsigned m_FormatBlueBits(VkFormat format) {
+unsigned m_FormatBlueBits(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
@@ -302,7 +307,7 @@ unsigned m_FormatBlueBits(VkFormat format) {
   }
   return 0;
 }
-unsigned m_FormatAlphaBits(VkFormat format) {
+unsigned m_FormatAlphaBits(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_R8G8B8A8_UINT:
   case VK_FORMAT_R8G8B8A8_SNORM:
@@ -366,7 +371,7 @@ unsigned m_FormatAlphaBits(VkFormat format) {
   return 0;
 }
 
-unsigned m_FormatDepthBits(VkFormat format) {
+unsigned m_FormatDepthBits(VkFormat format) noexcept {
   switch (format) {
   case VK_FORMAT_D16_UNORM:
   case VK_FORMAT_D16_UNORM_S8_UINT:
@@ -384,7 +389,7 @@ unsigned m_FormatDepthBits(VkFormat format) {
   }
   return 0;
 }
-unsigned m_FormatStencilBits(VkFormat format) {
+unsigned m_FormatStencilBits(VkFormat format) noexcept {
   switch (format) {
 
   case VK_FORMAT_D16_UNORM_S8_UINT:

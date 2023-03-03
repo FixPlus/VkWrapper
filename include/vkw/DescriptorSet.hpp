@@ -17,27 +17,32 @@ public:
   DescriptorSetLayoutBinding(
       uint32_t binding, VkDescriptorType type,
       VkShaderStageFlags shaderStages = VK_SHADER_STAGE_ALL,
-      uint32_t descriptorCount = 1, VkSampler *pImmutableSamplers = nullptr);
+      uint32_t descriptorCount = 1,
+      VkSampler *pImmutableSamplers = nullptr) noexcept;
   virtual ~DescriptorSetLayoutBinding() = default;
 
-  uint32_t binding() const { return m_binding.binding; }
+  uint32_t binding() const noexcept { return m_binding.binding; }
 
-  VkDescriptorType type() const { return m_binding.descriptorType; }
+  VkDescriptorType type() const noexcept { return m_binding.descriptorType; }
 
-  bool hasDynamicOffset() const;
+  bool hasDynamicOffset() const noexcept;
 
-  uint32_t descriptorCount() const { return m_binding.descriptorCount; }
+  uint32_t descriptorCount() const noexcept {
+    return m_binding.descriptorCount;
+  }
 
-  operator VkDescriptorSetLayoutBinding const &() const { return m_binding; }
+  operator VkDescriptorSetLayoutBinding const &() const noexcept {
+    return m_binding;
+  }
 
-  bool operator==(DescriptorSetLayoutBinding const &rhs) const {
+  bool operator==(DescriptorSetLayoutBinding const &rhs) const noexcept {
     return m_binding.binding == rhs.m_binding.binding &&
            m_binding.descriptorType == rhs.m_binding.descriptorType &&
            m_binding.descriptorCount == rhs.m_binding.descriptorCount &&
            m_binding.stageFlags == rhs.m_binding.stageFlags;
   }
 
-  bool operator!=(DescriptorSetLayoutBinding const &rhs) const {
+  bool operator!=(DescriptorSetLayoutBinding const &rhs) const noexcept {
     return !(*this == rhs);
   }
 
@@ -48,8 +53,9 @@ private:
 class DescriptorSetLayoutInfo {
 public:
   template <forward_range_of<DescriptorSetLayoutBinding> T>
-  explicit DescriptorSetLayoutInfo(T const &bindings,
-                                   VkDescriptorSetLayoutCreateFlags flags = 0) {
+  explicit DescriptorSetLayoutInfo(
+      T const &bindings,
+      VkDescriptorSetLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled) {
     auto bindingsSubrange =
         ranges::make_subrange<DescriptorSetLayoutBinding>(bindings);
     using bindingsSubrangeT = decltype(bindingsSubrange);
@@ -60,15 +66,15 @@ public:
     m_fillInfo(flags);
   }
 
-  auto begin() { return m_bindings.begin(); }
+  auto begin() noexcept { return m_bindings.begin(); }
 
-  auto end() { return m_bindings.end(); }
+  auto end() noexcept { return m_bindings.end(); }
 
-  auto begin() const { return m_bindings.begin(); }
+  auto begin() const noexcept { return m_bindings.begin(); }
 
-  auto end() const { return m_bindings.end(); }
+  auto end() const noexcept { return m_bindings.end(); }
 
-  bool operator==(DescriptorSetLayoutInfo const &rhs) const {
+  bool operator==(DescriptorSetLayoutInfo const &rhs) const noexcept {
     if (m_bindings.size() != rhs.m_bindings.size() ||
         m_createInfo.flags != rhs.m_createInfo.flags)
       return false;
@@ -81,16 +87,19 @@ public:
         });
   }
 
-  bool operator!=(DescriptorSetLayoutInfo const &rhs) const {
+  bool operator!=(DescriptorSetLayoutInfo const &rhs) const noexcept {
     return !(*this == rhs);
   }
 
-  VkDescriptorSetLayoutCreateFlags flags() const { return m_createInfo.flags; }
+  VkDescriptorSetLayoutCreateFlags flags() const noexcept {
+    return m_createInfo.flags;
+  }
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
 private:
-  void m_fillInfo(VkDescriptorSetLayoutCreateFlags flags);
+  void m_fillInfo(VkDescriptorSetLayoutCreateFlags flags) noexcept(
+      ExceptionsDisabled);
   boost::container::small_vector<DescriptorSetLayoutBinding, 3> m_bindings;
   boost::container::small_vector<VkDescriptorSetLayoutBinding, 5> m_rawBindings;
   VkDescriptorSetLayoutCreateInfo m_createInfo{};
@@ -100,16 +109,17 @@ class DescriptorSetLayout : public DescriptorSetLayoutInfo,
                             public UniqueVulkanObject<VkDescriptorSetLayout> {
 public:
   template <forward_range_of<DescriptorSetLayoutBinding> T>
-  DescriptorSetLayout(Device const &device, T const &bindings,
-                      VkDescriptorSetLayoutCreateFlags flags = 0)
+  DescriptorSetLayout(
+      Device const &device, T const &bindings,
+      VkDescriptorSetLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : DescriptorSetLayoutInfo(bindings, flags),
         UniqueVulkanObject<VkDescriptorSetLayout>(device, info()) {}
 
-  bool operator==(DescriptorSetLayout const &rhs) const {
+  bool operator==(DescriptorSetLayout const &rhs) const noexcept {
     return DescriptorSetLayoutInfo::operator==(rhs);
   }
 
-  bool operator!=(DescriptorSetLayout const &rhs) const {
+  bool operator!=(DescriptorSetLayout const &rhs) const noexcept {
     return !(*this == rhs);
   }
 };
@@ -133,27 +143,29 @@ public:
   };
 
   void write(uint32_t binding, BufferBase const &buffer, VkDescriptorType type,
-             VkDeviceSize offset = 0, VkDeviceSize range = VK_WHOLE_SIZE);
+             VkDeviceSize offset = 0,
+             VkDeviceSize range = VK_WHOLE_SIZE) noexcept;
 
   template <typename T>
-  void write(uint32_t binding, UniformBuffer<T> const &uniformBuffer) {
+  void write(uint32_t binding, UniformBuffer<T> const &uniformBuffer) noexcept {
     write(binding, uniformBuffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 0,
           sizeof(T));
   }
 
   template <typename T>
-  void write(uint32_t binding, StorageBuffer<T> const &storageBuffer) {
+  void write(uint32_t binding, StorageBuffer<T> const &storageBuffer) noexcept {
     write(binding, storageBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 0,
           sizeof(T));
   }
 
   void write(uint32_t binding, ImageViewBase const &image, VkImageLayout layout,
-             Sampler const &sampler) {
+             Sampler const &sampler) noexcept {
     m_write_combined_image_sampler(binding, {sampler, image, layout});
   }
 
-  void writeStorageImage(uint32_t binding, ImageViewBase const &image,
-                         VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL);
+  void
+  writeStorageImage(uint32_t binding, ImageViewBase const &image,
+                    VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL) noexcept;
 
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
 
@@ -163,30 +175,33 @@ public:
       pOffsets[counter++] = offset.offset;
   }
 
-  void setDynamicOffset(uint32_t binding, uint32_t offset);
+  void setDynamicOffset(uint32_t binding,
+                        uint32_t offset) noexcept(ExceptionsDisabled);
 
   DescriptorSetLayout const &layout() const { return m_layout; }
 
   operator VkDescriptorSet() const { return m_set; }
 
   virtual ~DescriptorSet();
-  DescriptorSet(DescriptorPool &pool, DescriptorSetLayout const &layout);
+  DescriptorSet(DescriptorPool &pool,
+                DescriptorSetLayout const &layout) noexcept(ExceptionsDisabled);
 
 protected:
-  void m_write(uint32_t writeCount, VkWriteDescriptorSet *pWrites);
+  void m_write(uint32_t writeCount, VkWriteDescriptorSet *pWrites) noexcept;
 
 private:
   void m_write_combined_image_sampler(uint32_t binding,
-                                      VkDescriptorImageInfo imageInfo);
-  void m_write_storage_image(uint32_t binding, VkDescriptorImageInfo imageInfo);
+                                      VkDescriptorImageInfo imageInfo) noexcept;
+  void m_write_storage_image(uint32_t binding,
+                             VkDescriptorImageInfo imageInfo) noexcept;
   void m_write_uniformBuffer(uint32_t binding,
-                             VkDescriptorBufferInfo bufferInfo);
+                             VkDescriptorBufferInfo bufferInfo) noexcept;
   void m_write_storageBuffer(uint32_t binding,
-                             VkDescriptorBufferInfo bufferInfo);
+                             VkDescriptorBufferInfo bufferInfo) noexcept;
   struct M_DynamicOffset {
     uint32_t binding;
     uint32_t offset{0};
-    M_DynamicOffset(uint32_t bind) : binding(bind){};
+    M_DynamicOffset(uint32_t bind) noexcept : binding(bind){};
   };
   boost::container::small_vector<M_DynamicOffset, 2> m_dynamicOffsets{};
 

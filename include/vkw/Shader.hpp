@@ -13,9 +13,10 @@ class Device;
 class ShaderBase : public UniqueVulkanObject<VkShaderModule> {
 public:
   ShaderBase(Device const &device, SPIRVModule const &module,
-             VkShaderStageFlagBits stage, VkShaderModuleCreateFlags flags = 0);
+             VkShaderStageFlagBits stage,
+             VkShaderModuleCreateFlags flags = 0) noexcept(ExceptionsDisabled);
 
-  VkShaderStageFlagBits stage() const { return m_stage; }
+  VkShaderStageFlagBits stage() const noexcept { return m_stage; }
 
 private:
   VkShaderStageFlagBits m_stage;
@@ -23,22 +24,24 @@ private:
 
 class FragmentShader : public ShaderBase {
 public:
-  FragmentShader(Device const &device, SPIRVModule const &module,
-                 VkShaderModuleCreateFlags flags = 0)
+  FragmentShader(
+      Device const &device, SPIRVModule const &module,
+      VkShaderModuleCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : ShaderBase(device, module, VK_SHADER_STAGE_FRAGMENT_BIT, flags) {}
 };
 
 class VertexShader : public ShaderBase {
 public:
   VertexShader(Device const &device, SPIRVModule const &module,
-               VkShaderModuleCreateFlags flags = 0)
+               VkShaderModuleCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : ShaderBase(device, module, VK_SHADER_STAGE_VERTEX_BIT, flags) {}
 };
 
 class ComputeShader : public ShaderBase {
 public:
-  ComputeShader(Device const &device, SPIRVModule const &module,
-                VkShaderModuleCreateFlags flags = 0)
+  ComputeShader(
+      Device const &device, SPIRVModule const &module,
+      VkShaderModuleCreateFlags flags = 0) noexcept(ExceptionsDisabled)
       : ShaderBase(device, module, VK_SHADER_STAGE_COMPUTE_BIT, flags) {}
 };
 

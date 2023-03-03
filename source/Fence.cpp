@@ -5,7 +5,7 @@ namespace vkw {
 
 namespace {
 
-VkFenceCreateInfo fillCreateInfo(bool createSignaled) {
+VkFenceCreateInfo fillCreateInfo(bool createSignaled) noexcept {
   VkFenceCreateInfo createInfo{};
   VkFenceCreateFlags flags{};
   if (createSignaled)
@@ -18,11 +18,13 @@ VkFenceCreateInfo fillCreateInfo(bool createSignaled) {
 }
 } // namespace
 
-Fence::Fence(Device const &device, bool createSignaled)
+Fence::Fence(Device const &device,
+             bool createSignaled) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkFence>(device, fillCreateInfo(createSignaled)) {}
 
 bool Fence::wait_impl(Device const &device, VkFence const *pFences,
-                      uint32_t fenceCount, bool waitAll, uint64_t timeout) {
+                      uint32_t fenceCount, bool waitAll,
+                      uint64_t timeout) noexcept(ExceptionsDisabled) {
   auto result = device.core<1, 0>().vkWaitForFences(
       device, fenceCount, pFences, static_cast<VkBool32>(waitAll), timeout);
   if (result == VK_TIMEOUT)
@@ -34,7 +36,7 @@ bool Fence::wait_impl(Device const &device, VkFence const *pFences,
   return false;
 }
 
-bool Fence::signaled() const {
+bool Fence::signaled() const noexcept(ExceptionsDisabled) {
   auto result = parent().core<1, 0>().vkGetFenceStatus(parent(), handle());
   if (result == VK_SUCCESS)
     return true;
@@ -45,7 +47,7 @@ bool Fence::signaled() const {
   return false;
 }
 
-void Fence::reset() {
+void Fence::reset() noexcept(ExceptionsDisabled) {
   auto h = handle();
   VK_CHECK_RESULT(parent().core<1, 0>().vkResetFences(parent(), 1, &h))
 }

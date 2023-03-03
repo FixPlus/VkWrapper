@@ -15,7 +15,8 @@ class Surface;
 class PresentInfo {
 public:
   template <forward_range_of<SwapChain> SWA, forward_range_of<Semaphore> SMA>
-  PresentInfo(SWA const &swapChains, SMA const &waitFor)
+  PresentInfo(SWA const &swapChains,
+              SMA const &waitFor) noexcept(ExceptionsDisabled)
       : m_swp_ext(decltype(ranges::make_subrange<SwapChain>(swapChains))::get(
                       *(ranges::make_subrange<SwapChain>(swapChains).begin()))
                       .ext()) {
@@ -50,7 +51,8 @@ public:
 
   template <forward_range_of<Semaphore> SMA =
                 boost::container::small_vector<Semaphore, 2>>
-  PresentInfo(SwapChain const &swapChain, SMA const &waitFor = {})
+  PresentInfo(SwapChain const &swapChain,
+              SMA const &waitFor = {}) noexcept(ExceptionsDisabled)
       : m_swp_ext(swapChain.extension()) {
 
     auto waitForSub = ranges::make_subrange<Semaphore>(waitFor);
@@ -68,7 +70,8 @@ public:
     m_fill_info();
   }
 
-  PresentInfo(SwapChain const &swapChain, Semaphore const &waitFor)
+  PresentInfo(SwapChain const &swapChain,
+              Semaphore const &waitFor) noexcept(ExceptionsDisabled)
       : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
@@ -79,7 +82,8 @@ public:
     m_fill_info();
   }
 
-  PresentInfo(SwapChain const &swapChain) : m_swp_ext(swapChain.extension()) {
+  PresentInfo(SwapChain const &swapChain) noexcept(ExceptionsDisabled)
+      : m_swp_ext(swapChain.extension()) {
 
     m_swapChains.emplace_back(swapChain);
     m_pswapChains.emplace_back(swapChain);
@@ -88,7 +92,7 @@ public:
     m_fill_info();
   }
 
-  void updateImages() {
+  void updateImages() noexcept(ExceptionsDisabled) {
     auto swpIt = m_pswapChains.begin();
     auto swpIm = m_images.begin();
     for (; swpIt != m_pswapChains.end(); ++swpIt, ++swpIm) {
@@ -96,13 +100,13 @@ public:
     }
   }
 
-  operator VkPresentInfoKHR() const { return m_info; }
+  operator VkPresentInfoKHR() const noexcept { return m_info; }
 
-  Extension<ext::KHR_swapchain> const &swapChainExtension() const {
+  Extension<ext::KHR_swapchain> const &swapChainExtension() const noexcept {
     return m_swp_ext.get();
   }
 
-  PresentInfo(PresentInfo const &another)
+  PresentInfo(PresentInfo const &another) noexcept(ExceptionsDisabled)
       : m_wait_semaphores(another.m_wait_semaphores),
         m_swapChains(another.m_swapChains), m_images(another.m_images),
         m_swp_ext(another.m_swp_ext) {
@@ -110,7 +114,8 @@ public:
   }
   PresentInfo(PresentInfo &&another) noexcept = default;
 
-  PresentInfo &operator=(PresentInfo const &another) {
+  PresentInfo &
+  operator=(PresentInfo const &another) noexcept(ExceptionsDisabled) {
     m_wait_semaphores = another.m_wait_semaphores;
     m_swapChains = another.m_swapChains;
     m_images = another.m_images;
@@ -124,7 +129,7 @@ public:
   virtual ~PresentInfo() = default;
 
 private:
-  void m_fill_info();
+  void m_fill_info() noexcept;
 
   boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
   boost::container::small_vector<StrongReference<SwapChain const>, 2>
@@ -144,7 +149,8 @@ public:
             forward_range_of<VkPipelineStageFlags const> PSFA =
                 boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(PCMDA const &commandBuffer, SMA const &waitFor = {},
-             PSFA const &waitTill = {}, SMA const &signalTo = {}) {
+             PSFA const &waitTill = {},
+             SMA const &signalTo = {}) noexcept(ExceptionsDisabled) {
     auto commandBufferSub =
         ranges::make_subrange<PrimaryCommandBuffer const>(commandBuffer);
     using commandBufferSubT = decltype(commandBufferSub);
@@ -179,11 +185,11 @@ public:
     m_fill_info();
   }
 
-  operator VkSubmitInfo() const { return m_info; }
+  operator VkSubmitInfo() const noexcept { return m_info; }
 
   SubmitInfo(const PrimaryCommandBuffer &commandBuffer,
              Semaphore const &waitFor, VkPipelineStageFlags waitTill,
-             Semaphore const &signalTo)
+             Semaphore const &signalTo) noexcept(ExceptionsDisabled)
       : m_wait_stage(1, waitTill), m_cmd_buffers(1, commandBuffer),
         m_wait_semaphores(1, waitFor), m_signal_semaphores(1, signalTo) {
     m_fill_info();
@@ -194,7 +200,7 @@ public:
             forward_range_of<VkPipelineStageFlags const> PSFA =
                 boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(SMA const &waitFor = {}, PSFA const &waitTill = {},
-             SMA const &signalTo = {}) {
+             SMA const &signalTo = {}) noexcept(ExceptionsDisabled) {
     auto waitForSub = ranges::make_subrange<Semaphore const>(waitFor);
     auto signalToSub = ranges::make_subrange<Semaphore const>(signalTo);
     auto waitTillSub =
@@ -225,7 +231,8 @@ public:
             forward_range_of<VkPipelineStageFlags const> PSFA =
                 boost::container::small_vector<VkPipelineStageFlags, 2>>
   SubmitInfo(const PrimaryCommandBuffer &commandBuffer, SMA const &waitFor = {},
-             PSFA const &waitTill = {}, SMA const &signalTo = {})
+             PSFA const &waitTill = {},
+             SMA const &signalTo = {}) noexcept(ExceptionsDisabled)
       : SubmitInfo(waitFor, waitTill, signalTo) {
 
     m_cmd_buffers.emplace_back(commandBuffer);
@@ -234,7 +241,8 @@ public:
     m_info.pCommandBuffers = m_cmd_buffers.data();
   }
 
-  SubmitInfo &operator=(SubmitInfo const &another) {
+  SubmitInfo &
+  operator=(SubmitInfo const &another) noexcept(ExceptionsDisabled) {
     m_cmd_buffers = another.m_cmd_buffers;
     m_signal_semaphores = another.m_signal_semaphores;
     m_wait_semaphores = another.m_wait_semaphores;
@@ -251,7 +259,7 @@ public:
     return *this;
   }
 
-  SubmitInfo(SubmitInfo const &another)
+  SubmitInfo(SubmitInfo const &another) noexcept(ExceptionsDisabled)
       : m_cmd_buffers(another.m_cmd_buffers),
         m_signal_semaphores(another.m_signal_semaphores),
         m_wait_semaphores(another.m_wait_semaphores),
@@ -276,26 +284,29 @@ private:
   boost::container::small_vector<VkSemaphore, 2> m_wait_semaphores;
   boost::container::small_vector<VkPipelineStageFlags, 2> m_wait_stage;
 
-  void m_fill_info();
+  void m_fill_info() noexcept;
 
   VkSubmitInfo m_info{};
 };
 class Queue {
 public:
-  bool present(PresentInfo const &presentInfo) const;
+  bool present(PresentInfo const &presentInfo) const
+      noexcept(ExceptionsDisabled);
 
-  void submit(SubmitInfo const &info) const {
+  void submit(SubmitInfo const &info) const noexcept(ExceptionsDisabled) {
     VkSubmitInfo rawInfo = info;
     m_submit(&rawInfo, 1, nullptr);
   }
 
-  void submit(SubmitInfo const &info, Fence const &fence) const {
+  void submit(SubmitInfo const &info, Fence const &fence) const
+      noexcept(ExceptionsDisabled) {
     VkSubmitInfo rawInfo = info;
     m_submit(&rawInfo, 1, &fence);
   }
 
   template <forward_range_of<SubmitInfo const> SubmitRange>
-  void submit(SubmitRange const &info, Fence const &fence) const {
+  void submit(SubmitRange const &info, Fence const &fence) const
+      noexcept(ExceptionsDisabled) {
     auto infoSubrange = ranges::make_subrange<SubmitInfo const>(info);
     using infoSubrangeT = decltype(infoSubrange);
     boost::container::small_vector<VkSubmitInfo, 3> m_infos;
@@ -308,7 +319,7 @@ public:
   }
 
   template <forward_range_of<SubmitInfo const> SubmitRange>
-  void submit(SubmitRange const &info) const {
+  void submit(SubmitRange const &info) const noexcept(ExceptionsDisabled) {
     auto infoSubrange = ranges::make_subrange<SubmitInfo const>(info);
     using infoSubrangeT = decltype(infoSubrange);
     boost::container::small_vector<VkSubmitInfo, 3> m_infos;
@@ -320,23 +331,25 @@ public:
     m_submit(m_infos.data(), m_infos.size(), nullptr);
   }
 
-  QueueFamily const &family() const;
+  QueueFamily const &family() const noexcept(ExceptionsDisabled);
 
-  unsigned index() const { return m_queueIndex; }
+  unsigned index() const noexcept { return m_queueIndex; }
 
-  bool supportsPresenting(Surface const &surface) const;
+  bool supportsPresenting(Surface const &surface) const
+      noexcept(ExceptionsDisabled);
 
-  operator VkQueue() const { return m_queue; }
+  operator VkQueue() const noexcept { return m_queue; }
 
-  void waitIdle() const;
+  void waitIdle() const noexcept(ExceptionsDisabled);
 
 private:
-  Queue(Device &parent, uint32_t queueFamilyIndex, uint32_t queueIndex);
+  Queue(Device &parent, uint32_t queueFamilyIndex,
+        uint32_t queueIndex) noexcept(ExceptionsDisabled);
 
   friend class Device;
 
   void m_submit(VkSubmitInfo const *info, size_t infoCount,
-                Fence const *fence) const;
+                Fence const *fence) const noexcept(ExceptionsDisabled);
   StrongReference<Device> m_parent;
   VkQueue m_queue = VK_NULL_HANDLE;
   uint32_t m_familyIndex;

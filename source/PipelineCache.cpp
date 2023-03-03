@@ -18,12 +18,13 @@ VkPipelineCacheCreateInfo fillCreateInfo(size_t initDataSize, void *initData,
 }
 } // namespace
 
-PipelineCache::PipelineCache(vkw::Device const &device, size_t initDataSize,
-                             void *initData, VkPipelineCacheCreateFlags flags)
+PipelineCache::PipelineCache(
+    vkw::Device const &device, size_t initDataSize, void *initData,
+    VkPipelineCacheCreateFlags flags) noexcept(ExceptionsDisabled)
     : UniqueVulkanObject<VkPipelineCache>(
           device, fillCreateInfo(initDataSize, initData, flags)) {}
 
-size_t PipelineCache::dataSize() const {
+size_t PipelineCache::dataSize() const noexcept(ExceptionsDisabled) {
   size_t ret{};
   VK_CHECK_RESULT(parent().core<1, 0>().vkGetPipelineCacheData(
       parent(), handle(), &ret, nullptr))
@@ -31,7 +32,8 @@ size_t PipelineCache::dataSize() const {
   return ret;
 }
 
-bool PipelineCache::getData(void *buffer, size_t bufferLength) const {
+bool PipelineCache::getData(void *buffer, size_t bufferLength) const
+    noexcept(ExceptionsDisabled) {
 
   auto result = parent().core<1, 0>().vkGetPipelineCacheData(
       parent(), handle(), &bufferLength, buffer);

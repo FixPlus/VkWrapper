@@ -17,31 +17,33 @@ public:
                         VkAttachmentLoadOp stencilLoadOp,
                         VkAttachmentStoreOp stencilStoreOp,
                         VkImageLayout initialLayout, VkImageLayout finalLayout,
-                        VkAttachmentDescriptionFlags flags = 0)
+                        VkAttachmentDescriptionFlags flags = 0) noexcept
       : m_description({flags, viewFormat, samples, loadOp, storeOp,
                        stencilLoadOp, stencilStoreOp, initialLayout,
                        finalLayout}) {}
 
-  VkFormat format() const { return m_description.format; }
+  VkFormat format() const noexcept { return m_description.format; }
 
-  bool isDepthStencil() const;
-  bool formatHasDepthAspect() const;
-  bool formatHasStencilAspect() const;
-  bool isColor() const;
+  bool isDepthStencil() const noexcept;
+  bool formatHasDepthAspect() const noexcept;
+  bool formatHasStencilAspect() const noexcept;
+  bool isColor() const noexcept;
 
-  VkAttachmentLoadOp loadOp() const { return m_description.loadOp; }
+  VkAttachmentLoadOp loadOp() const noexcept { return m_description.loadOp; }
 
-  VkAttachmentLoadOp stencilLoadOp() const {
+  VkAttachmentLoadOp stencilLoadOp() const noexcept {
     return m_description.stencilLoadOp;
   }
 
-  VkAttachmentStoreOp storeOp() const { return m_description.storeOp; }
+  VkAttachmentStoreOp storeOp() const noexcept { return m_description.storeOp; }
 
-  VkAttachmentStoreOp stencilStoreOp() const {
+  VkAttachmentStoreOp stencilStoreOp() const noexcept {
     return m_description.stencilStoreOp;
   }
 
-  operator VkAttachmentDescription const &() const { return m_description; }
+  operator VkAttachmentDescription const &() const noexcept {
+    return m_description;
+  }
 
 private:
   VkAttachmentDescription m_description;
@@ -49,29 +51,33 @@ private:
 
 class SubpassDescription : public ReferenceGuard {
 public:
-  void addInputAttachment(AttachmentDescription const &, VkImageLayout layout);
-  void addColorAttachment(AttachmentDescription const &, VkImageLayout layout);
-  void addDepthAttachment(AttachmentDescription const &, VkImageLayout layout);
-  void addPreserveAttachment(AttachmentDescription const &);
+  void addInputAttachment(AttachmentDescription const &,
+                          VkImageLayout layout) noexcept(ExceptionsDisabled);
+  void addColorAttachment(AttachmentDescription const &,
+                          VkImageLayout layout) noexcept(ExceptionsDisabled);
+  void addDepthAttachment(AttachmentDescription const &,
+                          VkImageLayout layout) noexcept(ExceptionsDisabled);
+  void addPreserveAttachment(AttachmentDescription const &) noexcept(
+      ExceptionsDisabled);
 
   using SubpassAttachmentContainerT = boost::container::small_vector<
       std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>,
       2>;
   using PreservedAttachmentContainerT = boost::container::small_vector<
       StrongReference<AttachmentDescription const>, 2>;
-  SubpassAttachmentContainerT const &inputAttachments() const {
+  SubpassAttachmentContainerT const &inputAttachments() const noexcept {
     return m_inputAttachments;
   }
 
-  SubpassAttachmentContainerT const &colorAttachments() const {
+  SubpassAttachmentContainerT const &colorAttachments() const noexcept {
     return m_colorAttachments;
   }
   std::optional<std::pair<StrongReference<AttachmentDescription const>,
                           VkImageLayout>> const &
-  depthAttachments() const {
+  depthAttachments() const noexcept {
     return m_depthAttachment;
   }
-  PreservedAttachmentContainerT const &preserveAttachments() const {
+  PreservedAttachmentContainerT const &preserveAttachments() const noexcept {
     return m_preserveAttachments;
   }
 
@@ -88,17 +94,17 @@ private:
 
 class SubpassDependency {
 public:
-  void setSrcSubpass(SubpassDescription const &subpass) {
+  void setSrcSubpass(SubpassDescription const &subpass) noexcept {
     m_srcSubpass = subpass;
   }
 
-  void setDstSubpass(SubpassDescription const &subpass) {
+  void setDstSubpass(SubpassDescription const &subpass) noexcept {
     m_dstSubpass = subpass;
   }
 
-  auto srcSubpass() const { return m_srcSubpass; }
+  auto srcSubpass() const noexcept { return m_srcSubpass; }
 
-  auto dstSubpass() const { return m_dstSubpass; }
+  auto dstSubpass() const noexcept { return m_dstSubpass; }
 
   VkPipelineStageFlags srcStageMask{};
   VkPipelineStageFlags dstStageMask{};
@@ -113,14 +119,14 @@ private:
 
 class RenderPassCreateInfo {
 public:
-  RenderPassCreateInfo(RenderPassCreateInfo &&another);
+  RenderPassCreateInfo(RenderPassCreateInfo &&another) noexcept;
   RenderPassCreateInfo(RenderPassCreateInfo const &another) = delete;
   template <forward_range_of<AttachmentDescription const> T>
   RenderPassCreateInfo(
       T const &attachments,
       std::vector<StrongReference<SubpassDescription const>> const &subpasses,
       std::vector<SubpassDependency> const &dependencies,
-      VkRenderPassCreateFlags flags = 0) {
+      VkRenderPassCreateFlags flags = 0) noexcept(ExceptionsDisabled) {
     auto attachmentsSubrange =
         ranges::make_subrange<AttachmentDescription const>(attachments);
     using attachmentsSubrangeT = decltype(attachmentsSubrange);
@@ -137,7 +143,7 @@ public:
       AttachmentDescription const &attachment,
       std::vector<StrongReference<SubpassDescription const>> const &subpasses,
       std::vector<SubpassDependency> const &dependencies,
-      VkRenderPassCreateFlags flags = 0) {
+      VkRenderPassCreateFlags flags = 0) noexcept(ExceptionsDisabled) {
     m_attachments.emplace_back(attachment);
     m_init(subpasses, dependencies, flags);
   }
@@ -145,9 +151,9 @@ public:
   RenderPassCreateInfo &
   operator=(RenderPassCreateInfo &&another) noexcept = default;
 
-  auto &info() const { return m_createInfo; }
+  auto &info() const noexcept { return m_createInfo; }
 
-  uint32_t subpassCount() const { return m_subpasses.size(); }
+  uint32_t subpassCount() const noexcept { return m_subpasses.size(); }
 
   struct M_subpassDesc {
     std::vector<VkAttachmentReference> inputAttachments;
@@ -156,17 +162,17 @@ public:
     std::vector<uint32_t> preserveAttachments;
   };
 
-  M_subpassDesc const &subpassInfo(uint32_t subpass) const {
+  M_subpassDesc const &subpassInfo(uint32_t subpass) const noexcept {
     return m_subpassesDescs.at(subpass);
   }
 
-  auto const &attachmentDescriptions() const { return m_attachments; }
+  auto const &attachmentDescriptions() const noexcept { return m_attachments; }
 
 private:
   void m_init(
       std::vector<StrongReference<SubpassDescription const>> const &subpasses,
       std::vector<SubpassDependency> const &dependencies,
-      VkRenderPassCreateFlags flags = 0);
+      VkRenderPassCreateFlags flags = 0) noexcept(ExceptionsDisabled);
 
   std::vector<StrongReference<AttachmentDescription const>> m_attachments;
   std::vector<VkAttachmentDescription> m_attachments_raw;
@@ -180,7 +186,8 @@ private:
 class RenderPass : public RenderPassCreateInfo,
                    public UniqueVulkanObject<VkRenderPass> {
 public:
-  RenderPass(Device const &device, RenderPassCreateInfo createInfo)
+  RenderPass(Device const &device,
+             RenderPassCreateInfo createInfo) noexcept(ExceptionsDisabled)
       : RenderPassCreateInfo(std::move(createInfo)),
         UniqueVulkanObject<VkRenderPass>(device, info()) {}
 };

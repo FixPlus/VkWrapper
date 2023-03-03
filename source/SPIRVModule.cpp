@@ -5,7 +5,8 @@
 #include <unordered_map>
 namespace vkw {
 
-SPIRVModule::SPIRVModule(std::span<const unsigned int> code) {
+SPIRVModule::SPIRVModule(std::span<const unsigned int> code) noexcept(
+    ExceptionsDisabled) {
   m_code.reserve(code.size());
   std::copy(code.begin(), code.end(), std::back_inserter(m_code));
   // TODO: maybe some code verification checks here
@@ -15,13 +16,14 @@ namespace {
 
 class MessageCollector {
 public:
-  void postMessage(spv_message_level_t messageLevel, std::string_view message) {
+  void postMessage(spv_message_level_t messageLevel,
+                   std::string_view message) noexcept(ExceptionsDisabled) {
     m_messages.emplace_back(messageLevel, message);
   }
 
-  auto &messages() const { return m_messages; }
+  auto &messages() const noexcept { return m_messages; }
 
-  void flushMessages() { m_messages.clear(); }
+  void flushMessages() noexcept { m_messages.clear(); }
 
 private:
   std::vector<std::pair<spv_message_level_t, std::string>> m_messages;
@@ -29,7 +31,7 @@ private:
 
 class SPIRVContext : public MessageCollector, public spvtools::Context {
 public:
-  SPIRVContext()
+  SPIRVContext() noexcept
       : spvtools::Context(SPV_ENV_VULKAN_1_0),
         m_consumer([this](spv_message_level_t messageLevel, const char *input,
                           const spv_position_t position, const char *message) {
@@ -45,7 +47,7 @@ private:
 
 void SPIRVModule::m_link(std::vector<unsigned int> &output,
                          std::span<const std::span<const unsigned int>> input,
-                         bool linkLibrary) {
+                         bool linkLibrary) noexcept(ExceptionsDisabled) {
   static SPIRVContext context;
   boost::container::small_vector<size_t, 3> codeSizes;
   boost::container::small_vector<const unsigned int *, 3> codes;
@@ -77,7 +79,7 @@ void SPIRVModule::m_link(std::vector<unsigned int> &output,
       ss << message.second << std::endl;
     }
 
-    throw vkw::Error{ss.str(), ErrorCode::SPIRV_LINK_ERROR};
+    postError(vkw::Error{ss.str(), ErrorCode::SPIRV_LINK_ERROR});
   }
 }
 

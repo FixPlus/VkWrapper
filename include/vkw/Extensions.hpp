@@ -17,35 +17,39 @@ template <> struct NativeHandlerOf<Device> { using Handle = VkDevice; };
 enum class ext;
 
 namespace internal {
-bool isExtensionEnabled(Instance const &instance, const char *extName);
-bool isExtensionEnabled(Device const &device, const char *extName);
+bool isExtensionEnabled(Instance const &instance,
+                        const char *extName) noexcept(ExceptionsDisabled);
+bool isExtensionEnabled(Device const &device,
+                        const char *extName) noexcept(ExceptionsDisabled);
 
-const char *ext_name(ext id);
+const char *ext_name(ext id) noexcept(ExceptionsDisabled);
 
 template <typename T>
 using PFN_getProcAddr =
     PFN_vkVoidFunction (*)(typename NativeHandlerOf<T>::Handle, const char *);
 
-template <typename T> PFN_getProcAddr<T> getProcAddrOf(T const &instance);
+template <typename T>
+PFN_getProcAddr<T> getProcAddrOf(T const &instance) noexcept;
 
-extern template PFN_getProcAddr<Device> getProcAddrOf(Device const &instance);
+extern template PFN_getProcAddr<Device>
+getProcAddrOf(Device const &instance) noexcept;
 
 extern template PFN_getProcAddr<Instance>
-getProcAddrOf(Instance const &instance);
+getProcAddrOf(Instance const &instance) noexcept;
 
-VkInstance handleOf(Instance const &instance);
-VkDevice handleOf(Device const &device);
+VkInstance handleOf(Instance const &instance) noexcept;
+VkDevice handleOf(Device const &device) noexcept;
 } // namespace internal
 
 template <ext id, typename T>
 class ExtensionBase
     : public SymbolTableBase<typename NativeHandlerOf<T>::Handle> {
 public:
-  ExtensionBase(T const &handle)
+  explicit ExtensionBase(T const &handle) noexcept(ExceptionsDisabled)
       : SymbolTableBase<typename NativeHandlerOf<T>::Handle>(
             internal::getProcAddrOf(handle), internal::handleOf(handle)) {
     if (!internal::isExtensionEnabled(handle, internal::ext_name(id)))
-      throw ExtensionMissing(id, internal::ext_name(id));
+      postError(ExtensionMissing(id, internal::ext_name(id)));
   }
 };
 

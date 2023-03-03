@@ -4,9 +4,9 @@
 
 namespace vkw {
 
-BufferBase::BufferBase(VmaAllocator allocator,
-                       VkBufferCreateInfo const &createInfo,
-                       VmaAllocationCreateInfo const &allocCreateInfo)
+BufferBase::BufferBase(
+    VmaAllocator allocator, VkBufferCreateInfo const &createInfo,
+    VmaAllocationCreateInfo const &allocCreateInfo) noexcept(ExceptionsDisabled)
     : Allocation(allocator), m_createInfo(createInfo) {
 
   VK_CHECK_RESULT(vmaCreateBuffer(m_allocator, &createInfo, &allocCreateInfo,

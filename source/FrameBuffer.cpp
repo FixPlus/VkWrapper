@@ -10,7 +10,7 @@ namespace vkw {
 FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                                  VkExtent2D extents,
                                  std::span<ImageViewVT<V2DA> const *> views,
-                                 uint32_t layers)
+                                 uint32_t layers) noexcept(ExceptionsDisabled)
     : m_parent(renderPass) {
   std::transform(views.begin(), views.end(), std::back_inserter(m_views),
                  [](ImageViewVT<V2DA> const *view) {
@@ -31,9 +31,9 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
   // size match check
 
   if (views.size() != renderPassAttachments.size())
-    throw Error("Attachment count mismatch: FrameBuffer(" +
-                std::to_string(views.size()) + ")<->RenderPass(" +
-                std::to_string(renderPassAttachments.size()) + ")");
+    postError(Error("Attachment count mismatch: FrameBuffer(" +
+                    std::to_string(views.size()) + ")<->RenderPass(" +
+                    std::to_string(renderPassAttachments.size()) + ")"));
 
   auto viewIter = views.begin();
   uint32_t counter = 0;
@@ -44,12 +44,13 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                     return counter++,
                            desc.format() != (*(viewIter++))->format();
                   })) {
-    throw Error("Attachment format mismatch on (" + std::to_string(counter) +
-                ") index: FrameBuffer(" +
-                std::to_string((*(--viewIter))->format()) + ")<->RenderPass(" +
-                std::to_string(
-                    (renderPassAttachments.begin() + counter)->get().format()) +
-                ")");
+    postError(
+        Error("Attachment format mismatch on (" + std::to_string(counter) +
+              ") index: FrameBuffer(" +
+              std::to_string((*(--viewIter))->format()) + ")<->RenderPass(" +
+              std::to_string(
+                  (renderPassAttachments.begin() + counter)->get().format()) +
+              ")"));
   }
 
   counter = 0;
@@ -63,12 +64,12 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                            extents.height > viewExtent.height;
                   })) {
     auto viewExtent = (*(views.begin() + counter))->image()->rawExtents();
-    throw Error("Attachment #" + std::to_string(counter) + " extents(" +
-                std::to_string(viewExtent.width) + "x" +
-                std::to_string(viewExtent.height) +
-                ") are less than FrameBuffer extent(" +
-                std::to_string(extents.width) + "x" +
-                std::to_string(extents.height) + ")");
+    postError(Error("Attachment #" + std::to_string(counter) + " extents(" +
+                    std::to_string(viewExtent.width) + "x" +
+                    std::to_string(viewExtent.height) +
+                    ") are less than FrameBuffer extent(" +
+                    std::to_string(extents.width) + "x" +
+                    std::to_string(extents.height) + ")"));
   }
 
   counter = 0;
@@ -78,10 +79,10 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                   [layers, &counter](ImageViewVT<V2DA> const *view) {
                     return counter++, view->layers() < layers;
                   })) {
-    throw(Error("Attachment #" + std::to_string(counter) +
-                " has fewer layers(" +
-                std::to_string((*(views.begin() + counter))->layers()) +
-                ") than Framebuffer(" + std::to_string(layers) + ")"));
+    postError(Error("Attachment #" + std::to_string(counter) +
+                    " has fewer layers(" +
+                    std::to_string((*(views.begin() + counter))->layers()) +
+                    ") than Framebuffer(" + std::to_string(layers) + ")"));
   }
 
   m_createInfo.attachmentCount = views.size();
@@ -92,9 +93,9 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
   m_createInfo.pAttachments = m_rawViews.data();
 }
 
-FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
-                                 VkExtent2D extents,
-                                 std::span<ImageViewVT<V2D> const *> views)
+FrameBufferInfo::FrameBufferInfo(
+    RenderPass const &renderPass, VkExtent2D extents,
+    std::span<ImageViewVT<V2D> const *> views) noexcept(ExceptionsDisabled)
     : m_parent(renderPass) {
   std::transform(views.begin(), views.end(), std::back_inserter(m_views),
                  [](ImageViewVT<V2D> const *view) {
@@ -115,9 +116,9 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
   // size match check
 
   if (views.size() != renderPassAttachments.size())
-    throw Error("Attachment count mismatch: FrameBuffer(" +
-                std::to_string(views.size()) + ")<->RenderPass(" +
-                std::to_string(renderPassAttachments.size()) + ")");
+    postError(Error("Attachment count mismatch: FrameBuffer(" +
+                    std::to_string(views.size()) + ")<->RenderPass(" +
+                    std::to_string(renderPassAttachments.size()) + ")"));
 
   auto viewIter = views.begin();
   uint32_t counter = 0;
@@ -127,10 +128,10 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
       renderPassAttachments.begin(), renderPassAttachments.end(),
       [&viewIter, &counter](AttachmentDescription const &desc) {
         if (desc.format() != (*viewIter)->format()) {
-          throw Error("Attachment format mismatch on (" +
-                      std::to_string(counter) + ") index: FrameBuffer(" +
-                      std::to_string((*viewIter)->format()) +
-                      ")<->RenderPass(" + std::to_string(desc.format()) + ")");
+          postError(Error(
+              "Attachment format mismatch on (" + std::to_string(counter) +
+              ") index: FrameBuffer(" + std::to_string((*viewIter)->format()) +
+              ")<->RenderPass(" + std::to_string(desc.format()) + ")"));
         }
         ++counter;
         ++viewIter;
@@ -147,12 +148,12 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                            extents.height > viewExtent.height;
                   })) {
     auto viewExtent = (*(views.begin() + counter))->image()->rawExtents();
-    throw Error("Attachment #" + std::to_string(counter) + " extents(" +
-                std::to_string(viewExtent.width) + "x" +
-                std::to_string(viewExtent.height) +
-                ") are less than FrameBuffer extent(" +
-                std::to_string(extents.width) + "x" +
-                std::to_string(extents.height) + ")");
+    postError(Error("Attachment #" + std::to_string(counter) + " extents(" +
+                    std::to_string(viewExtent.width) + "x" +
+                    std::to_string(viewExtent.height) +
+                    ") are less than FrameBuffer extent(" +
+                    std::to_string(extents.width) + "x" +
+                    std::to_string(extents.height) + ")"));
   }
 
   counter = 0;
