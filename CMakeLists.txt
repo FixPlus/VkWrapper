@@ -7,7 +7,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(PROJECT_NAME VkWrapper)
 
 project(${PROJECT_NAME} LANGUAGES CXX)
-set(PROJECT_VERSION 2.0)
+set(PROJECT_VERSION 3.0)
 
 include(cmake/find_dependencies.cmake)
 include(cmake/find_vulkan_sdk.cmake)
