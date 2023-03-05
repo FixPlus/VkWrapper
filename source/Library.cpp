@@ -29,10 +29,16 @@ private:
 #endif
 };
 
-Library::Library(VulkanLibraryLoader *loader,
-                 HostAllocator *allocator) noexcept(ExceptionsDisabled)
+Library::Library(VulkanLibraryLoader *loader, HostAllocator *allocator,
+                 ApiVersion vkwVersion) noexcept(ExceptionsDisabled)
     : m_default_allocator(allocator ? nullptr : new HostAllocator(false)),
       m_allocator(allocator ? *allocator : *m_default_allocator) {
+  auto dll_vkw_version = ApiVersion{MajorVersion, MinorVersion, 0};
+  if (vkwVersion != dll_vkw_version) {
+    postError(ApiVersionUnsupported{
+        "vkw version mismatch", dll_vkw_version, vkwVersion,
+        ApiVersionUnsupported::CompatibilityFactor::EXACT_VERSION});
+  }
   if (loader == nullptr) {
     m_embedded_loader = std::make_unique<VulkanDefaultLoader>();
     loader = m_embedded_loader.get();
@@ -234,6 +240,26 @@ layer Library::LayerId(std::string_view layerName) noexcept(
 
   return static_cast<layer>(found - begin);
 }
+
+ApiVersion Library::version() noexcept {
+  return ApiVersion(MajorVersion, MinorVersion, 0);
+}
+
+ApiVersionUnsupported::ApiVersionUnsupported(
+    std::string_view details, ApiVersion lastSupported, ApiVersion unsupported,
+    CompatibilityFactor compatibility) noexcept
+    : Error(std::string(details)
+                .append(": ")
+                .append(unsupported)
+                .append(" is unsupported (")
+                .append(compatibility == CompatibilityFactor::EARLIER_VERSION
+                            ? "last supported:"
+                            : "only supported:")
+                .append(lastSupported)
+                .append(")"),
+            ErrorCode::API_VERSION_UNSUPPORTED),
+      m_unsupported(unsupported), m_lastSupported(lastSupported),
+      m_compatibility(compatibility) {}
 
 namespace internal {
 const char *ext_name(ext id) noexcept(ExceptionsDisabled) {

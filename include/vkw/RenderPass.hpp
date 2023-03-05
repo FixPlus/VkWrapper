@@ -29,6 +29,7 @@ public:
   bool formatHasStencilAspect() const noexcept;
   bool isColor() const noexcept;
 
+  VkSampleCountFlagBits samples() const { return m_description.samples; }
   VkAttachmentLoadOp loadOp() const noexcept { return m_description.loadOp; }
 
   VkAttachmentLoadOp stencilLoadOp() const noexcept {
@@ -51,41 +52,41 @@ private:
 
 class SubpassDescription : public ReferenceGuard {
 public:
-  void addInputAttachment(AttachmentDescription const &,
-                          VkImageLayout layout) noexcept(ExceptionsDisabled);
-  void addColorAttachment(AttachmentDescription const &,
-                          VkImageLayout layout) noexcept(ExceptionsDisabled);
-  void addDepthAttachment(AttachmentDescription const &,
-                          VkImageLayout layout) noexcept(ExceptionsDisabled);
-  void addPreserveAttachment(AttachmentDescription const &) noexcept(
-      ExceptionsDisabled);
+  SubpassDescription &
+  addInputAttachment(AttachmentDescription const &,
+                     VkImageLayout layout) noexcept(ExceptionsDisabled);
+  SubpassDescription &
+  addColorAttachment(AttachmentDescription const &,
+                     VkImageLayout layout) noexcept(ExceptionsDisabled);
+  SubpassDescription &
+  addDepthAttachment(AttachmentDescription const &,
+                     VkImageLayout layout) noexcept(ExceptionsDisabled);
+  SubpassDescription &
+  addResolveAttachment(AttachmentDescription const &,
+                       VkImageLayout layout) noexcept(ExceptionsDisabled);
+  SubpassDescription &addPreserveAttachment(
+      AttachmentDescription const &) noexcept(ExceptionsDisabled);
 
   using SubpassAttachmentContainerT = boost::container::small_vector<
       std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>,
       2>;
   using PreservedAttachmentContainerT = boost::container::small_vector<
       StrongReference<AttachmentDescription const>, 2>;
-  SubpassAttachmentContainerT const &inputAttachments() const noexcept {
-    return m_inputAttachments;
-  }
+  auto &inputAttachments() const noexcept { return m_inputAttachments; }
 
-  SubpassAttachmentContainerT const &colorAttachments() const noexcept {
-    return m_colorAttachments;
-  }
-  std::optional<std::pair<StrongReference<AttachmentDescription const>,
-                          VkImageLayout>> const &
-  depthAttachments() const noexcept {
-    return m_depthAttachment;
-  }
-  PreservedAttachmentContainerT const &preserveAttachments() const noexcept {
-    return m_preserveAttachments;
-  }
+  auto &colorAttachments() const noexcept { return m_colorAttachments; }
+
+  auto &resolveAttachments() const noexcept { return m_resolveAttachments; }
+
+  auto &depthAttachments() const noexcept { return m_depthAttachment; }
+  auto &preserveAttachments() const noexcept { return m_preserveAttachments; }
 
   VkDependencyFlags flags;
 
 private:
   SubpassAttachmentContainerT m_inputAttachments;
   SubpassAttachmentContainerT m_colorAttachments;
+  SubpassAttachmentContainerT m_resolveAttachments;
   std::optional<
       std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>>
       m_depthAttachment;
@@ -158,6 +159,7 @@ public:
   struct M_subpassDesc {
     std::vector<VkAttachmentReference> inputAttachments;
     std::vector<VkAttachmentReference> colorAttachments;
+    std::vector<VkAttachmentReference> resolveAttachments;
     std::optional<VkAttachmentReference> depthAttachment;
     std::vector<uint32_t> preserveAttachments;
   };

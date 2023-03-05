@@ -592,17 +592,17 @@ protected:
   ImageRestInterface(VkSampleCountFlagBits samples, uint32_t mipLevels,
                      VkImageUsageFlags usage, VkImageCreateFlags flags,
                      VkImageLayout initialLayout, VkImageTiling tiling,
-                     VkSharingMode sharingMode, uint32_t queueFamilyIndexCount,
-                     uint32_t const *pQueueFamilyIndices) noexcept {
+                     SharingInfo const &sharingInfo) noexcept {
     m_createInfo.usage = usage;
     m_createInfo.flags = flags;
     m_createInfo.initialLayout = initialLayout;
     m_createInfo.samples = samples;
     m_createInfo.tiling = tiling;
     m_createInfo.mipLevels = mipLevels;
-    m_createInfo.sharingMode = sharingMode;
-    m_createInfo.queueFamilyIndexCount = queueFamilyIndexCount;
-    m_createInfo.pQueueFamilyIndices = pQueueFamilyIndices;
+    m_createInfo.sharingMode = sharingInfo.sharingMode();
+    m_createInfo.queueFamilyIndexCount = sharingInfo.queueFamilies().size();
+    if (sharingInfo.sharingMode() != VK_SHARING_MODE_EXCLUSIVE)
+      m_createInfo.pQueueFamilyIndices = sharingInfo.queueFamilies().data();
   }
 };
 
@@ -653,7 +653,7 @@ public:
                            VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
                            0, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_LINEAR,
-                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+                           SharingInfo{}),
         AllocatedImage(allocator,
                        {.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT,
                         .usage = VMA_MEMORY_USAGE_CPU_TO_GPU,
@@ -681,11 +681,12 @@ public:
   Image(VmaAllocator allocator, VmaAllocationCreateInfo allocCreateInfo,
         VkFormat format, uint32_t width, uint32_t height, uint32_t depth,
         uint32_t layers, uint32_t mipLevels, VkImageUsageFlags usage,
-        VkImageCreateFlags flags = 0) noexcept(ExceptionsDisabled)
+        VkImageCreateFlags flags = 0,
+        SharingInfo const &sharingInfo = {}) noexcept(ExceptionsDisabled)
       : BasicImage<ptype, itype, iarr>(format, width, height, depth, layers),
         ImageRestInterface(VK_SAMPLE_COUNT_1_BIT, mipLevels, usage, flags,
                            VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_TILING_OPTIMAL,
-                           VK_SHARING_MODE_EXCLUSIVE, 0, nullptr),
+                           sharingInfo),
         AllocatedImage(allocator, allocCreateInfo) {}
 };
 

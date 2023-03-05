@@ -74,10 +74,12 @@ private:
   static T m_createImpl(typename TypeTraits::CreatorType const &creator,
                         typename TypeTraits::CreateInfoType const
                             &createInfo) noexcept(ExceptionsDisabled) {
-    // TODO: add checks here
     T ret;
-    std::invoke(TypeTraits::getConstructor(creator), creator, &createInfo,
-                creator.hostAllocator().allocator(), &ret);
+    VkResult result =
+        std::invoke(TypeTraits::getConstructor(creator), creator, &createInfo,
+                    creator.hostAllocator().allocator(), &ret);
+    if (result != VK_SUCCESS)
+      postError(VulkanError(result, __FILE__, __LINE__));
     return ret;
   }
 
@@ -121,10 +123,12 @@ private:
   static VkDevice m_createImpl(
       vkw::Instance const &instance, VkPhysicalDevice phDevice,
       VkDeviceCreateInfo const &createInfo) noexcept(ExceptionsDisabled) {
-    // TODO: add checks here
     VkDevice ret;
-    std::invoke(TypeTraits::getConstructor(instance), phDevice, &createInfo,
-                instance.hostAllocator().allocator(), &ret);
+    VkResult result =
+        std::invoke(TypeTraits::getConstructor(instance), phDevice, &createInfo,
+                    instance.hostAllocator().allocator(), &ret);
+    if (result != VK_SUCCESS)
+      postError(VulkanError(result, __FILE__, __LINE__));
     return ret;
   }
 

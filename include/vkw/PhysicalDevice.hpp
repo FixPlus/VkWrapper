@@ -122,6 +122,16 @@ public:
     return m_enabledExtensions;
   }
 
+  ApiVersion supportedApiVersion() const noexcept {
+    return m_properties.apiVersion;
+  }
+
+  void requestApiVersion(ApiVersion version) noexcept(ExceptionsDisabled);
+
+  ApiVersion requestedApiVersion() const noexcept {
+    return m_requestedApiVersion;
+  }
+
   bool isFeatureSupported(feature feature) const noexcept(ExceptionsDisabled);
 
   void enableFeature(feature feature) noexcept(ExceptionsDisabled);
@@ -158,6 +168,7 @@ protected:
 
   VkPhysicalDevice m_physicalDevice{};
   StrongReference<Instance const> m_instance;
+  ApiVersion m_requestedApiVersion = ApiVersion{1, 0, 0};
 };
 
 class FeatureUnsupported : public Error {

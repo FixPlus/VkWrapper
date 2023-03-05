@@ -71,9 +71,9 @@ class Device;
 template <typename T> class Buffer : public BufferBase {
 public:
   Buffer(Device const &device, uint64_t count, VkBufferUsageFlags usage,
-         VmaAllocationCreateInfo const
-             &allocCreateInfo) noexcept(ExceptionsDisabled)
-      : BufferBase(device.getAllocator(), m_fillInfo(count, usage),
+         VmaAllocationCreateInfo const &allocCreateInfo,
+         SharingInfo const &sharingInfo = {}) noexcept(ExceptionsDisabled)
+      : BufferBase(device.getAllocator(), m_fillInfo(count, usage, sharingInfo),
                    allocCreateInfo),
         m_count(count), m_device(device) {}
 
@@ -85,12 +85,16 @@ protected:
   StrongReference<Device const> m_device;
 
 private:
-  VkBufferCreateInfo m_fillInfo(uint64_t count,
-                                VkBufferUsageFlags usage) noexcept {
+  VkBufferCreateInfo m_fillInfo(uint64_t count, VkBufferUsageFlags usage,
+                                SharingInfo const &sharingInfo) noexcept {
     VkBufferCreateInfo createInfo{};
     createInfo.size = count * sizeof(T);
     createInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.sharingMode = sharingInfo.sharingMode();
+    if (sharingInfo.sharingMode() != VK_SHARING_MODE_EXCLUSIVE) {
+      createInfo.pQueueFamilyIndices = sharingInfo.queueFamilies().data();
+      createInfo.queueFamilyIndexCount = sharingInfo.queueFamilies().size();
+    }
     createInfo.usage = usage;
     createInfo.pNext = nullptr;
     return createInfo;

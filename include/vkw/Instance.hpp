@@ -18,36 +18,23 @@ enum class layer;
 
 class PhysicalDevice;
 
-class InstanceCreateInfo {
-public:
-  void requestApiVersion(ApiVersion version) noexcept {
-    m_apiVersion = version;
-  }
+struct InstanceCreateInfo {
+  void requestApiVersion(ApiVersion version) noexcept { apiVersion = version; }
   void requestExtension(ext ext) noexcept(ExceptionsDisabled) {
-    m_reqExtensions.push_back(ext);
+    requestedExtensions.push_back(ext);
   }
 
   void requestLayer(layer layer) noexcept(ExceptionsDisabled) {
-    m_reqLayers.push_back(layer);
+    requestedLayers.push_back(layer);
   }
 
-  auto requestedExtensionsBegin() const noexcept {
-    return m_reqExtensions.begin();
-  }
-
-  auto requestedExtensionsEnd() const noexcept { return m_reqExtensions.end(); }
-
-  auto requestedLayersBegin() const noexcept { return m_reqLayers.begin(); }
-
-  auto requestedLayersEnd() const noexcept { return m_reqLayers.end(); }
-
-  ApiVersion requestedApiVersion() const noexcept { return m_apiVersion; }
-
-private:
-  std::vector<ext> m_reqExtensions;
-  std::vector<layer> m_reqLayers;
-  ApiVersion m_apiVersion = VK_API_VERSION_1_0;
-  std::string_view m_appName;
+  std::vector<ext> requestedExtensions;
+  std::vector<layer> requestedLayers;
+  ApiVersion apiVersion = ApiVersion{1, 0, 0};
+  std::string_view applicationName = "APITest";
+  std::string_view engineName = "APITest";
+  ApiVersion applicationVersion = ApiVersion{1, 0, 0};
+  ApiVersion engineVersion = ApiVersion{1, 0, 0};
 };
 class Instance : public ReferenceGuard {
 public:
@@ -72,6 +59,8 @@ public:
   operator VkInstance() const noexcept { return m_instance; }
 
   virtual ~Instance();
+
+  auto &apiVersion() const noexcept { return m_apiVer; }
 
   template <uint32_t major, uint32_t minor>
   InstanceCore<major, minor> const &core() const noexcept(ExceptionsDisabled) {

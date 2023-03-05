@@ -8,6 +8,33 @@
 #include <iostream>
 
 namespace vkw {
+namespace {
+#undef max
+template <unsigned major = 1, unsigned minor = 0>
+std::unique_ptr<DeviceCore<1, 0>>
+loadDeviceSymbols(vkw::Instance const &instance, VkDevice device,
+                  ApiVersion version) noexcept(ExceptionsDisabled) {
+  // Here template magic is being used to automatically generate load of
+  // every available DeviceCore<major, minor> classes from SymbolTable.inc
+  if (version >
+      ApiVersion{major, minor, std::numeric_limits<unsigned>::max()}) {
+    if constexpr (std::derived_from<DeviceCore<major, minor + 1>,
+                                    SymbolTableBase<VkDevice>>)
+      return loadDeviceSymbols<major, minor + 1>(instance, device, version);
+    else if constexpr (std::derived_from<DeviceCore<major + 1, 0>,
+                                         SymbolTableBase<VkDevice>>)
+      return loadDeviceSymbols<major + 1, 0>(instance, device, version);
+    else
+      postError(ApiVersionUnsupported(
+          "Could not load device symbols for requested api version",
+          ApiVersion{major, minor, 0}, version));
+  } else {
+    return std::make_unique<DeviceCore<major, minor>>(
+        instance.core<1, 0>().vkGetDeviceProcAddr, device);
+  }
+}
+
+} // namespace
 
 Device::Device(Instance const &instance,
                PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
@@ -16,9 +43,8 @@ Device::Device(Instance const &instance,
       m_allocator(m_allocatorCreateImpl()) {
 
   auto const &queueFamilies = physicalDevice().queueFamilies();
-  // TODO: add option to load specific Vulkan version symbols
-  m_coreDeviceSymbols = std::make_unique<DeviceCore<1, 0>>(
-      parent().core<1, 0>().vkGetDeviceProcAddr, handle());
+  m_coreDeviceSymbols = loadDeviceSymbols(
+      parent(), handle(), physicalDevice().requestedApiVersion());
 
   std::transform(queueFamilies.begin(), queueFamilies.end(),
                  std::back_inserter(m_queues),
@@ -73,7 +99,7 @@ DeviceInfo::DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
     m_enabledExtensions.emplace(ext);
   }
 
-  m_apiVer = {1, 0, 0};
+  m_apiVer = m_ph_device.requestedApiVersion();
 }
 
 Queue const &Device::anyGraphicsQueue() const noexcept(ExceptionsDisabled) {
