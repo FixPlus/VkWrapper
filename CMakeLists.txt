@@ -12,7 +12,6 @@ set(PROJECT_VERSION 2.0)
 include(cmake/find_dependencies.cmake)
 include(cmake/find_vulkan_sdk.cmake)
 
-# toggle ReferenceGuard
 option(VKW_ENABLE_REFERENCE_GUARD "Toggle ReferenceGuard checker. Defaulted OFF" OFF)
 option(VKW_ENABLE_EXCEPTIONS "Toggle exception use. Defaulted" ON)
 
