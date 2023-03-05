@@ -7,9 +7,11 @@
 #include <cassert>
 #include <iostream>
 
+#undef max
+#include <limits>
+
 namespace vkw {
 namespace {
-#undef max
 template <unsigned major = 1, unsigned minor = 0>
 std::unique_ptr<DeviceCore<1, 0>>
 loadDeviceSymbols(vkw::Instance const &instance, VkDevice device,
