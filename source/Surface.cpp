@@ -34,7 +34,7 @@ Surface::Surface(Instance const &parent, Display *display,
   createInfo.dpy = display;
   createInfo.window = window;
 
-  VK_CHECK_RESULT_(xlibSurfaceExt.vkCreateXlibSurfaceKHR(
+  VK_CHECK_RESULT(xlibSurfaceExt.vkCreateXlibSurfaceKHR(
       m_parent.get(), &createInfo, parent.hostAllocator().allocator(),
       &m_surface))
 };
@@ -50,7 +50,7 @@ Surface::Surface(Instance const &parent, xcb_connection_t *connection,
   createInfo.connection = connection;
   createInfo.window = window;
 
-  VK_CHECK_RESULT_(xcbSurfaceExt.vkCreateXCBSurfaceKHR(
+  VK_CHECK_RESULT(xcbSurfaceExt.vkCreateXCBSurfaceKHR(
       m_parent, &createInfo, parent.hostAllocator().allocator(), &m_surface))
 };
 #elif defined VK_USE_PLATFORM_WAYLAND_KHR
@@ -65,7 +65,7 @@ Surface::Surface(Instance const &parent, wl_display *display,
   createInfo.display = display;
   createInfo.surface = surface;
 
-  VK_CHECK_RESULT_(waylandSurfaceExt.vkCreateWaylandSurfaceKHR(
+  VK_CHECK_RESULT(waylandSurfaceExt.vkCreateWaylandSurfaceKHR(
       m_parent, &createInfo, parent.hostAllocator().allocator(), &m_surface))
 };
 #endif

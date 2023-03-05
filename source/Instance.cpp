@@ -10,9 +10,10 @@
 #include <cstring>
 #include <vkw/PhysicalDevice.hpp>
 
+#undef max
+#include <limits>
 namespace vkw {
 namespace {
-#undef max
 template <unsigned major = 1, unsigned minor = 0>
 std::unique_ptr<InstanceCore<1, 0>>
 loadInstanceSymbols(vkw::Library const &library, VkInstance instance,
