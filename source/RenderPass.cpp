@@ -46,24 +46,36 @@ bool AttachmentDescription::isColor() const noexcept {
   return !isDepthStencil();
 }
 
-void SubpassDescription::addInputAttachment(
+SubpassDescription &SubpassDescription::addInputAttachment(
     AttachmentDescription const &attachment,
     VkImageLayout layout) noexcept(ExceptionsDisabled) {
   m_inputAttachments.emplace_back(attachment, layout);
+  return *this;
 }
-void SubpassDescription::addColorAttachment(
+SubpassDescription &SubpassDescription::addColorAttachment(
     AttachmentDescription const &attachment,
     VkImageLayout layout) noexcept(ExceptionsDisabled) {
   m_colorAttachments.emplace_back(attachment, layout);
+  return *this;
 }
-void SubpassDescription::addDepthAttachment(
+
+SubpassDescription &SubpassDescription::addResolveAttachment(
+    AttachmentDescription const &attachment,
+    VkImageLayout layout) noexcept(ExceptionsDisabled) {
+  m_resolveAttachments.emplace_back(attachment, layout);
+  return *this;
+}
+
+SubpassDescription &SubpassDescription::addDepthAttachment(
     AttachmentDescription const &attachment,
     VkImageLayout layout) noexcept(ExceptionsDisabled) {
   m_depthAttachment = std::make_pair(std::ref(attachment), layout);
+  return *this;
 }
-void SubpassDescription::addPreserveAttachment(
+SubpassDescription &SubpassDescription::addPreserveAttachment(
     AttachmentDescription const &attachment) noexcept(ExceptionsDisabled) {
   m_preserveAttachments.emplace_back(attachment);
+  return *this;
 }
 
 RenderPassCreateInfo::RenderPassCreateInfo(
@@ -135,6 +147,34 @@ void RenderPassCreateInfo::m_init(
           colorAttachment.second});
     }
 
+    if (!subpass.get().resolveAttachments().empty()) {
+      if (subpass.get().resolveAttachments().size() !=
+          subpass.get().colorAttachments().size()) {
+        std::stringstream ss{};
+        ss << "Subpass has different count of color and resolve attachments: "
+           << subpass.get().colorAttachments().size()
+           << " != " << subpass.get().resolveAttachments().size();
+        postError(Error(ss.view()));
+      }
+    }
+
+    for (auto &resolveAttachment : subpass.get().resolveAttachments()) {
+      auto found = std::find_if(m_attachments.begin(), m_attachments.end(),
+                                [&resolveAttachment](auto &attachment) {
+                                  return &attachment.get() ==
+                                         &resolveAttachment.first.get();
+                                });
+      if (found == m_attachments.end()) {
+        postError(Error("Subpass referenced unknown resolve attachment"));
+      }
+      if (!found->get().isColor()) {
+        postError(Error("Subpass referenced color attachment with bad format"));
+      }
+      subpassDesc.resolveAttachments.emplace_back(VkAttachmentReference{
+          static_cast<uint32_t>(found - m_attachments.begin()),
+          resolveAttachment.second});
+    }
+
     for (auto &preserveAttachment : subpass.get().preserveAttachments()) {
       auto found =
           std::find_if(m_attachments.begin(), m_attachments.end(),
@@ -175,7 +215,9 @@ void RenderPassCreateInfo::m_init(
     desc.pDepthStencilAttachment = subpassDesc.depthAttachment.has_value()
                                        ? &subpassDesc.depthAttachment.value()
                                        : nullptr;
-    desc.pResolveAttachments = nullptr; // TODO: support MSAA
+    desc.pResolveAttachments = subpassDesc.resolveAttachments.empty()
+                                   ? nullptr
+                                   : subpassDesc.resolveAttachments.data();
 
     m_subpassesDescs.emplace_back(std::move(subpassDesc));
     m_subpasses.emplace_back(desc);

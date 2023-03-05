@@ -10,6 +10,8 @@
 
 namespace vkw {
 
+#include <vkw/LibraryVersion.inc>
+
 struct ApiVersion {
   uint32_t major;
   uint32_t minor;
@@ -33,6 +35,24 @@ struct ApiVersion {
   auto operator<=>(ApiVersion const &another) const = default;
 };
 
+class ApiVersionUnsupported : public Error {
+public:
+  enum class CompatibilityFactor { EARLIER_VERSION, EXACT_VERSION };
+  ApiVersionUnsupported(std::string_view details, ApiVersion supported,
+                        ApiVersion unsupported,
+                        CompatibilityFactor compatibility =
+                            CompatibilityFactor::EARLIER_VERSION) noexcept;
+
+  auto &supported() const noexcept { return m_lastSupported; }
+  auto &unsupported() const noexcept { return m_unsupported; }
+  auto compatibility() const noexcept { return m_compatibility; }
+
+private:
+  ApiVersion m_unsupported;
+  ApiVersion m_lastSupported;
+  CompatibilityFactor m_compatibility;
+};
+
 enum class ext;
 enum class layer;
 
@@ -46,12 +66,25 @@ public:
 class Library final : public ReferenceGuard {
 public:
   /**
+   *    @param loader
    *    Application may create their own vulkan loader
    *    using interface VulkanLibraryLoader.
    *    Pass nullptr to use embedded loader.
+   *
+   *    @param allocator
+   *    Application may want to pass their own instance of
+   *    HostAllocator if it wants to override VkAllocationCallback structure.
+   *    Pass nullptr to disable VkAllocationCallback override
+   *
+   *    @param vkwVersion
+   *    This parameter should only be passed with default value here.
+   *    Do not overwrite it. It used to check if loaded dll version
+   *    matches header version
    * */
   Library(VulkanLibraryLoader *loader = nullptr,
-          HostAllocator *allocator = nullptr) noexcept(ExceptionsDisabled);
+          HostAllocator *allocator = nullptr,
+          ApiVersion vkwVersion = ApiVersion{MajorVersion, MinorVersion,
+                                             0}) noexcept(ExceptionsDisabled);
 
   ~Library();
 
@@ -86,6 +119,8 @@ public:
   static layer LayerId(std::string_view layerName) noexcept(ExceptionsDisabled);
 
   static bool ValidLayerName(std::string_view layerName) noexcept;
+
+  static ApiVersion version() noexcept;
 
   auto &hostAllocator() const noexcept { return m_allocator.get(); }
 

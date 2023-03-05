@@ -9,6 +9,19 @@
 
 namespace vkw {
 
+namespace {
+
+unsigned getProperMaskLength(VkSampleCountFlagBits samples) {
+  switch (samples) {
+  case VK_SAMPLE_COUNT_64_BIT:
+    return 2;
+  default:
+    return 1;
+  }
+}
+
+} // namespace
+
 bool PipelineLayoutInfo::operator==(
     PipelineLayoutInfo const &rhs) const noexcept {
   if (m_createInfo.flags != rhs.m_createInfo.flags ||
@@ -399,8 +412,53 @@ GraphicsPipelineCreateInfo::addDynamicState(VkDynamicState state) noexcept {
     m_dynamicState.pDynamicStates = m_dynStates.data();
   }
   return *this;
+}
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::enableMultisampling(
+    bool alphaToCoverageEnable,
+    bool alphaToOneEnable) noexcept(ExceptionsDisabled) {
+  auto &subpassInfo = m_renderPass.get().subpassInfo(m_createInfo.subpass);
+  if (subpassInfo.resolveAttachments.empty())
+    postError(Error{"enableMultisampling() cannot be called if render pass "
+                    "subpass have no resolve attachments"});
+  auto attachmentIndex = subpassInfo.resolveAttachments.front().attachment;
+  auto &attachmentDesc =
+      m_renderPass.get().attachmentDescriptions().at(attachmentIndex).get();
+  m_multisampleState.rasterizationSamples = attachmentDesc.samples();
+  m_multisampleState.alphaToCoverageEnable = alphaToCoverageEnable;
+  m_multisampleState.alphaToOneEnable = alphaToOneEnable;
+  return *this;
 };
 
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::enableSampleRateShading(
+    float minRate) noexcept(ExceptionsDisabled) {
+  if (m_multisampleState.rasterizationSamples == VK_SAMPLE_COUNT_1_BIT) {
+    postError(Error{"enableSampleRateShading() cannot be called if "
+                    "multisampling is not enabled"});
+  }
+  if (pass().parent().physicalDevice().enabledFeatures().sampleRateShading ==
+      VK_FALSE) {
+    postError(Error{"enableSampleRateShading() cannot be called if "
+                    "sampleRateShading feature is not enabled"});
+  }
+
+  m_multisampleState.sampleShadingEnable = VK_TRUE;
+  m_multisampleState.minSampleShading = minRate;
+  return *this;
+}
+GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::setSampleMask(
+    std::span<VkSampleMask> mask) noexcept(ExceptionsDisabled) {
+  if (m_multisampleState.rasterizationSamples == VK_SAMPLE_COUNT_1_BIT) {
+    postError(Error{"setSampleMask() cannot be called if "
+                    "multisampling is not enabled"});
+  }
+  if (mask.size() !=
+      getProperMaskLength(m_multisampleState.rasterizationSamples)) {
+    postError(Error{"mask provided ro setSampleMask() has incorrect size"});
+  }
+  m_sampleMask.clear();
+  std::copy(mask.begin(), mask.end(), std::back_inserter(m_sampleMask));
+  return *this;
+}
 ComputePipelineCreateInfo::ComputePipelineCreateInfo(
     const PipelineLayout &layout, const ComputeShader &shader,
     SpecializationConstants constants) noexcept

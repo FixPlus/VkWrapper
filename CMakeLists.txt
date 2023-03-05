@@ -28,7 +28,15 @@ if (MSVC)
 endif ()
 
 include_directories(include)
+string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
+message(${VERSION_LIST})
+list(GET VERSION_LIST 0 VKW_VERSION_MAJOR)
+list(GET VERSION_LIST 1 VKW_VERSION_MINOR)
 
+configure_file(LibraryVersion.inc.in ${CMAKE_CURRENT_BINARY_DIR}/include/vkw/LibraryVersion.inc)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/include/vkw/LibraryVersion.inc DESTINATION include/vkw)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/include)
 add_subdirectory(source)
+
 
 include(cmake/generate_export_configuration.cmake)

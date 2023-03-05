@@ -549,7 +549,14 @@ public:
   addBlendState(VkPipelineColorBlendAttachmentState state,
                 uint32_t attachment) noexcept;
   GraphicsPipelineCreateInfo &addDynamicState(VkDynamicState state) noexcept;
+  GraphicsPipelineCreateInfo &
+  enableMultisampling(bool alphaToCoverageEnable,
+                      bool alphaToOneEnable) noexcept(ExceptionsDisabled);
+  GraphicsPipelineCreateInfo &
+  enableSampleRateShading(float minRate) noexcept(ExceptionsDisabled);
 
+  GraphicsPipelineCreateInfo &
+  setSampleMask(std::span<VkSampleMask> mask) noexcept(ExceptionsDisabled);
   operator VkGraphicsPipelineCreateInfo const &() const noexcept {
     return m_createInfo;
   }
@@ -595,13 +602,15 @@ private:
   VkPipelineInputAssemblyStateCreateInfo m_inputAssemblyStateCreateInfo;
   VkPipelineRasterizationStateCreateInfo m_rasterizationStateCreateInfo;
 
-  // TODO: support configure for these stages
-  VkPipelineViewportStateCreateInfo m_viewportState{};
   VkPipelineMultisampleStateCreateInfo m_multisampleState{};
+  boost::container::small_vector<VkSampleMask, 2> m_sampleMask;
   VkPipelineDepthStencilStateCreateInfo m_depthStencilState{};
   VkPipelineColorBlendStateCreateInfo m_colorBlendState{};
   boost::container::small_vector<VkPipelineColorBlendAttachmentState, 2>
       m_blendStates{};
+
+  // TODO: support configure for viewport state
+  VkPipelineViewportStateCreateInfo m_viewportState{};
 
   StrongReference<PipelineLayout const> m_layout;
   VkGraphicsPipelineCreateInfo m_createInfo{};

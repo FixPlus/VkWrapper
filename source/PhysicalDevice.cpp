@@ -154,4 +154,12 @@ void PhysicalDevice::enableExtension(ext extension) noexcept(
 
   m_enabledExtensions.emplace_back(extension);
 }
+void PhysicalDevice::requestApiVersion(ApiVersion version) noexcept(
+    ExceptionsDisabled) {
+  if (version > supportedApiVersion())
+    postError(
+        ApiVersionUnsupported("Cannot create device with requested version",
+                              supportedApiVersion(), version));
+  m_requestedApiVersion = version;
+}
 } // namespace vkw

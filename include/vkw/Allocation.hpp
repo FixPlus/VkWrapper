@@ -2,8 +2,10 @@
 #define VKRENDERER_ALLOCATION_HPP
 
 #include "vma/vk_mem_alloc.h"
-#include <span>
 #include <vkw/Exception.hpp>
+
+#include <boost/container/small_vector.hpp>
+#include <span>
 
 namespace vkw {
 
@@ -58,5 +60,26 @@ protected:
   VmaAllocation m_allocation = VK_NULL_HANDLE;
   VmaAllocationInfo m_allocInfo{};
 };
+
+class SharingInfo {
+public:
+  SharingInfo() = default;
+  auto sharingMode() const { return m_sharingMode; }
+
+  std::span<unsigned const> queueFamilies() const {
+    return {m_queueFamilies.data(), m_queueFamilies.size()};
+  }
+
+  SharingInfo &addQueueFamily(unsigned index) {
+    m_queueFamilies.push_back(index);
+    m_sharingMode = VK_SHARING_MODE_CONCURRENT;
+    return *this;
+  }
+
+private:
+  VkSharingMode m_sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+  boost::container::small_vector<unsigned, 3> m_queueFamilies;
+};
+
 } // namespace vkw
 #endif // VKRENDERER_ALLOCATION_HPP

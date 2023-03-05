@@ -11,21 +11,50 @@
 #include <vkw/PhysicalDevice.hpp>
 
 namespace vkw {
+namespace {
+#undef max
+template <unsigned major = 1, unsigned minor = 0>
+std::unique_ptr<InstanceCore<1, 0>>
+loadInstanceSymbols(vkw::Library const &library, VkInstance instance,
+                    ApiVersion version) noexcept(ExceptionsDisabled) {
+  // Here template magic is being used to automatically generate load of
+  // every available InstanceCore<major, minor> classes from SymbolTable.inc
+  if (version >
+      ApiVersion{major, minor, std::numeric_limits<unsigned>::max()}) {
+    if constexpr (std::derived_from<InstanceCore<major, minor + 1>,
+                                    SymbolTableBase<VkInstance>>)
+      return loadInstanceSymbols<major, minor + 1>(library, instance, version);
+    else if constexpr (std::derived_from<InstanceCore<major + 1, 0>,
+                                         SymbolTableBase<VkInstance>>)
+      return loadInstanceSymbols<major + 1, 0>(library, instance, version);
+    else
+      postError(ApiVersionUnsupported(
+          "Could not load instance symbols for requested api version",
+          ApiVersion{major, minor, 0}, version));
+  } else {
+    return std::make_unique<InstanceCore<major, minor>>(
+        library.vkGetInstanceProcAddr, instance);
+  }
+}
 
+} // namespace
 Instance::Instance(Library const &library,
                    InstanceCreateInfo const &CI) noexcept(ExceptionsDisabled)
-    : m_vulkanLib(library), m_apiVer(CI.requestedApiVersion()) {
+    : m_vulkanLib(library), m_apiVer(CI.apiVersion) {
+
+  if (library.instanceAPIVersion() < CI.apiVersion)
+    postError(ApiVersionUnsupported(
+        "Cannot create instance with requested api version",
+        library.instanceAPIVersion(), CI.apiVersion));
+
   VkApplicationInfo appInfo{};
 
-  // TODO: all this information should be filled externally using wrapper
-  // structures to hold it
-
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
-  appInfo.pApplicationName = "APITest";
-  appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.pEngineName = "APITest";
-  appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
-  appInfo.apiVersion = CI.requestedApiVersion();
+  appInfo.pApplicationName = CI.applicationName.data();
+  appInfo.applicationVersion = CI.applicationVersion;
+  appInfo.pEngineName = CI.engineName.data();
+  appInfo.engineVersion = CI.engineVersion;
+  appInfo.apiVersion = CI.apiVersion;
 
   VkInstanceCreateInfo createInfo{};
   createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
@@ -33,14 +62,14 @@ Instance::Instance(Library const &library,
 
   // Check presence of all required layers and extensions
 
-  std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
+  std::for_each(CI.requestedLayers.begin(), CI.requestedLayers.end(),
                 [&library](layer id) {
                   if (!library.hasLayer(id))
                     postError(LayerUnsupported{id, Library::LayerName(id)});
                 });
 
   std::for_each(
-      CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+      CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
       [&library](ext id) {
         if (!library.hasInstanceExtension(id))
           postError(ExtensionUnsupported{id, Library::ExtensionName(id)});
@@ -49,10 +78,10 @@ Instance::Instance(Library const &library,
   std::vector<const char *> reqExtensionsNames{};
   std::vector<const char *> reqLayerNames{};
 
-  std::transform(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+  std::transform(CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
                  std::back_inserter(reqExtensionsNames),
                  [](auto id) { return Library::ExtensionName(id); });
-  std::transform(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
+  std::transform(CI.requestedLayers.begin(), CI.requestedLayers.end(),
                  std::back_inserter(reqLayerNames),
                  [](auto id) { return Library::LayerName(id); });
 
@@ -64,13 +93,12 @@ Instance::Instance(Library const &library,
   VK_CHECK_RESULT(m_vulkanLib.get().vkCreateInstance(
       &createInfo, hostAllocator().allocator(), &m_instance))
 
-  // TODO: add option to load specific Vulkan version symbols
-  m_coreInstanceSymbols = std::make_unique<InstanceCore<1, 0>>(
-      m_vulkanLib.get().vkGetInstanceProcAddr, m_instance);
+  m_coreInstanceSymbols =
+      loadInstanceSymbols(m_vulkanLib.get(), m_instance, CI.apiVersion);
 
-  std::for_each(CI.requestedExtensionsBegin(), CI.requestedExtensionsEnd(),
+  std::for_each(CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
                 [this](auto ext) { m_enabledExtensions.emplace(ext); });
-  std::for_each(CI.requestedLayersBegin(), CI.requestedLayersEnd(),
+  std::for_each(CI.requestedLayers.begin(), CI.requestedLayers.end(),
                 [this](auto ext) { m_enabledLayers.emplace(ext); });
 }
 

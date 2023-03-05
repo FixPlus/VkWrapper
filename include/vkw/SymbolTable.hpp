@@ -31,11 +31,9 @@ private:
   Level m_level;
 };
 
-template <uint32_t major, uint32_t minor>
-class InstanceCore : public SymbolTableBase<VkInstance> {};
+template <uint32_t major, uint32_t minor> class InstanceCore {};
 
-template <uint32_t major, uint32_t minor>
-class DeviceCore : public SymbolTableBase<VkInstance> {};
+template <uint32_t major, uint32_t minor> class DeviceCore {};
 
 #define VKW_DUMP_CORE_CLASSES
 #include "SymbolTable.inc"
