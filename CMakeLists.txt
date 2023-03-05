@@ -29,7 +29,6 @@ endif ()
 
 include_directories(include)
 string(REPLACE "." ";" VERSION_LIST ${PROJECT_VERSION})
-message(${VERSION_LIST})
 list(GET VERSION_LIST 0 VKW_VERSION_MAJOR)
 list(GET VERSION_LIST 1 VKW_VERSION_MINOR)
 
