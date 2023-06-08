@@ -172,5 +172,22 @@ void DescriptorSet::write(uint32_t binding, BufferBase const &buffer,
   writeSet.descriptorType = type;
   m_write(1, &writeSet);
 }
+void DescriptorSet::writeInputAttachment(uint32_t binding,
+                                         const ImageViewBase &image,
+                                         VkImageLayout layout) noexcept {
+  VkDescriptorImageInfo imageInfo{};
+  imageInfo.imageView = image;
+  imageInfo.imageLayout = layout;
+  VkWriteDescriptorSet writeSet{};
+  writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  writeSet.pNext = nullptr;
+  writeSet.descriptorCount = 1;
+  writeSet.dstSet = m_set;
+  writeSet.dstArrayElement = 0;
+  writeSet.pImageInfo = &imageInfo;
+  writeSet.dstBinding = binding;
+  writeSet.descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+  m_write(1, &writeSet);
+}
 
 } // namespace vkw

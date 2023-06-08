@@ -167,6 +167,10 @@ public:
   writeStorageImage(uint32_t binding, ImageViewBase const &image,
                     VkImageLayout layout = VK_IMAGE_LAYOUT_GENERAL) noexcept;
 
+  void writeInputAttachment(
+      uint32_t binding, ImageViewBase const &image,
+      VkImageLayout layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) noexcept;
+
   uint32_t dynamicOffsetsCount() const { return m_dynamicOffsets.size(); }
 
   void copyOffsets(uint32_t *pOffsets) const {
