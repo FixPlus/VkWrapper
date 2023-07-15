@@ -40,6 +40,7 @@ public:
       : m_allocator(another.m_allocator), m_allocation(another.m_allocation),
         m_allocInfo(another.m_allocInfo) {
     another.m_allocInfo.pMappedData = nullptr;
+    another.m_call_mapped = false;
   }
   Allocation(Allocation const &another) = delete;
 
@@ -47,6 +48,7 @@ public:
     std::swap(m_allocator, another.m_allocator);
     std::swap(m_allocation, another.m_allocation);
     std::swap(m_allocInfo, another.m_allocInfo);
+    std::swap(m_call_mapped, another.m_call_mapped);
     return *this;
   }
   Allocation &operator=(Allocation const &another) = delete;
@@ -59,6 +61,7 @@ protected:
   VmaAllocator m_allocator;
   VmaAllocation m_allocation = VK_NULL_HANDLE;
   VmaAllocationInfo m_allocInfo{};
+  bool m_call_mapped = false;
 };
 
 class SharingInfo {

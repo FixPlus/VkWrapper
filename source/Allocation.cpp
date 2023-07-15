@@ -21,16 +21,19 @@ bool Allocation::coherent() const noexcept {
 }
 
 void Allocation::unmap() {
-  if (!m_allocInfo.pMappedData)
+  if (!m_allocInfo.pMappedData || !m_call_mapped)
     return;
+  m_call_mapped = false;
   vmaUnmapMemory(m_allocator, m_allocation);
   m_allocInfo.pMappedData = nullptr;
 }
 
 void Allocation::map() noexcept(ExceptionsDisabled) {
-  if (!m_allocInfo.pMappedData)
-    VK_CHECK_RESULT(
-        vmaMapMemory(m_allocator, m_allocation, &m_allocInfo.pMappedData));
+  if (m_allocInfo.pMappedData || m_call_mapped)
+    return;
+  m_call_mapped = true;
+  VK_CHECK_RESULT(
+      vmaMapMemory(m_allocator, m_allocation, &m_allocInfo.pMappedData));
 }
 
 void Allocation::flush(VkDeviceSize offset,
