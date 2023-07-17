@@ -15,6 +15,7 @@ struct SpvReflectEntryPoint;
 struct SpvReflectInterfaceVariable;
 struct SpvReflectDescriptorSet;
 struct SpvReflectDescriptorBinding;
+struct SpvReflectBlockVariable;
 
 namespace spv_reflect {
 
@@ -224,6 +225,27 @@ private:
   const SpvReflectDescriptorBinding *m_binding;
 };
 
+class SPIRVPushConstantInfo;
+
+struct PushConstantTraits {
+  using value_type = SPIRVPushConstantInfo;
+  using super_type = const SpvReflectShaderModule;
+};
+
+class SPIRVPushConstantInfo {
+public:
+  unsigned size() const;
+
+  unsigned offset() const;
+
+private:
+  friend class ReflectInfoIteratorTraitsCommon<PushConstantTraits>;
+  explicit SPIRVPushConstantInfo(
+      const SpvReflectBlockVariable *constant) noexcept
+      : m_constant{constant} {}
+  const SpvReflectBlockVariable *m_constant;
+};
+
 class SPIRVDescriptorSetInfo;
 
 struct ReflectDescriptorSetTraits {
@@ -305,6 +327,7 @@ public:
 
   using EntryPoints = ReflectInfoRange<ReflectEntryPointTraits>;
   using DescriptorSets = ReflectInfoRange<ReflectDescriptorSetModuleTraits>;
+  using PushConstants = ReflectInfoRange<PushConstantTraits>;
 
   /// List of all entry points defined by that module.
   auto entryPoints() const noexcept { return EntryPoints(rawModule()); }
@@ -312,6 +335,9 @@ public:
   /// Descriptors sets used in the first entry point. If there is no
   /// entry points it shows all descriptors for this module.
   auto sets() const noexcept { return DescriptorSets(rawModule()); }
+
+  /// List of all push constants defined in this module.
+  auto pushConstants() const noexcept { return PushConstants(rawModule()); }
 
   virtual ~SPIRVModuleInfo();
 

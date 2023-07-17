@@ -274,6 +274,19 @@ ReflectInfoIteratorTraitsCommon<ReflectDescriptorSetModuleTraits>::get_size(
   return s->descriptor_set_count;
 }
 
+template <>
+SPIRVPushConstantInfo
+ReflectInfoIteratorTraitsCommon<PushConstantTraits>::get_value(
+    const SpvReflectShaderModule *s, unsigned idx) noexcept {
+  return SPIRVPushConstantInfo{s->push_constant_blocks + idx};
+}
+
+template <>
+unsigned ReflectInfoIteratorTraitsCommon<PushConstantTraits>::get_size(
+    const SpvReflectShaderModule *s) noexcept {
+  return s->push_constant_block_count;
+}
+
 namespace {
 
 VkFormat mapFormat(SpvReflectFormat format) noexcept {
@@ -333,6 +346,10 @@ unsigned SPIRVDescriptorBindingInfo::index() const noexcept {
   return m_binding->binding;
 }
 unsigned SPIRVDescriptorSetInfo::index() const noexcept { return m_set->set; }
+
+unsigned SPIRVPushConstantInfo::size() const { return m_constant->size; }
+
+unsigned SPIRVPushConstantInfo::offset() const { return m_constant->offset; }
 
 SPIRVModuleInfo::~SPIRVModuleInfo() = default;
 } // namespace vkw
