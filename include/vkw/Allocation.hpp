@@ -38,7 +38,7 @@ public:
 
   Allocation(Allocation &&another) noexcept
       : m_allocator(another.m_allocator), m_allocation(another.m_allocation),
-        m_allocInfo(another.m_allocInfo) {
+        m_allocInfo(another.m_allocInfo), m_call_mapped(another.m_call_mapped) {
     another.m_allocInfo.pMappedData = nullptr;
     another.m_call_mapped = false;
   }
