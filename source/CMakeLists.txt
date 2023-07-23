@@ -42,7 +42,7 @@ message(STATUS "Found SPIRV-Opt: " ${SPIRV_OPT})
 
 file(GLOB ${PROJECT_NAME}_SOURCE *.cpp *.h *.hpp ../include/vkw/*.h ../include/vkw/*.hpp)
 
-add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCE} ../external/SPIRV-Reflect/spirv_reflect.cpp DeviceFeatures.inc LayerMap.inc VulkanTypeTraits.inc)
+add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCE} ../external/SPIRV-Reflect/spirv_reflect.cpp SymbolTable.inc DeviceFeatures.inc LayerMap.inc VulkanTypeTraits.inc)
 
 add_subdirectory(loader)
 
