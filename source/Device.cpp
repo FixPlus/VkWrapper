@@ -40,8 +40,9 @@ loadDeviceSymbols(vkw::Instance const &instance, VkDevice device,
 
 Device::Device(Instance const &instance,
                PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
-    : DeviceInfo(std::move(phDevice)), UniqueVulkanObject<VkDevice>(
-                                           instance, physicalDevice(), info()),
+    : DeviceInfo(instance, std::move(phDevice)), UniqueVulkanObject<VkDevice>(
+                                                     instance, physicalDevice(),
+                                                     info()),
       m_allocator(m_allocatorCreateImpl()) {
 
   auto const &queueFamilies = physicalDevice().queueFamilies();
@@ -62,7 +63,8 @@ Device::Device(Instance const &instance,
                  });
 }
 
-DeviceInfo::DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
+DeviceInfo::DeviceInfo(Instance const &parent,
+                       PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
     : m_ph_device(std::move(phDevice)) {
 
   auto const &queueFamilies = m_ph_device.queueFamilies();
@@ -86,6 +88,16 @@ DeviceInfo::DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
       static_cast<uint32_t>(m_queueCreateInfo.size());
   m_createInfo.pQueueCreateInfos = m_queueCreateInfo.data();
   m_createInfo.pEnabledFeatures = &m_ph_device.enabledFeatures();
+
+  // Add memory VK_EXT_memory_budget if possible.
+  if (parent.isExtensionEnabled(ext::KHR_get_physical_device_properties2) &&
+      m_ph_device.extensionSupported(ext::EXT_memory_budget) &&
+      std::ranges::none_of(m_ph_device.enabledExtensions(),
+                           [](auto &extension) {
+                             return extension == ext::EXT_memory_budget;
+                           })) {
+    m_ph_device.enableExtension(ext::EXT_memory_budget);
+  }
 
   m_enabledExtensionsRaw.reserve(m_ph_device.enabledExtensions().size());
   std::transform(m_ph_device.enabledExtensions().begin(),
@@ -192,10 +204,14 @@ void Device::waitIdle() noexcept(ExceptionsDisabled){
 
 VmaAllocator Device::m_allocatorCreateImpl() noexcept(ExceptionsDisabled) {
   VmaAllocatorCreateInfo allocatorInfo = {};
-  allocatorInfo.vulkanApiVersion = VK_API_VERSION_1_0;
+  allocatorInfo.vulkanApiVersion = apiVersion();
   allocatorInfo.physicalDevice = physicalDevice();
   allocatorInfo.device = handle();
   allocatorInfo.instance = parent();
+  if (std::ranges::any_of(physicalDevice().enabledExtensions(), [](auto &id) {
+        return id == ext::EXT_memory_budget;
+      }))
+    allocatorInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
 
   VmaVulkanFunctions vmaVulkanFunctions{};
   vmaVulkanFunctions.vkGetInstanceProcAddr =
@@ -217,4 +233,23 @@ void Device::AllocatorDeleter::operator()(VmaAllocator a) {
 }
 
 Device::~Device() {}
+
+void Device::frame() {
+  m_currentFrame++;
+  vmaSetCurrentFrameIndex(m_allocator.get(), m_currentFrame);
+}
+
+std::vector<std::pair<VkDeviceSize, VkDeviceSize>>
+Device::getDeviceMemoryUsage() {
+  auto heapCount = physicalDevice().memoryProperties().memoryHeapCount;
+  std::vector<VmaBudget> heapsInfo;
+  heapsInfo.resize(heapCount);
+  vmaGetHeapBudgets(m_allocator.get(), heapsInfo.data());
+  std::vector<std::pair<VkDeviceSize, VkDeviceSize>> ret;
+  std::transform(heapsInfo.begin(), heapsInfo.end(), std::back_inserter(ret),
+                 [](auto &heapInfo) {
+                   return std::make_pair(heapInfo.usage, heapInfo.budget);
+                 });
+  return ret;
+}
 } // namespace vkw

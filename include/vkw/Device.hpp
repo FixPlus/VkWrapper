@@ -21,7 +21,8 @@ enum class ext;
 
 class DeviceInfo {
 public:
-  explicit DeviceInfo(PhysicalDevice phDevice) noexcept(ExceptionsDisabled);
+  explicit DeviceInfo(Instance const &parent,
+                      PhysicalDevice phDevice) noexcept(ExceptionsDisabled);
 
   auto &info() const noexcept { return m_createInfo; }
 
@@ -71,6 +72,11 @@ public:
         m_coreDeviceSymbols.get());
   }
 
+  // Returns budget of each device heap.
+  std::vector<std::pair<VkDeviceSize, VkDeviceSize>> getDeviceMemoryUsage();
+  // Should be called every frame.
+  void frame();
+
   void waitIdle() noexcept(ExceptionsDisabled);
 
   ~Device() override;
@@ -82,7 +88,7 @@ private:
   };
   std::unique_ptr<std::remove_pointer_t<VmaAllocator>, AllocatorDeleter>
       m_allocator;
-
+  size_t m_currentFrame = 0u;
   using InFamilyQueueContainerT =
       boost::container::small_vector<std::unique_ptr<Queue>, 3>;
   using FamilyContainerT =

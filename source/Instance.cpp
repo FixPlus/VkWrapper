@@ -69,6 +69,7 @@ Instance::Instance(Library const &library,
                     postError(LayerUnsupported{id, Library::LayerName(id)});
                 });
 
+  auto requestedExtensions = CI.requestedExtensions;
   std::for_each(
       CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
       [&library](ext id) {
@@ -76,10 +77,18 @@ Instance::Instance(Library const &library,
           postError(ExtensionUnsupported{id, Library::ExtensionName(id)});
       });
 
+  // Enable VK_KHR_get_physical_device_properties2 if possible.
+  if (library.hasInstanceExtension(ext::KHR_get_physical_device_properties2) &&
+      std::ranges::none_of(requestedExtensions, [](auto &extension) {
+        return extension == ext::KHR_get_physical_device_properties2;
+      })) {
+    requestedExtensions.emplace_back(ext::KHR_get_physical_device_properties2);
+  }
+
   std::vector<const char *> reqExtensionsNames{};
   std::vector<const char *> reqLayerNames{};
 
-  std::transform(CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
+  std::transform(requestedExtensions.begin(), requestedExtensions.end(),
                  std::back_inserter(reqExtensionsNames),
                  [](auto id) { return Library::ExtensionName(id); });
   std::transform(CI.requestedLayers.begin(), CI.requestedLayers.end(),
@@ -97,7 +106,7 @@ Instance::Instance(Library const &library,
   m_coreInstanceSymbols =
       loadInstanceSymbols(m_vulkanLib.get(), m_instance, CI.apiVersion);
 
-  std::for_each(CI.requestedExtensions.begin(), CI.requestedExtensions.end(),
+  std::for_each(requestedExtensions.begin(), requestedExtensions.end(),
                 [this](auto ext) { m_enabledExtensions.emplace(ext); });
   std::for_each(CI.requestedLayers.begin(), CI.requestedLayers.end(),
                 [this](auto ext) { m_enabledLayers.emplace(ext); });
