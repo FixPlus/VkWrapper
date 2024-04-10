@@ -7,6 +7,7 @@
 #include "vkw/FrameBuffer.hpp"
 #include "vkw/Image.hpp"
 #include "vkw/Pipeline.hpp"
+#include "vkw/Query.hpp"
 #include "vkw/RenderPass.hpp"
 
 namespace vkw {
@@ -243,4 +244,26 @@ void CommandBuffer::m_bindDescriptorSets(const PipelineLayout &layout,
       m_commandBuffer, bindPoint, layout, firstSet, nsets, sets, ndynOffsets,
       dynOffsets);
 }
+
+void CommandBuffer::beginQuery(const QueryPool &queryPool, uint32_t query,
+                               VkQueryControlFlags flags) noexcept {
+  m_device.get().core<1, 0>().vkCmdBeginQuery(m_commandBuffer, queryPool, query,
+                                              flags);
+}
+
+void CommandBuffer::endQuery(const QueryPool &queryPool,
+                             uint32_t query) noexcept {
+  m_device.get().core<1, 0>().vkCmdEndQuery(m_commandBuffer, queryPool, query);
+}
+
+void CommandBuffer::resetQuery(const QueryPool &queryPool, uint32_t firstQuery,
+                               uint32_t count) noexcept {
+  m_device.get().core<1, 0>().vkCmdResetQueryPool(m_commandBuffer, queryPool,
+                                                  firstQuery, count);
+}
+void CommandBuffer::resetQuery(const QueryPool &queryPool) noexcept {
+  m_device.get().core<1, 0>().vkCmdResetQueryPool(m_commandBuffer, queryPool,
+                                                  0u, queryPool.size());
+}
+
 } // namespace vkw

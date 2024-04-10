@@ -15,6 +15,7 @@ class GraphicsPipeline;
 class PipelineLayout;
 class ComputePipeline;
 class FrameBuffer;
+class QueryPool;
 
 class CommandBuffer : public ReferenceGuard {
 public:
@@ -179,6 +180,16 @@ public:
                    uint32_t firstScissor = 0) noexcept;
   void setViewports(std::span<const VkViewport> viewports,
                     uint32_t firstViewport = 0) noexcept;
+
+  /** Query **/
+  void resetQuery(const QueryPool &queryPool, uint32_t firstQuery,
+                  uint32_t count) noexcept;
+  void resetQuery(const QueryPool &queryPool) noexcept;
+
+  void beginQuery(const QueryPool &queryPool, uint32_t query,
+                  VkQueryControlFlags flags = 0) noexcept;
+
+  void endQuery(const QueryPool &queryPool, uint32_t query) noexcept;
 
   /** Finishing */
 
