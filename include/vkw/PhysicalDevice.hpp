@@ -81,9 +81,18 @@ class PhysicalDevice : public ReferenceGuard {
 public:
   using QueueFamilyContainerT = boost::container::small_vector<QueueFamily, 3>;
   enum class feature {
+#define VKW_DUMP_FEATURES
 #define VKW_FEATURE_ENTRY(X) X,
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_FEATURES
+  };
+  enum class feature_v11 {
+#define VKW_DUMP_VULKAN11_FEATURES
+#define VKW_FEATURE_ENTRY(X) X,
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN11_FEATURES
   };
 
   PhysicalDevice(Instance const &instance,
@@ -113,6 +122,12 @@ public:
   VkPhysicalDeviceFeatures const &enabledFeatures() const noexcept {
     return m_enabledFeatures;
   }
+#ifdef VK_VERSION_1_2
+  VkPhysicalDeviceVulkan11Features const &
+  enabledVulkan11Features() const noexcept {
+    return m_enabledVulkan11Features;
+  }
+#endif
 
   std::vector<ext> const &supportedExtensions() const noexcept {
     return m_supportedExtensions;
@@ -134,7 +149,15 @@ public:
 
   bool isFeatureSupported(feature feature) const noexcept(ExceptionsDisabled);
 
+#ifdef VK_VERSION_1_2
+  bool isFeatureSupported(feature_v11 feature) const
+      noexcept(ExceptionsDisabled);
+#endif
   void enableFeature(feature feature) noexcept(ExceptionsDisabled);
+
+#ifdef VK_VERSION_1_2
+  void enableFeature(feature_v11 feature) noexcept(ExceptionsDisabled);
+#endif
 
   bool extensionSupported(ext extension) const noexcept(ExceptionsDisabled);
 
@@ -155,8 +178,16 @@ protected:
   /** @brief Features of the physical device that an application can use to
    * check if a feature is supported */
   VkPhysicalDeviceFeatures m_features{};
+#ifdef VK_VERSION_1_2
+  VkPhysicalDeviceVulkan11Features m_vulkan11Features;
+#endif
   /** @brief Features that have been enabled for use on the physical device */
   VkPhysicalDeviceFeatures m_enabledFeatures{};
+
+#ifdef VK_VERSION_1_2
+  VkPhysicalDeviceVulkan11Features m_enabledVulkan11Features;
+#endif
+
   /** @brief Memory types and heaps of the physical device */
   VkPhysicalDeviceMemoryProperties m_memoryProperties{};
   /** @brief Queue family properties of the physical device */
@@ -171,19 +202,18 @@ protected:
   ApiVersion m_requestedApiVersion = ApiVersion{1, 0, 0};
 };
 
-class FeatureUnsupported : public Error {
+template <typename T> class FeatureUnsupported : public Error {
 public:
-  FeatureUnsupported(PhysicalDevice::feature feature,
-                     std::string_view featureName) noexcept
+  FeatureUnsupported(T feature, std::string_view featureName) noexcept
       : Error(std::string("Feature ")
                   .append(featureName)
                   .append(" is unsupported"),
               ErrorCode::FEATURE_UNSUPPORTED),
         m_feature(feature) {}
-  PhysicalDevice::feature feature() const noexcept { return m_feature; }
+  T feature() const noexcept { return m_feature; }
 
 private:
-  PhysicalDevice::feature m_feature;
+  T m_feature;
 };
 
 } // namespace vkw

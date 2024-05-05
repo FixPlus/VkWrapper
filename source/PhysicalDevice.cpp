@@ -44,6 +44,19 @@ PhysicalDevice::PhysicalDevice(
   // Features should be checked by the examples before using them
   instance.core<1, 0>().vkGetPhysicalDeviceFeatures(m_physicalDevice,
                                                     &m_features);
+#ifdef VK_VERSION_1_2
+  m_vulkan11Features.pNext = nullptr;
+  m_vulkan11Features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  m_enabledVulkan11Features.pNext = nullptr;
+  m_enabledVulkan11Features.sType =
+      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+
+  VkPhysicalDeviceFeatures2 feats{};
+  feats.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+  feats.pNext = &m_vulkan11Features;
+  instance.core<1, 1>().vkGetPhysicalDeviceFeatures2(m_physicalDevice, &feats);
+#endif
   // Memory properties are used regularly for creating all kinds of buffers
   instance.core<1, 0>().vkGetPhysicalDeviceMemoryProperties(
       m_physicalDevice, &m_memoryProperties);
@@ -86,33 +99,55 @@ PhysicalDevice::PhysicalDevice(
 
 namespace {
 
-void unhandledFeatureEntry(PhysicalDevice::feature feature) {
+void unhandledFeatureEntry(auto feature) {
   std::stringstream ss;
   ss << "Unhandled feature entry: " << static_cast<unsigned>(feature);
   postError(Error(ss.view()));
 }
+
 const char *featureNameMap(PhysicalDevice::feature feature) {
   switch (feature) {
+#define VKW_DUMP_FEATURES
 #define VKW_FEATURE_ENTRY(X)                                                   \
   case PhysicalDevice::feature::X:                                             \
     return #X;
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_FEATURES
   default:
     unhandledFeatureEntry(feature);
     return nullptr;
   }
 }
+#ifdef VK_VERSION_1_2
+const char *featureNameMap(PhysicalDevice::feature_v11 feature) {
+  switch (feature) {
+#define VKW_DUMP_VULKAN11_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v11::X:                                         \
+    return #X;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN11_FEATURES
+  default:
+    unhandledFeatureEntry(feature);
+    return nullptr;
+  }
+}
+#endif
+
 } // namespace
 
 bool PhysicalDevice::isFeatureSupported(feature feature) const
     noexcept(ExceptionsDisabled) {
   switch (feature) {
+#define VKW_DUMP_FEATURES
 #define VKW_FEATURE_ENTRY(X)                                                   \
   case PhysicalDevice::feature::X:                                             \
     return m_features.X;
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_FEATURES
   default:
     unhandledFeatureEntry(feature);
     return false;
@@ -125,16 +160,55 @@ void PhysicalDevice::enableFeature(feature feature) noexcept(
     postError(FeatureUnsupported(feature, featureNameMap(feature)));
 
   switch (feature) {
+#define VKW_DUMP_FEATURES
 #define VKW_FEATURE_ENTRY(X)                                                   \
   case PhysicalDevice::feature::X:                                             \
     m_enabledFeatures.X = true;                                                \
     break;
 #include "DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_FEATURES
   default:
     unhandledFeatureEntry(feature);
   };
 }
+
+#ifdef VK_VERSION_1_2
+bool PhysicalDevice::isFeatureSupported(feature_v11 feature) const
+    noexcept(ExceptionsDisabled) {
+  switch (feature) {
+#define VKW_DUMP_VULKAN11_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v11::X:                                         \
+    return m_vulkan11Features.X;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN11_FEATURES
+  default:
+    unhandledFeatureEntry(feature);
+    return false;
+  }
+}
+
+void PhysicalDevice::enableFeature(feature_v11 feature) noexcept(
+    ExceptionsDisabled) {
+  if (!isFeatureSupported(feature))
+    postError(FeatureUnsupported(feature, featureNameMap(feature)));
+
+  switch (feature) {
+#define VKW_DUMP_VULKAN11_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v11::X:                                         \
+    m_enabledVulkan11Features.X = true;                                        \
+    break;
+#include "DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN11_FEATURES
+  default:
+    unhandledFeatureEntry(feature);
+  };
+}
+#endif
 
 bool PhysicalDevice::extensionSupported(ext extension) const
     noexcept(ExceptionsDisabled) {

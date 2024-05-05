@@ -11,6 +11,18 @@ enum class VertexAttributeType {
   VEC2F,
   FLOAT,
   RGBA8_UNORM,
+  VEC4U,
+  VEC3U,
+  VEC2U,
+  VEC4U16,
+  VEC3U16,
+  VEC2U16,
+  VEC4U8,
+  VEC3U8,
+  VEC2U8,
+  UINT,
+  UINT16,
+  UINT8
 };
 
 constexpr uint64_t size_of(VertexAttributeType attrType) {
@@ -26,6 +38,30 @@ constexpr uint64_t size_of(VertexAttributeType attrType) {
     return 1 * sizeof(float);
   case VertexAttributeType::RGBA8_UNORM:
     return 1 * sizeof(uint32_t);
+  case VertexAttributeType::VEC4U:
+    return 4 * sizeof(uint32_t);
+  case VertexAttributeType::VEC3U:
+    return 3 * sizeof(uint32_t);
+  case VertexAttributeType::VEC2U:
+    return 2 * sizeof(uint32_t);
+  case VertexAttributeType::VEC4U16:
+    return 4 * sizeof(uint16_t);
+  case VertexAttributeType::VEC3U16:
+    return 3 * sizeof(uint16_t);
+  case VertexAttributeType::VEC2U16:
+    return 2 * sizeof(uint16_t);
+  case VertexAttributeType::VEC4U8:
+    return 4 * sizeof(uint8_t);
+  case VertexAttributeType::VEC3U8:
+    return 3 * sizeof(uint8_t);
+  case VertexAttributeType::VEC2U8:
+    return 2 * sizeof(uint8_t);
+  case VertexAttributeType::UINT:
+    return sizeof(uint32_t);
+  case VertexAttributeType::UINT16:
+    return sizeof(uint16_t);
+  case VertexAttributeType::UINT8:
+    return sizeof(uint8_t);
   }
   return 0;
 }
@@ -42,6 +78,30 @@ constexpr VkFormat format_of(VertexAttributeType attrType) {
     return VK_FORMAT_R32_SFLOAT;
   case VertexAttributeType::RGBA8_UNORM:
     return VK_FORMAT_R8G8B8A8_UNORM;
+  case VertexAttributeType::VEC4U:
+    return VK_FORMAT_R32G32B32A32_UINT;
+  case VertexAttributeType::VEC3U:
+    return VK_FORMAT_R32G32B32_UINT;
+  case VertexAttributeType::VEC2U:
+    return VK_FORMAT_R32G32_UINT;
+  case VertexAttributeType::VEC4U16:
+    return VK_FORMAT_R16G16B16A16_UINT;
+  case VertexAttributeType::VEC3U16:
+    return VK_FORMAT_R16G16B16_UINT;
+  case VertexAttributeType::VEC2U16:
+    return VK_FORMAT_R16G16_UINT;
+  case VertexAttributeType::VEC4U8:
+    return VK_FORMAT_R8G8B8A8_UINT;
+  case VertexAttributeType::VEC3U8:
+    return VK_FORMAT_R8G8B8_UINT;
+  case VertexAttributeType::VEC2U8:
+    return VK_FORMAT_R8G8_UINT;
+  case VertexAttributeType::UINT:
+    return VK_FORMAT_R32_UINT;
+  case VertexAttributeType::UINT16:
+    return VK_FORMAT_R16_UINT;
+  case VertexAttributeType::UINT8:
+    return VK_FORMAT_R8_UINT;
   }
 
   return VK_FORMAT_MAX_ENUM;
@@ -54,6 +114,18 @@ constexpr uint32_t locations_hold(VertexAttributeType attrType) {
   case VertexAttributeType::VEC2F:
   case VertexAttributeType::FLOAT:
   case VertexAttributeType::RGBA8_UNORM:
+  case VertexAttributeType::VEC4U:
+  case VertexAttributeType::VEC3U:
+  case VertexAttributeType::VEC2U:
+  case VertexAttributeType::VEC4U16:
+  case VertexAttributeType::VEC3U16:
+  case VertexAttributeType::VEC2U16:
+  case VertexAttributeType::VEC4U8:
+  case VertexAttributeType::VEC3U8:
+  case VertexAttributeType::VEC2U8:
+  case VertexAttributeType::UINT:
+  case VertexAttributeType::UINT16:
+  case VertexAttributeType::UINT8:
     return 1u;
   }
   return 0xFFFFFFFF;

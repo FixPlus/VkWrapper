@@ -40,9 +40,8 @@ loadDeviceSymbols(vkw::Instance const &instance, VkDevice device,
 
 Device::Device(Instance const &instance,
                PhysicalDevice phDevice) noexcept(ExceptionsDisabled)
-    : DeviceInfo(instance, std::move(phDevice)), UniqueVulkanObject<VkDevice>(
-                                                     instance, physicalDevice(),
-                                                     info()),
+    : DeviceInfo(instance, std::move(phDevice)),
+      UniqueVulkanObject<VkDevice>(instance, physicalDevice(), info()),
       m_allocator(m_allocatorCreateImpl()) {
 
   auto const &queueFamilies = physicalDevice().queueFamilies();
@@ -108,7 +107,9 @@ DeviceInfo::DeviceInfo(Instance const &parent,
 
   m_createInfo.enabledExtensionCount = m_enabledExtensionsRaw.size();
   m_createInfo.ppEnabledExtensionNames = m_enabledExtensionsRaw.data();
-
+#ifdef VK_VERSION_1_2
+  m_createInfo.pNext = &m_ph_device.enabledVulkan11Features();
+#endif
   for (auto &ext : m_ph_device.enabledExtensions()) {
     m_enabledExtensions.emplace(ext);
   }
