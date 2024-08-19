@@ -179,13 +179,13 @@ protected:
    * check if a feature is supported */
   VkPhysicalDeviceFeatures m_features{};
 #ifdef VK_VERSION_1_2
-  VkPhysicalDeviceVulkan11Features m_vulkan11Features;
+  VkPhysicalDeviceVulkan11Features m_vulkan11Features{};
 #endif
   /** @brief Features that have been enabled for use on the physical device */
   VkPhysicalDeviceFeatures m_enabledFeatures{};
 
 #ifdef VK_VERSION_1_2
-  VkPhysicalDeviceVulkan11Features m_enabledVulkan11Features;
+  VkPhysicalDeviceVulkan11Features m_enabledVulkan11Features{};
 #endif
 
   /** @brief Memory types and heaps of the physical device */
