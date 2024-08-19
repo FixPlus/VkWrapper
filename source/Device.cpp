@@ -108,7 +108,10 @@ DeviceInfo::DeviceInfo(Instance const &parent,
   m_createInfo.enabledExtensionCount = m_enabledExtensionsRaw.size();
   m_createInfo.ppEnabledExtensionNames = m_enabledExtensionsRaw.data();
 #ifdef VK_VERSION_1_2
-  m_createInfo.pNext = &m_ph_device.enabledVulkan11Features();
+  if (phDevice.requestedApiVersion() >= ApiVersion(1, 1, 0))
+    m_createInfo.pNext = &m_ph_device.enabledVulkan11Features();
+  else
+    m_createInfo.pNext = nullptr;
 #endif
   for (auto &ext : m_ph_device.enabledExtensions()) {
     m_enabledExtensions.emplace(ext);

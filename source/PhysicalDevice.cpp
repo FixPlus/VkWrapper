@@ -45,17 +45,20 @@ PhysicalDevice::PhysicalDevice(
   instance.core<1, 0>().vkGetPhysicalDeviceFeatures(m_physicalDevice,
                                                     &m_features);
 #ifdef VK_VERSION_1_2
-  m_vulkan11Features.pNext = nullptr;
-  m_vulkan11Features.sType =
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-  m_enabledVulkan11Features.pNext = nullptr;
-  m_enabledVulkan11Features.sType =
-      VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+  if (instance.apiVersion() >= ApiVersion(1, 1, 0)) {
+    m_vulkan11Features.pNext = nullptr;
+    m_vulkan11Features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
+    m_enabledVulkan11Features.pNext = nullptr;
+    m_enabledVulkan11Features.sType =
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
 
-  VkPhysicalDeviceFeatures2 feats{};
-  feats.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-  feats.pNext = &m_vulkan11Features;
-  instance.core<1, 1>().vkGetPhysicalDeviceFeatures2(m_physicalDevice, &feats);
+    VkPhysicalDeviceFeatures2 feats{};
+    feats.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    feats.pNext = &m_vulkan11Features;
+    instance.core<1, 1>().vkGetPhysicalDeviceFeatures2(m_physicalDevice,
+                                                       &feats);
+  }
 #endif
   // Memory properties are used regularly for creating all kinds of buffers
   instance.core<1, 0>().vkGetPhysicalDeviceMemoryProperties(
