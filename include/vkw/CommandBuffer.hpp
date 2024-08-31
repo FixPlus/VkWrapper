@@ -21,7 +21,8 @@ class CommandBuffer : public ReferenceGuard {
 public:
   CommandBuffer(CommandBuffer &&another) noexcept
       : m_device(another.m_device), m_pool(another.m_pool),
-        m_executable(another.m_executable), m_recording(another.m_recording) {
+        m_executable(another.m_executable), m_recording(another.m_recording),
+        m_commandBuffer(another.m_commandBuffer) {
     another.m_commandBuffer = VK_NULL_HANDLE;
   };
 
