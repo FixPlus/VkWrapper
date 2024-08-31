@@ -33,18 +33,14 @@ elseif (UNIX)
     set(VULKAN_SDK_LIB_DIR $ENV{VULKAN_SDK}/lib)
 endif ()
 
-find_library(SPIRV_TOOLS NAMES SPIRV-Tools PATHS ${VULKAN_SDK_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-find_library(SPIRV_LINK NAMES SPIRV-Tools-link PATHS ${VULKAN_SDK_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-find_library(SPIRV_OPT NAMES SPIRV-Tools-opt PATHS ${VULKAN_SDK_LIB_DIR} NO_DEFAULT_PATH REQUIRED)
-message(STATUS "Found SPIRV-Tools: " ${SPIRV_TOOLS})
-message(STATUS "Found SPIRV-Link: " ${SPIRV_LINK})
-message(STATUS "Found SPIRV-Opt: " ${SPIRV_OPT})
+find_package(SPIRV-Tools-opt REQUIRED)
+find_package(SPIRV-Tools-link REQUIRED)
 
 file(GLOB ${PROJECT_NAME}_SOURCE *.cpp *.h *.hpp ../include/vkw/*.h ../include/vkw/*.hpp)
 
-add_library(${PROJECT_NAME} SHARED ${${PROJECT_NAME}_SOURCE} ../external/SPIRV-Reflect/spirv_reflect.cpp SymbolTable.inc DeviceFeatures.inc LayerMap.inc VulkanTypeTraits.inc)
+add_library(${MAIN_LIB_NAME} SHARED ${${PROJECT_NAME}_SOURCE} ../external/SPIRV-Reflect/spirv_reflect.cpp SymbolTable.inc DeviceFeatures.inc LayerMap.inc VulkanTypeTraits.inc)
 
 add_subdirectory(loader)
 
-target_link_libraries(${PROJECT_NAME} PRIVATE LOADER_LIB ${SPIRV_OPT} ${SPIRV_TOOLS} ${SPIRV_LINK} ${SPIRV_OPT})
-target_include_directories(${PROJECT_NAME} PRIVATE $ENV{Vulkan_INCLUDE_DIR} ../external/SPIRV-Reflect)
+target_link_libraries(${MAIN_LIB_NAME} PRIVATE LOADER_LIB SPIRV-Tools-link)
+target_include_directories(${MAIN_LIB_NAME} PRIVATE $ENV{Vulkan_INCLUDE_DIR} ../external/SPIRV-Reflect)

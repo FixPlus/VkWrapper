@@ -8,6 +8,12 @@ set(PROJECT_NAME VkWrapper)
 
 project(${PROJECT_NAME} LANGUAGES CXX)
 set(PROJECT_VERSION 3.0)
+set(MAIN_LIB_NAME ${PROJECT_NAME})
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+    if(MSVC)
+        set(MAIN_LIB_NAME ${MAIN_LIB_NAME}d)
+    endif ()
+endif ()
 
 include(cmake/find_dependencies.cmake)
 include(cmake/find_vulkan_sdk.cmake)

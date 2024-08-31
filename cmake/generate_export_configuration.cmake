@@ -1,8 +1,8 @@
 include(GenerateExportHeader)
-generate_export_header(${PROJECT_NAME})
-set_property(TARGET ${PROJECT_NAME} PROPERTY VERSION ${PROJECT_VERSION})
+generate_export_header(${MAIN_LIB_NAME})
+set_property(TARGET ${MAIN_LIB_NAME} PROPERTY VERSION ${PROJECT_VERSION})
 
-install(TARGETS ${PROJECT_NAME} EXPORT ${PROJECT_NAME}Targets
+install(TARGETS ${MAIN_LIB_NAME} EXPORT ${PROJECT_NAME}Targets
         LIBRARY DESTINATION lib
         ARCHIVE DESTINATION lib
         RUNTIME DESTINATION bin
