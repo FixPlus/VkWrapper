@@ -20,6 +20,7 @@ public:
   SymbolTableBase(PFN_getProcAddr getProcAddr, Level level)
       : m_level(level), m_getProcAddr(getProcAddr){};
 
+  virtual ~SymbolTableBase() = default;
 protected:
   template <typename FuncType>
   FuncType getProcAddrT(std::string const &funcName) {
