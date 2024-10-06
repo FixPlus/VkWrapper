@@ -29,7 +29,11 @@ CommandBuffer::CommandBuffer(
 uint32_t CommandBuffer::queueFamily() const noexcept {
   return m_pool.get().queueFamilyIndex();
 }
-
+void CommandBuffer::reset(VkCommandBufferResetFlags flags) noexcept(
+    ExceptionsDisabled) {
+  VK_CHECK_RESULT(
+      m_device.get().core<1, 0>().vkResetCommandBuffer(m_commandBuffer, flags))
+}
 void CommandBuffer::m_begin(VkCommandBufferUsageFlags flags,
                             const VkCommandBufferInheritanceInfo
                                 *inheritanceInfo) noexcept(ExceptionsDisabled) {

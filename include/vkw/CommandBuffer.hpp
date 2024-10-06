@@ -196,6 +196,8 @@ public:
 
   void end() noexcept(ExceptionsDisabled);
 
+  void reset(VkCommandBufferResetFlags flags) noexcept(ExceptionsDisabled);
+
 protected:
   CommandBuffer(CommandPool &pool,
                 VkCommandBufferLevel bufferLevel) noexcept(ExceptionsDisabled);
