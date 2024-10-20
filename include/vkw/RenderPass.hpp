@@ -10,44 +10,46 @@
 
 namespace vkw {
 
-class AttachmentDescription final : public ReferenceGuard {
+class AttachmentDescription final : public VkAttachmentDescription {
 public:
-  AttachmentDescription(VkFormat viewFormat, VkSampleCountFlagBits samples,
+  AttachmentDescription(unsigned id, VkFormat viewFormat,
+                        VkSampleCountFlagBits samples,
                         VkAttachmentLoadOp loadOp, VkAttachmentStoreOp storeOp,
                         VkAttachmentLoadOp stencilLoadOp,
                         VkAttachmentStoreOp stencilStoreOp,
                         VkImageLayout initialLayout, VkImageLayout finalLayout,
                         VkAttachmentDescriptionFlags flags = 0) noexcept
-      : m_description({flags, viewFormat, samples, loadOp, storeOp,
-                       stencilLoadOp, stencilStoreOp, initialLayout,
-                       finalLayout}) {}
+      : VkAttachmentDescription({flags, viewFormat, samples, loadOp, storeOp,
+                                 stencilLoadOp, stencilStoreOp, initialLayout,
+                                 finalLayout}),
+        id(id) {}
 
-  VkFormat format() const noexcept { return m_description.format; }
+  VkFormat format() const noexcept { return VkAttachmentDescription::format; }
 
   bool isDepthStencil() const noexcept;
   bool formatHasDepthAspect() const noexcept;
   bool formatHasStencilAspect() const noexcept;
   bool isColor() const noexcept;
 
-  VkSampleCountFlagBits samples() const { return m_description.samples; }
-  VkAttachmentLoadOp loadOp() const noexcept { return m_description.loadOp; }
+  VkSampleCountFlagBits samples() const {
+    return VkAttachmentDescription::samples;
+  }
+  VkAttachmentLoadOp loadOp() const noexcept {
+    return VkAttachmentDescription::loadOp;
+  }
 
   VkAttachmentLoadOp stencilLoadOp() const noexcept {
-    return m_description.stencilLoadOp;
+    return VkAttachmentDescription::stencilLoadOp;
   }
 
-  VkAttachmentStoreOp storeOp() const noexcept { return m_description.storeOp; }
+  VkAttachmentStoreOp storeOp() const noexcept {
+    return VkAttachmentDescription::storeOp;
+  }
 
   VkAttachmentStoreOp stencilStoreOp() const noexcept {
-    return m_description.stencilStoreOp;
+    return VkAttachmentDescription::stencilStoreOp;
   }
-
-  operator VkAttachmentDescription const &() const noexcept {
-    return m_description;
-  }
-
-private:
-  VkAttachmentDescription m_description;
+  unsigned id;
 };
 
 class SubpassDescription : public ReferenceGuard {
@@ -67,11 +69,10 @@ public:
   SubpassDescription &addPreserveAttachment(
       AttachmentDescription const &) noexcept(ExceptionsDisabled);
 
-  using SubpassAttachmentContainerT = boost::container::small_vector<
-      std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>,
-      2>;
-  using PreservedAttachmentContainerT = boost::container::small_vector<
-      StrongReference<AttachmentDescription const>, 2>;
+  using SubpassAttachmentContainerT =
+      boost::container::small_vector<std::pair<unsigned, VkImageLayout>, 2>;
+  using PreservedAttachmentContainerT =
+      boost::container::small_vector<unsigned, 2>;
   auto &inputAttachments() const noexcept { return m_inputAttachments; }
 
   auto &colorAttachments() const noexcept { return m_colorAttachments; }
@@ -87,9 +88,7 @@ private:
   SubpassAttachmentContainerT m_inputAttachments;
   SubpassAttachmentContainerT m_colorAttachments;
   SubpassAttachmentContainerT m_resolveAttachments;
-  std::optional<
-      std::pair<StrongReference<AttachmentDescription const>, VkImageLayout>>
-      m_depthAttachment;
+  std::optional<std::pair<unsigned, VkImageLayout>> m_depthAttachment;
   PreservedAttachmentContainerT m_preserveAttachments;
 };
 
@@ -131,12 +130,7 @@ public:
     auto attachmentsSubrange =
         ranges::make_subrange<AttachmentDescription const>(attachments);
     using attachmentsSubrangeT = decltype(attachmentsSubrange);
-    std::transform(attachmentsSubrange.begin(), attachmentsSubrange.end(),
-                   std::back_inserter(m_attachments),
-                   [](auto const &attachment) {
-                     return StrongReference<const AttachmentDescription>{
-                         attachmentsSubrangeT::get(attachment)};
-                   });
+    std::ranges::copy(attachmentsSubrange, std::back_inserter(m_attachments));
     m_init(subpasses, dependencies, flags);
   }
 
@@ -176,7 +170,7 @@ private:
       std::vector<SubpassDependency> const &dependencies,
       VkRenderPassCreateFlags flags = 0) noexcept(ExceptionsDisabled);
 
-  std::vector<StrongReference<AttachmentDescription const>> m_attachments;
+  std::vector<AttachmentDescription> m_attachments;
   std::vector<VkAttachmentDescription> m_attachments_raw;
   std::vector<M_subpassDesc> m_subpassesDescs;
   std::vector<VkSubpassDescription> m_subpasses;

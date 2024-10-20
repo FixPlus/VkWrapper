@@ -44,13 +44,12 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                     return counter++,
                            desc.format() != (*(viewIter++))->format();
                   })) {
-    postError(
-        Error("Attachment format mismatch on (" + std::to_string(counter) +
-              ") index: FrameBuffer(" +
-              std::to_string((*(--viewIter))->format()) + ")<->RenderPass(" +
-              std::to_string(
-                  (renderPassAttachments.begin() + counter)->get().format()) +
-              ")"));
+    postError(Error(
+        "Attachment format mismatch on (" + std::to_string(counter) +
+        ") index: FrameBuffer(" + std::to_string((*(--viewIter))->format()) +
+        ")<->RenderPass(" +
+        std::to_string((renderPassAttachments.begin() + counter)->format()) +
+        ")"));
   }
 
   counter = 0;

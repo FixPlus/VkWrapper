@@ -422,7 +422,7 @@ GraphicsPipelineCreateInfo &GraphicsPipelineCreateInfo::enableMultisampling(
                     "subpass have no resolve attachments"});
   auto attachmentIndex = subpassInfo.resolveAttachments.front().attachment;
   auto &attachmentDesc =
-      m_renderPass.get().attachmentDescriptions().at(attachmentIndex).get();
+      m_renderPass.get().attachmentDescriptions().at(attachmentIndex);
   m_multisampleState.rasterizationSamples = attachmentDesc.samples();
   m_multisampleState.alphaToCoverageEnable = alphaToCoverageEnable;
   m_multisampleState.alphaToOneEnable = alphaToOneEnable;
