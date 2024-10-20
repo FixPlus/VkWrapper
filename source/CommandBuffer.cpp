@@ -155,8 +155,8 @@ void CommandBuffer::setViewports(std::span<const VkViewport> viewports,
 
 void PrimaryCommandBuffer::beginRenderPass(
     const RenderPass &renderPass, const FrameBuffer &frameBuffer,
-    VkRect2D renderArea, bool useSecondary, uint32_t clearValuesCount,
-    VkClearValue *pClearValues) noexcept(ExceptionsDisabled) {
+    VkRect2D renderArea, bool useSecondary,
+    std::span<const VkClearValue> clearValues) noexcept(ExceptionsDisabled) {
 #ifdef VKW_COMMAND_BUFFER_TRACK_RENDER_PASSES
   if (m_currentPass.has_value())
     postError(
@@ -169,8 +169,8 @@ void PrimaryCommandBuffer::beginRenderPass(
   beginInfo.renderPass = renderPass;
   beginInfo.framebuffer = frameBuffer;
   beginInfo.renderArea = renderArea;
-  beginInfo.clearValueCount = clearValuesCount;
-  beginInfo.pClearValues = pClearValues;
+  beginInfo.clearValueCount = clearValues.size();
+  beginInfo.pClearValues = clearValues.data();
 
   m_device.get().core<1, 0>().vkCmdBeginRenderPass(
       m_commandBuffer, &beginInfo,

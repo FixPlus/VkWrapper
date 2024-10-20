@@ -243,11 +243,11 @@ public:
   explicit PrimaryCommandBuffer(CommandPool &pool) noexcept(ExceptionsDisabled)
       : CommandBuffer(pool, VK_COMMAND_BUFFER_LEVEL_PRIMARY){};
 
-  void beginRenderPass(
-      RenderPass const &renderPass, FrameBuffer const &frameBuffer,
-      VkRect2D renderArea, bool useSecondary = false,
-      uint32_t clearValuesCount = 0,
-      VkClearValue *pClearValues = nullptr) noexcept(ExceptionsDisabled);
+  void beginRenderPass(RenderPass const &renderPass,
+                       FrameBuffer const &frameBuffer, VkRect2D renderArea,
+                       bool useSecondary = false,
+                       std::span<const VkClearValue> clearValues =
+                           {}) noexcept(ExceptionsDisabled);
 
   void nextSubpass(bool useSecondary = false) noexcept(ExceptionsDisabled);
 
