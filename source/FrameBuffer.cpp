@@ -36,7 +36,7 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                     std::to_string(renderPassAttachments.size()) + ")"));
 
   auto viewIter = views.begin();
-  uint32_t counter = 0;
+  int counter = -1;
 
   // format match check
   if (std::any_of(renderPassAttachments.begin(), renderPassAttachments.end(),
@@ -52,7 +52,7 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
         ")"));
   }
 
-  counter = 0;
+  counter = -1;
 
   // extents check
   if (std::any_of(views.begin(), views.end(),
@@ -71,7 +71,7 @@ FrameBufferInfo::FrameBufferInfo(RenderPass const &renderPass,
                     std::to_string(extents.height) + ")"));
   }
 
-  counter = 0;
+  counter = -1;
 
   // layer check
   if (std::any_of(views.begin(), views.end(),
