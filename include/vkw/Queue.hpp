@@ -150,138 +150,33 @@ private:
   VkPresentInfoKHR m_info{};
 };
 
-class SubmitInfo {
+class SubmitInfo final {
 public:
-  template <forward_range_of<PrimaryCommandBuffer const> PCMDA,
-            forward_range_of<Semaphore const> SMA,
-            forward_range_of<VkPipelineStageFlags const> PSFA =
-                cntr::vector<VkPipelineStageFlags, 2>>
-  SubmitInfo(PCMDA const &commandBuffer, SMA const &waitFor = {},
-             PSFA const &waitTill = {},
-             SMA const &signalTo = {}) noexcept(ExceptionsDisabled) {
-    auto commandBufferSub =
-        ranges::make_subrange<PrimaryCommandBuffer const>(commandBuffer);
-    using commandBufferSubT = decltype(commandBufferSub);
+  SubmitInfo() = default;
 
-    auto waitForSub = ranges::make_subrange<Semaphore const>(waitFor);
-    auto signalToSub = ranges::make_subrange<Semaphore const>(signalTo);
-    using semaphoreSubT = decltype(waitForSub);
-
-    auto waitTillSub = ranges::make_subrange<VkPipelineStageFlags>(waitTill);
-    using FSFASubT = decltype(waitTillSub);
-
-    std::transform(commandBufferSub.begin(), commandBufferSub.end(),
-                   std::back_inserter(m_cmd_buffers),
-                   [](auto const &cmd) -> VkCommandBuffer {
-                     return commandBufferSubT::get(cmd);
-                   });
-    std::transform(
-        waitForSub.begin(), waitForSub.end(),
-        std::back_inserter(m_wait_semaphores),
-        [](auto const &smr) -> VkSemaphore { return semaphoreSubT::get(smr); });
-    std::transform(
-        signalToSub.begin(), signalToSub.end(),
-        std::back_inserter(m_signal_semaphores),
-        [](auto const &smr) -> VkSemaphore { return semaphoreSubT::get(smr); });
-
-    std::transform(waitTillSub.begin(), waitTillSub.end(),
-                   std::back_inserter(m_wait_stage),
-                   [](auto const &stage) -> VkPipelineStageFlags {
-                     return FSFASubT::get(stage);
-                   });
-
-    m_fill_info();
+  void addWaitCondition(const Semaphore &sema, VkPipelineStageFlags stage) {
+    m_wait_semaphores.push_back(sema);
+    m_wait_stage.push_back(stage);
+  }
+  void addSignalTo(const Semaphore &sema) {
+    m_signal_semaphores.push_back(sema);
+  }
+  void addCommands(const PrimaryCommandBuffer &buffer) {
+    m_cmd_buffers.push_back(buffer);
   }
 
-  operator VkSubmitInfo() const noexcept { return m_info; }
-
-  SubmitInfo(const PrimaryCommandBuffer &commandBuffer,
-             Semaphore const &waitFor, VkPipelineStageFlags waitTill,
-             Semaphore const &signalTo) noexcept(ExceptionsDisabled)
-      : m_wait_stage(1, waitTill), m_cmd_buffers(1, commandBuffer),
-        m_wait_semaphores(1, waitFor), m_signal_semaphores(1, signalTo) {
-    m_fill_info();
-  }
-
-  template <forward_range_of<Semaphore const> SMA = cntr::vector<Semaphore, 2>,
-            forward_range_of<VkPipelineStageFlags const> PSFA =
-                cntr::vector<VkPipelineStageFlags, 2>>
-  SubmitInfo(SMA const &waitFor = {}, PSFA const &waitTill = {},
-             SMA const &signalTo = {}) noexcept(ExceptionsDisabled) {
-    auto waitForSub = ranges::make_subrange<Semaphore const>(waitFor);
-    auto signalToSub = ranges::make_subrange<Semaphore const>(signalTo);
-    auto waitTillSub =
-        ranges::make_subrange<VkPipelineStageFlags const>(waitTill);
-    using FSFASubT = decltype(waitTillSub);
-    using SMASubT = decltype(waitForSub);
-
-    std::transform(
-        waitForSub.begin(), waitForSub.end(),
-        std::back_inserter(m_wait_semaphores),
-        [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
-    std::transform(
-        signalToSub.begin(), signalToSub.end(),
-        std::back_inserter(m_signal_semaphores),
-        [](auto const &smr) -> VkSemaphore { return SMASubT::get(smr); });
-
-    std::transform(waitTillSub.begin(), waitTillSub.end(),
-                   std::back_inserter(m_wait_stage),
-                   [](auto const &stage) -> VkPipelineStageFlags {
-                     return FSFASubT::get(stage);
-                   });
-
-    m_fill_info();
-  }
-
-  template <forward_range_of<Semaphore const> SMA = cntr::vector<Semaphore, 2>,
-            forward_range_of<VkPipelineStageFlags const> PSFA =
-                cntr::vector<VkPipelineStageFlags, 2>>
-  SubmitInfo(const PrimaryCommandBuffer &commandBuffer, SMA const &waitFor = {},
-             PSFA const &waitTill = {},
-             SMA const &signalTo = {}) noexcept(ExceptionsDisabled)
-      : SubmitInfo(waitFor, waitTill, signalTo) {
-
-    m_cmd_buffers.emplace_back(commandBuffer);
-
-    m_info.commandBufferCount = m_cmd_buffers.size();
-    m_info.pCommandBuffers = m_cmd_buffers.data();
-  }
-
-  SubmitInfo &
-  operator=(SubmitInfo const &another) noexcept(ExceptionsDisabled) {
-    m_cmd_buffers = another.m_cmd_buffers;
-    m_signal_semaphores = another.m_signal_semaphores;
-    m_wait_semaphores = another.m_wait_semaphores;
-    m_wait_stage = another.m_wait_stage;
-    m_fill_info();
-    return *this;
-  }
-  SubmitInfo &operator=(SubmitInfo &&another) noexcept {
-    m_cmd_buffers = std::move(another.m_cmd_buffers);
-    m_signal_semaphores = std::move(another.m_signal_semaphores);
-    m_wait_semaphores = std::move(another.m_wait_semaphores);
-    m_wait_stage = std::move(another.m_wait_stage);
-    m_fill_info();
-    return *this;
-  }
-
-  SubmitInfo(SubmitInfo const &another) noexcept(ExceptionsDisabled)
-      : m_cmd_buffers(another.m_cmd_buffers),
-        m_signal_semaphores(another.m_signal_semaphores),
-        m_wait_semaphores(another.m_wait_semaphores),
-        m_wait_stage(another.m_wait_stage) {
-    m_fill_info();
-  }
-  SubmitInfo(SubmitInfo &&another) noexcept
-      : m_cmd_buffers(std::move(another.m_cmd_buffers)),
-        m_signal_semaphores(std::move(another.m_signal_semaphores)),
-        m_wait_semaphores(std::move(another.m_wait_semaphores)),
-        m_wait_stage(std::move(another.m_wait_stage)) {
-    m_cmd_buffers = another.m_cmd_buffers;
-    m_signal_semaphores = another.m_signal_semaphores;
-    m_wait_semaphores = another.m_wait_semaphores;
-    m_wait_stage = another.m_wait_stage;
-    m_fill_info();
+  operator VkSubmitInfo() const noexcept {
+    VkSubmitInfo info{};
+    info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    info.pNext = nullptr;
+    info.commandBufferCount = m_cmd_buffers.size();
+    info.pCommandBuffers = m_cmd_buffers.data();
+    info.signalSemaphoreCount = m_signal_semaphores.size();
+    info.pSignalSemaphores = m_signal_semaphores.data();
+    info.waitSemaphoreCount = m_wait_semaphores.size();
+    info.pWaitSemaphores = m_wait_semaphores.data();
+    info.pWaitDstStageMask = m_wait_stage.data();
+    return info;
   }
 
 private:
@@ -289,23 +184,6 @@ private:
   cntr::vector<VkSemaphore, 2> m_signal_semaphores;
   cntr::vector<VkSemaphore, 2> m_wait_semaphores;
   cntr::vector<VkPipelineStageFlags, 2> m_wait_stage;
-
-  void m_fill_info() noexcept {
-    assert(
-        m_wait_stage.size() == m_wait_semaphores.size() &&
-        "Count of dst stage masks must be equal to count of wait semaphores");
-    m_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-    m_info.pNext = nullptr;
-    m_info.commandBufferCount = m_cmd_buffers.size();
-    m_info.pCommandBuffers = m_cmd_buffers.data();
-    m_info.signalSemaphoreCount = m_signal_semaphores.size();
-    m_info.pSignalSemaphores = m_signal_semaphores.data();
-    m_info.waitSemaphoreCount = m_wait_semaphores.size();
-    m_info.pWaitSemaphores = m_wait_semaphores.data();
-    m_info.pWaitDstStageMask = m_wait_stage.data();
-  }
-
-  VkSubmitInfo m_info{};
 };
 
 class QueueMissing final : public Error {
