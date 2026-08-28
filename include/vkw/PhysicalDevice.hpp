@@ -130,6 +130,13 @@ public:
 #undef VKW_FEATURE_ENTRY
 #undef VKW_DUMP_VULKAN11_FEATURES
   };
+  enum class feature_v13 {
+#define VKW_DUMP_VULKAN13_FEATURES
+#define VKW_FEATURE_ENTRY(X) X,
+#include "vkw/DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN13_FEATURES
+  };
 private:
   static const char *m_featureNameMap(PhysicalDevice::feature feature) {
     switch (feature) {
@@ -156,6 +163,23 @@ private:
 #include "vkw/DeviceFeatures.inc"
 #undef VKW_FEATURE_ENTRY
 #undef VKW_DUMP_VULKAN11_FEATURES
+    default:
+      assert(0 && "feature value not in list");
+      return nullptr;
+    }
+  }
+#endif
+
+#ifdef VK_VERSION_1_3
+  static const char *m_featureNameMap(PhysicalDevice::feature_v13 feature) {
+    switch (feature) {
+#define VKW_DUMP_VULKAN13_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v13::X:                                         \
+    return #X;
+#include "vkw/DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN13_FEATURES
     default:
       assert(0 && "feature value not in list");
       return nullptr;
@@ -200,7 +224,30 @@ public:
     return m_enabledVulkan11Features;
   }
 #endif
-
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceVulkan13Features const &
+  enabledVulkan13Features() const noexcept {
+    return m_enabledVulkan13Features;
+  }
+#endif
+  void *prepareNext() {
+#ifdef VK_VERSION_1_2
+    if (requestedApiVersion() >= ApiVersion(1, 1, 0)) {
+      void *ret = &m_enabledVulkan11Features;
+      m_enabledVulkan11Features.pNext = nullptr;
+#ifdef VK_VERSION_1_3
+      if (requestedApiVersion() >= ApiVersion(1, 3, 0)) {
+        m_enabledVulkan11Features.pNext = &m_enabledVulkan13Features;
+        m_enabledVulkan13Features.pNext = nullptr;
+      }
+#endif
+      return ret;
+    } else
+      return nullptr;
+#else
+    return nullptr;
+#endif
+  }
   auto supportedExtensions() const noexcept {
     return std::ranges::subrange(m_supportedExtensions.begin(),
                                  m_supportedExtensions.end());
@@ -295,6 +342,39 @@ public:
     };
   }
 #endif
+#ifdef VK_VERSION_1_3
+  bool isFeatureSupported(feature_v13 feature) const noexcept {
+    switch (feature) {
+#define VKW_DUMP_VULKAN13_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v13::X:                                         \
+    return m_vulkan13Features.X;
+#include "vkw/DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN13_FEATURES
+    default:
+      assert(0 && "feature value not in list");
+      return false;
+    }
+  }
+  void enableFeature(feature_v13 feature) noexcept(ExceptionsDisabled) {
+    if (!isFeatureSupported(feature))
+      postError(FeatureUnsupported(feature, m_featureNameMap(feature)));
+
+    switch (feature) {
+#define VKW_DUMP_VULKAN13_FEATURES
+#define VKW_FEATURE_ENTRY(X)                                                   \
+  case PhysicalDevice::feature_v13::X:                                         \
+    m_enabledVulkan13Features.X = true;                                        \
+    break;
+#include "vkw/DeviceFeatures.inc"
+#undef VKW_FEATURE_ENTRY
+#undef VKW_DUMP_VULKAN13_FEATURES
+    default:
+      assert(0 && "feature value not in list");
+    };
+  }
+#endif
 
   bool extensionSupported(ext extension) const noexcept {
     return std::find(m_supportedExtensions.begin(), m_supportedExtensions.end(),
@@ -343,7 +423,18 @@ private:
       m_enabledVulkan11Features.pNext = nullptr;
       m_enabledVulkan11Features.sType =
           VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;
-
+#ifdef VK_VERSION_1_3
+      if (instance.apiVersion() >= ApiVersion(1, 3, 0)) {
+        m_vulkan13Features.pNext = nullptr;
+        m_vulkan13Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        m_enabledVulkan13Features.pNext = nullptr;
+        m_enabledVulkan13Features.sType =
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;
+        m_vulkan11Features.pNext = &m_vulkan13Features;
+        m_enabledVulkan11Features.pNext = &m_enabledVulkan13Features;
+      }
+#endif
       VkPhysicalDeviceFeatures2 feats{};
       feats.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
       feats.pNext = &m_vulkan11Features;
@@ -351,6 +442,7 @@ private:
                                                          &feats);
     }
 #endif
+
     // Memory properties are used regularly for creating all kinds of buffers
     instance.core<1, 0>().vkGetPhysicalDeviceMemoryProperties(
         m_physicalDevice, &m_memoryProperties);
@@ -400,11 +492,17 @@ private:
 #ifdef VK_VERSION_1_2
   VkPhysicalDeviceVulkan11Features m_vulkan11Features{};
 #endif
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceVulkan13Features m_vulkan13Features{};
+#endif
   /** @brief Features that have been enabled for use on the physical device */
   VkPhysicalDeviceFeatures m_enabledFeatures{};
 
 #ifdef VK_VERSION_1_2
   VkPhysicalDeviceVulkan11Features m_enabledVulkan11Features{};
+#endif
+#ifdef VK_VERSION_1_3
+  VkPhysicalDeviceVulkan13Features m_enabledVulkan13Features{};
 #endif
 
   /** @brief Memory types and heaps of the physical device */

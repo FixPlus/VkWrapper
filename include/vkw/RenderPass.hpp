@@ -387,5 +387,106 @@ private:
   unsigned m_numColorAttachments;
 };
 
+class RenderingInfo {
+public:
+  RenderingInfo() {
+    m_info.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+    m_info.layerCount = 1;
+  }
+  RenderingInfo(RenderingInfo &&another)
+      : m_info(another.m_info),
+        m_colorAttachments(std::move(another.m_colorAttachments)),
+        m_depthAttachment(another.m_depthAttachment),
+        m_stencilAttachment(another.m_stencilAttachment) {
+    m_info.pColorAttachments = m_colorAttachments.data();
+    m_info.pDepthAttachment =
+        m_info.pDepthAttachment ? &m_depthAttachment : nullptr;
+    m_info.pStencilAttachment =
+        m_info.pStencilAttachment ? &m_stencilAttachment : nullptr;
+  }
+  RenderingInfo &operator=(RenderingInfo &&another) {
+    if (this == &another)
+      return *this;
+    m_info = another.m_info;
+    m_colorAttachments = std::move(another.m_colorAttachments);
+    m_depthAttachment = another.m_depthAttachment;
+    m_stencilAttachment = another.m_stencilAttachment;
+
+    m_info.pColorAttachments = m_colorAttachments.data();
+    m_info.pDepthAttachment =
+        m_info.pDepthAttachment ? &m_depthAttachment : nullptr;
+    m_info.pStencilAttachment =
+        m_info.pStencilAttachment ? &m_stencilAttachment : nullptr;
+    return *this;
+  }
+  RenderingInfo(const RenderingInfo &another)
+      : m_info(another.m_info), m_colorAttachments(another.m_colorAttachments),
+        m_depthAttachment(another.m_depthAttachment),
+        m_stencilAttachment(another.m_stencilAttachment) {
+    m_info.pColorAttachments = m_colorAttachments.data();
+    m_info.pDepthAttachment =
+        m_info.pDepthAttachment ? &m_depthAttachment : nullptr;
+    m_info.pStencilAttachment =
+        m_info.pStencilAttachment ? &m_stencilAttachment : nullptr;
+  }
+  RenderingInfo &operator=(const RenderingInfo &another) {
+    if (this == &another)
+      return *this;
+    RenderingInfo tmp{another};
+    *this = std::move(tmp);
+    return *this;
+  }
+
+  RenderingInfo &setRenderArea(VkRect2D area) & {
+    m_info.renderArea = area;
+    return *this;
+  }
+  RenderingInfo &addColorAttachment(const VkRenderingAttachmentInfo &info,
+                                    bool enabled) & {
+    auto index = m_colorAttachments.size();
+    m_colorAttachments.emplace_back(info);
+    if (enabled) {
+      m_info.viewMask |= 1u << index;
+    }
+    m_info.colorAttachmentCount = index + 1;
+    m_info.pColorAttachments = m_colorAttachments.data();
+    return *this;
+  }
+  RenderingInfo &setColorView(VkImageView view, size_t index) & {
+    m_colorAttachments.at(index).imageView = view;
+    return *this;
+  }
+  RenderingInfo &addDepthAttachment(const VkRenderingAttachmentInfo &info) & {
+    m_depthAttachment = info;
+    m_info.pDepthAttachment = &m_depthAttachment;
+    return *this;
+  }
+  RenderingInfo &setDepthView(VkImageView view) & {
+    m_depthAttachment.imageView = view;
+    return *this;
+  }
+  RenderingInfo &addStencilAttachment(const VkRenderingAttachmentInfo &info) & {
+    m_stencilAttachment = info;
+    m_info.pStencilAttachment = &m_stencilAttachment;
+    return *this;
+  }
+  RenderingInfo &setStencilView(VkImageView view) & {
+    m_stencilAttachment.imageView = view;
+    return *this;
+  }
+  RenderingInfo &setFlags(VkRenderingFlags flags) & {
+    m_info.flags = flags;
+    return *this;
+  }
+
+  const VkRenderingInfo &get() const { return m_info; }
+
+private:
+  VkRenderingInfo m_info{};
+  cntr::vector<VkRenderingAttachmentInfo, 2> m_colorAttachments;
+  VkRenderingAttachmentInfo m_depthAttachment;
+  VkRenderingAttachmentInfo m_stencilAttachment;
+};
+
 } // namespace vkw
 #endif // VKRENDERER_RENDERPASS_HPP

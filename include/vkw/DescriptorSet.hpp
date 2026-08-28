@@ -8,6 +8,7 @@
 #include <vkw/Sampler.hpp>
 
 #include <algorithm>
+#include <ranges>
 
 namespace vkw {
 
@@ -56,6 +57,10 @@ public:
       return lhs.binding > rhs.binding;
     });
   }
+
+  explicit DescriptorSetLayoutInfo(
+      VkDescriptorSetLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
+      : m_flags(flags) {}
 
   auto bindings() const noexcept {
     return std::ranges::subrange(m_bindings.begin(), m_bindings.end());
@@ -113,6 +118,12 @@ public:
       : DescriptorSetLayoutInfo(std::forward<BindingRange>(bindings), flags),
         vk::DescriptorSetLayout(device, info()) {}
 
+  DescriptorSetLayout(
+      Device const &device,
+      VkDescriptorSetLayoutCreateFlags flags = 0) noexcept(ExceptionsDisabled)
+      : DescriptorSetLayoutInfo(flags), vk::DescriptorSetLayout(device,
+                                                                info()) {}
+
   bool operator==(DescriptorSetLayout const &rhs) const noexcept {
     return DescriptorSetLayoutInfo::operator==(rhs);
   }
@@ -122,13 +133,64 @@ public:
   }
 };
 
-struct DescriptorWrite {};
+class DescriptorWrite : private VkWriteDescriptorSet {
+public:
+  DescriptorWrite(unsigned binding, VkDescriptorType type) {
+    this->dstBinding = binding;
+    sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    pNext = nullptr;
+    descriptorType = type;
+    descriptorCount = 0;
+    dstArrayElement = 0;
+    pTexelBufferView = nullptr;
+  }
+
+  DescriptorWrite &addImage(VkSampler sampler, VkImageView view,
+                            VkImageLayout layout) & {
+    m_images.emplace_back(VkDescriptorImageInfo{sampler, view, layout});
+    pImageInfo = m_images.data();
+    ++descriptorCount;
+    return *this;
+  }
+  DescriptorWrite &addBuffer(VkBuffer buffer, VkDeviceSize offset,
+                             VkDeviceSize size) & {
+    m_buffers.emplace_back(VkDescriptorBufferInfo{buffer, offset, size});
+    pBufferInfo = m_buffers.data();
+    ++descriptorCount;
+    return *this;
+  }
+  DescriptorWrite &&addImage(VkSampler sampler, VkImageView view,
+                             VkImageLayout layout) && {
+    m_images.emplace_back(VkDescriptorImageInfo{sampler, view, layout});
+    pImageInfo = m_images.data();
+    ++descriptorCount;
+    return std::move(*this);
+  }
+  DescriptorWrite &&addBuffer(VkBuffer buffer, VkDeviceSize offset,
+                              VkDeviceSize size) && {
+    m_buffers.emplace_back(VkDescriptorBufferInfo{buffer, offset, size});
+    pBufferInfo = m_buffers.data();
+    ++descriptorCount;
+    return std::move(*this);
+  }
+  VkWriteDescriptorSet get() const & {
+    VkWriteDescriptorSet copy =
+        static_cast<const VkWriteDescriptorSet &>(*this);
+    copy.pBufferInfo = m_buffers.data();
+    copy.pImageInfo = m_images.data();
+    return copy;
+  }
+
+private:
+  cntr::vector<VkDescriptorImageInfo, 2> m_images;
+  cntr::vector<VkDescriptorBufferInfo, 2> m_buffers;
+};
 
 class DescriptorSet : public ReferenceGuard {
 public:
   DescriptorSet(DescriptorPool &pool,
                 DescriptorSetLayout const &layout) noexcept(ExceptionsDisabled)
-      : m_layout(layout), m_set(pool.allocateSet(layout), pool) {
+      : m_set(pool.allocateSet(layout), pool) {
     for (auto const &binding : layout.bindings()) {
       if (binding.hasDynamicOffset())
         m_dynamicOffsets.emplace_back(binding.binding);
@@ -141,62 +203,16 @@ public:
     DynamicOffset(uint32_t bind) noexcept : binding(bind){};
   };
 
-  void write(uint32_t binding, BufferBase const &buffer,
-             VkDeviceSize offset = 0,
-             VkDeviceSize range = VK_WHOLE_SIZE) noexcept {
-    auto &bnd = m_layout.get().binding(binding);
-    VkWriteDescriptorSet writeSet{};
-    VkDescriptorBufferInfo bufferInfo;
-    bufferInfo.buffer = buffer;
-    bufferInfo.offset = offset;
-    bufferInfo.range = range;
-    writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeSet.pNext = nullptr;
-    /// TODO: support descriptor array writes here.
-    writeSet.descriptorCount = 1;
-    writeSet.dstSet = m_set.get();
-    writeSet.dstArrayElement = 0;
-    writeSet.pBufferInfo = &bufferInfo;
-    writeSet.dstBinding = binding;
-    writeSet.descriptorType = bnd.descriptorType;
-    m_write(1, &writeSet);
+  void write(const DescriptorWrite &write) noexcept {
+    VkWriteDescriptorSet copy = write.get();
+    m_write(1, &copy);
   }
 
-  void write(uint32_t binding, ImageViewBase const &image, VkImageLayout layout,
-             Sampler const &sampler) noexcept {
-    auto &bnd = m_layout.get().binding(binding);
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageView = image;
-    imageInfo.imageLayout = layout;
-    imageInfo.sampler = sampler;
-    VkWriteDescriptorSet writeSet{};
-    writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeSet.pNext = nullptr;
-    writeSet.descriptorCount = 1;
-    writeSet.dstSet = m_set.get();
-    writeSet.dstArrayElement = 0;
-    writeSet.pImageInfo = &imageInfo;
-    writeSet.dstBinding = binding;
-    writeSet.descriptorType = bnd.descriptorType;
-    m_write(1, &writeSet);
-  }
-
-  void write(uint32_t binding, ImageViewBase const &image,
-             VkImageLayout layout) noexcept {
-    auto &bnd = m_layout.get().binding(binding);
-    VkDescriptorImageInfo imageInfo{};
-    imageInfo.imageView = image;
-    imageInfo.imageLayout = layout;
-    VkWriteDescriptorSet writeSet{};
-    writeSet.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    writeSet.pNext = nullptr;
-    writeSet.descriptorCount = 1;
-    writeSet.dstSet = m_set.get();
-    writeSet.dstArrayElement = 0;
-    writeSet.pImageInfo = &imageInfo;
-    writeSet.dstBinding = binding;
-    writeSet.descriptorType = bnd.descriptorType;
-    m_write(1, &writeSet);
+  void write(std::span<const DescriptorWrite> writes) noexcept {
+    cntr::vector<VkWriteDescriptorSet, 4> rawWrites;
+    std::ranges::transform(writes, std::back_inserter(rawWrites),
+                           [](auto &&w) { return w.get(); });
+    m_write(rawWrites.size(), rawWrites.data());
   }
 
   auto dynamicOffsets() const noexcept(ExceptionsDisabled) {
@@ -217,8 +233,6 @@ public:
     found->offset = offset;
   }
 
-  DescriptorSetLayout const &layout() const { return m_layout; }
-
   operator VkDescriptorSet() const { return m_set.get(); }
 
 protected:
@@ -233,7 +247,6 @@ protected:
 private:
   cntr::vector<DynamicOffset, 2> m_dynamicOffsets{};
 
-  StrongReference<DescriptorSetLayout const> m_layout;
   struct SetDestructor {
     SetDestructor(DescriptorPool &pool) : pool(pool){};
     void operator()(VkDescriptorSet set) const {

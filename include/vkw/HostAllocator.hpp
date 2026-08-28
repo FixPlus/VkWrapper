@@ -13,6 +13,8 @@ private:
   public:
     void update(std::unique_ptr<HostAllocator> newAlloc) {
       m_alloc = std::move(newAlloc);
+      if (!m_alloc)
+        return;
       m_callbacks.pUserData = m_alloc.get();
       m_callbacks.pfnAllocation = &m_allocate;
       m_callbacks.pfnReallocation = &m_reallocate;
@@ -20,7 +22,7 @@ private:
       m_callbacks.pfnInternalAllocation = &m_internalAllocNotify;
       m_callbacks.pfnInternalFree = &m_internalFreeNotify;
     }
-    GlobalAllocatorKeeper() { update(std::make_unique<HostAllocator>()); }
+    GlobalAllocatorKeeper() = default;
     GlobalAllocatorKeeper(GlobalAllocatorKeeper &&) = delete;
     GlobalAllocatorKeeper &operator=(GlobalAllocatorKeeper &&) = delete;
     GlobalAllocatorKeeper(const GlobalAllocatorKeeper &) = delete;

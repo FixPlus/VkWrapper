@@ -10,7 +10,7 @@ class Fence;
 template <typename T>
 concept FenceIterator =
     std::forward_iterator<T> && requires(T a) {
-                                  { *a } -> std::same_as<Fence &>;
+                                  { *a } -> std::same_as<const Fence &>;
                                 };
 
 class Fence : public vk::Fence {
@@ -58,9 +58,9 @@ public:
            uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled) {
     cntr::vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
-      fences.push_back((*it).m_fence);
+      fences.push_back((*it).handle());
     }
-    return wait_impl(begin->m_device, fences.data(), fences.size(), false,
+    return wait_impl((*begin).parent(), fences.data(), fences.size(), false,
                      timeout);
   }
 
@@ -70,9 +70,9 @@ public:
            uint64_t timeout = UINT64_MAX) noexcept(ExceptionsDisabled) {
     cntr::vector<VkFence, 4> fences{};
     for (auto it = begin; it != end; ++it) {
-      fences.push_back((*it).m_fence);
+      fences.push_back((*it).handle());
     }
-    return wait_impl(begin->m_device, fences.data(), fences.size(), true,
+    return wait_impl((*begin).parent(), fences.data(), fences.size(), true,
                      timeout);
   }
 

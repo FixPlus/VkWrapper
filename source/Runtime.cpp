@@ -156,9 +156,9 @@ VKW_ErrorCode vkw_spvLink(VKW_spvContext handle,
   auto *context = reinterpret_cast<spvtools::Context *>(handle);
   spvtools::LinkerOptions options{};
   auto flags = linkInfo->flags;
-  options.SetCreateLibrary(flags | VKW_SPV_LINK_CREATE_LIBRARY);
-  options.SetVerifyIds(flags | VKW_SPV_LINK_VERIFY_IDS);
-  options.SetAllowPartialLinkage(flags | VKW_SPV_LINK_ALLOW_PARTIAL_LINKAGE);
+  options.SetCreateLibrary(flags & VKW_SPV_LINK_CREATE_LIBRARY);
+  options.SetVerifyIds(flags & VKW_SPV_LINK_VERIFY_IDS);
+  options.SetAllowPartialLinkage(flags & VKW_SPV_LINK_ALLOW_PARTIAL_LINKAGE);
   std::vector<uint32_t> output;
   auto result =
       spvtools::Link(*context, linkInfo->binaries, linkInfo->binary_sizes,

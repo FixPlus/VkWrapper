@@ -17,7 +17,7 @@ if(POLICY CMP0167)
 endif()
 
 # Boost is used primarily for containers.
-find_package(Boost 1.80 REQUIRED)
+find_package(Boost 1.91 REQUIRED)
 
 # Vulkan include dependencies
 find_package(Vulkan 1.4.328 REQUIRED COMPONENTS SPIRV-Tools)

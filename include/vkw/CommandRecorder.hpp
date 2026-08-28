@@ -170,7 +170,7 @@ public:
                      const FrameBuffer &frameBuffer,
                      VkCommandBufferUsageFlags flags = 0)
       : DescriptorRecorder(buffer),
-        m_ender(buffer, PassEnder(m_symbols, true)) {
+        m_ender(buffer, PassEnder(m_symbols, true, false)) {
     VkCommandBufferBeginInfo info{};
     info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
     info.pNext = nullptr;
@@ -241,7 +241,7 @@ private:
                      bool useSecondary = false,
                      std::span<const VkClearValue> clearValues = {})
       : DescriptorRecorder(buffer),
-        m_ender(buffer, PassEnder(m_symbols, false)) {
+        m_ender(buffer, PassEnder(m_symbols, false, false)) {
     VkRenderPassBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     beginInfo.pNext = nullptr;
@@ -256,18 +256,30 @@ private:
         useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS
                      : VK_SUBPASS_CONTENTS_INLINE);
   };
+  RenderPassRecorder(PrimaryCommandBuffer &buffer,
+                     const RenderingInfo &renderInfo)
+      : DescriptorRecorder(buffer),
+        m_ender(buffer, PassEnder(m_symbols, false, true)) {
+    static_cast<const DeviceCore<1, 3> *>(m_symbols)->vkCmdBeginRendering(
+        buffer, &renderInfo.get());
+  };
 
   struct PassEnder {
     void operator()(VkCommandBuffer buffer) {
       if (!buffer)
         return;
       if (!isSecondary)
-        symbols->vkCmdEndRenderPass(buffer);
+        if (isDynamic)
+          static_cast<const DeviceCore<1, 3> *>(symbols)->vkCmdEndRendering(
+              buffer);
+        else
+          symbols->vkCmdEndRenderPass(buffer);
       else
         VK_CHECK_RESULT(symbols->vkEndCommandBuffer(buffer));
     }
     DeviceCore<1, 0> const *symbols;
     bool isSecondary;
+    bool isDynamic;
   };
   std::unique_ptr<VkCommandBuffer_T, PassEnder> m_ender;
 };
@@ -319,6 +331,12 @@ public:
     m_symbols->vkCmdCopyImage(m_buffer, src, srcLayout, dst, dstLayout,
                               regions.size(), regions.data());
   }
+  void copyImageToImage(VkImage src, VkImageLayout srcLayout, VkImage dst,
+                        VkImageLayout dstLayout,
+                        std::span<const VkImageCopy> regions) noexcept {
+    m_symbols->vkCmdCopyImage(m_buffer, src, srcLayout, dst, dstLayout,
+                              regions.size(), regions.data());
+  }
 
   void blitImage(AllocatedImage const &targetImage, VkImageBlit blit,
                  bool usingGeneralLayout = false,
@@ -365,6 +383,11 @@ public:
                   std::span<const VkClearValue> clearValues = {}) {
     return RenderPassRecorder(*m_buffer, frameBuffer, renderArea, useSecondary,
                               clearValues);
+  }
+  RenderPassRecorder beginRenderPass(const RenderingInfo &info) {
+    if (m_buffer->parent().parent().apiVersion() < ApiVersion{1, 3, 0})
+      postError(LogicError{"Dynamic rendering requires at least vulkan 1.3"});
+    return RenderPassRecorder(*m_buffer, info);
   }
 
   ComputePassRecorder beginComputePass() {

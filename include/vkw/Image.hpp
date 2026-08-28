@@ -57,6 +57,8 @@ public:
     return !isDepthFormat(format);
   }
 
+  const VkImageCreateInfo &fullInfo() const { return m_createInfo; }
+
 protected:
   VkImageCreateInfo m_createInfo{};
 };
@@ -88,8 +90,6 @@ public:
     return m_createInfo == another.m_createInfo;
   }
 
-  ImageInterface const *image() const noexcept { return &m_parent.get(); }
-
   virtual operator VkImageView() const noexcept = 0;
 
   VkFormat format() const noexcept { return m_createInfo.format; };
@@ -99,8 +99,7 @@ protected:
                          VkFormat format = VK_FORMAT_MAX_ENUM,
                          uint32_t baseMipLevel = 0, uint32_t levelCount = 1,
                          VkComponentMapping componentMapping = {},
-                         VkImageViewCreateFlags flags = 0) noexcept
-      : m_parent(*image) {
+                         VkImageViewCreateFlags flags = 0) noexcept {
     assert(image && "incomplete view is constructed");
     m_createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
     m_createInfo.pNext = nullptr;
@@ -112,9 +111,6 @@ protected:
     m_createInfo.format = format;
   }
   VkImageViewCreateInfo m_createInfo{};
-
-private:
-  StrongReference<ImageInterface const> m_parent;
 };
 
 class ImageViewCreator : virtual public ImageViewBase {

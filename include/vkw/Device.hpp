@@ -106,12 +106,7 @@ public:
 
     m_createInfo.enabledExtensionCount = m_enabledExtensionsRaw.size();
     m_createInfo.ppEnabledExtensionNames = m_enabledExtensionsRaw.data();
-#ifdef VK_VERSION_1_2
-    if (phDevice.requestedApiVersion() >= ApiVersion(1, 1, 0))
-      m_createInfo.pNext = &m_ph_device.enabledVulkan11Features();
-    else
-      m_createInfo.pNext = nullptr;
-#endif
+    m_createInfo.pNext = m_ph_device.prepareNext();
 
     m_apiVer = m_ph_device.requestedApiVersion();
   }

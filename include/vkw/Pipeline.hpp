@@ -571,6 +571,65 @@ private:
   VkPipelineDepthStencilStateCreateInfo m_createInfo{};
 };
 
+class RenderingFormatInfo final {
+public:
+  RenderingFormatInfo() {
+    m_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
+    m_info.pNext = nullptr;
+  }
+  RenderingFormatInfo(RenderingFormatInfo &&another)
+      : m_info(another.m_info),
+        m_colorAttachments(std::move(another.m_colorAttachments)) {
+    m_info.pColorAttachmentFormats = m_colorAttachments.data();
+  }
+  RenderingFormatInfo(const RenderingFormatInfo &another)
+      : m_info(another.m_info), m_colorAttachments(another.m_colorAttachments) {
+    m_info.pColorAttachmentFormats = m_colorAttachments.data();
+  }
+  RenderingFormatInfo &operator=(RenderingFormatInfo &&another) {
+    if (this == &another)
+      return *this;
+    m_info = another.m_info;
+    m_colorAttachments = std::move(another.m_colorAttachments);
+    return *this;
+  }
+  RenderingFormatInfo &operator=(const RenderingFormatInfo &another) {
+    if (this == &another)
+      return *this;
+    RenderingFormatInfo tmp{another};
+    *this = std::move(tmp);
+    return *this;
+  }
+
+  VkPipelineRenderingCreateInfo const &get() const noexcept { return m_info; }
+
+  RenderingFormatInfo &addColorAttachment(VkFormat format, bool active) {
+    auto index = m_colorAttachments.size();
+    m_colorAttachments.emplace_back(format);
+    if (active)
+      m_info.viewMask |= 1u << index;
+    m_info.colorAttachmentCount = index + 1;
+    m_info.pColorAttachmentFormats = m_colorAttachments.data();
+    return *this;
+  }
+
+  RenderingFormatInfo &addDepthAttachment(VkFormat format) {
+    m_info.depthAttachmentFormat = format;
+    return *this;
+  }
+
+  RenderingFormatInfo &addStencilAttachment(VkFormat format) {
+    m_info.stencilAttachmentFormat = format;
+    return *this;
+  }
+
+  size_t numColorAttachments() const { return m_colorAttachments.size(); }
+
+private:
+  VkPipelineRenderingCreateInfo m_info{};
+  cntr::vector<VkFormat, 4> m_colorAttachments;
+};
+
 /**
  *
  * @class GraphicsPipelineCreateInfo
@@ -596,53 +655,14 @@ public:
   GraphicsPipelineCreateInfo(
       RenderPass const &renderPass,
       PipelineLayout const &layout) noexcept(ExceptionsDisabled)
-      : m_renderPass(renderPass), m_layout(layout) {
-
-    m_inputAssemblyStateCreateInfo = vkw::InputAssemblyStateCreateInfo{};
-    m_rasterizationStateCreateInfo = vkw::RasterizationStateCreateInfo{};
-
-    // Default MultisampleStateCreateInfo
-    m_multisampleState.sampleShadingEnable = VK_FALSE;
-    m_multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-    m_multisampleState.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-    m_multisampleState.pNext = nullptr;
-    m_multisampleState.flags = 0;
-
-    // Default Depth/stencil state create info
-    m_depthStencilState.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    m_depthStencilState.pNext = nullptr;
-    m_depthStencilState.depthTestEnable = VK_FALSE;
-    m_depthStencilState.depthWriteEnable = VK_FALSE;
-    m_depthStencilState.stencilTestEnable = VK_FALSE;
-    m_depthStencilState.depthBoundsTestEnable = VK_FALSE;
-
-    // Default Color blending state create info
-    m_colorBlendState.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-    m_colorBlendState.pNext = nullptr;
-    m_colorBlendState.flags = 0;
-    m_colorBlendState.attachmentCount =
-        m_renderPass.get().numColorAttachments();
-    VkPipelineColorBlendAttachmentState state{};
-    state.blendEnable = VK_FALSE;
-    state.colorWriteMask = 0xf;
-    m_blendStates.resize(m_colorBlendState.attachmentCount, state);
-    m_colorBlendState.pAttachments = m_blendStates.data();
-    m_colorBlendState.logicOpEnable = VK_FALSE;
-
-    m_viewportState.sType =
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-    m_viewportState.pNext = nullptr;
-    m_viewportState.flags = 0;
-    m_viewportState.viewportCount = m_viewportState.scissorCount = 1;
-
-    m_dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-    m_dynamicState.pNext = nullptr;
-    m_dynamicState.dynamicStateCount = 0;
-    m_dynamicState.pDynamicStates = nullptr;
-    m_dynamicState.flags = 0;
+      : m_renderPass(&renderPass), m_layout(layout) {
+    m_init(m_renderPass->numColorAttachments());
+  }
+  GraphicsPipelineCreateInfo(
+      RenderingFormatInfo const &renderInfo,
+      PipelineLayout const &layout) noexcept(ExceptionsDisabled)
+      : m_layout(layout), m_renderingFormatinfo(renderInfo) {
+    m_init(m_renderingFormatinfo->numColorAttachments());
   }
 
   GraphicsPipelineCreateInfo &
@@ -733,11 +753,13 @@ public:
       postError(LogicError{"enableSampleRateShading() cannot be called if "
                            "multisampling is not enabled"});
     }
+#if 0
     if (pass().parent().physicalDevice().enabledFeatures().sampleRateShading ==
         VK_FALSE) {
       postError(LogicError{"enableSampleRateShading() cannot be called if "
                            "sampleRateShading feature is not enabled"});
     }
+#endif
 
     m_multisampleState.sampleShadingEnable = VK_TRUE;
     m_multisampleState.minSampleShading = minRate;
@@ -775,9 +797,10 @@ public:
     m_dynamicState.pDynamicStates = m_dynStates.data();
     VkGraphicsPipelineCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    createInfo.pNext = nullptr;
+    createInfo.pNext =
+        m_renderingFormatinfo ? &m_renderingFormatinfo->get() : nullptr;
     createInfo.flags = 0;
-    createInfo.renderPass = m_renderPass.get();
+    createInfo.renderPass = m_renderPass ? *m_renderPass : nullptr;
     createInfo.layout = m_layout.get();
     // multiple subpasses are not supported.
     createInfo.subpass = 0;
@@ -830,7 +853,7 @@ public:
 
   PipelineLayout const &layout() const noexcept { return m_layout; }
 
-  RenderPass const &pass() const noexcept { return m_renderPass; }
+  RenderPass const *pass() const noexcept { return m_renderPass; }
 
   template <typename Stage> auto shader() const noexcept {
     return m_getStage<Stage>(m_shaders);
@@ -842,7 +865,55 @@ public:
   }
 
 private:
-  StrongReference<RenderPass const> m_renderPass;
+  void m_init(unsigned numColors) {
+
+    m_inputAssemblyStateCreateInfo = vkw::InputAssemblyStateCreateInfo{};
+    m_rasterizationStateCreateInfo = vkw::RasterizationStateCreateInfo{};
+
+    // Default MultisampleStateCreateInfo
+    m_multisampleState.sampleShadingEnable = VK_FALSE;
+    m_multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+    m_multisampleState.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+    m_multisampleState.pNext = nullptr;
+    m_multisampleState.flags = 0;
+
+    // Default Depth/stencil state create info
+    m_depthStencilState.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+    m_depthStencilState.pNext = nullptr;
+    m_depthStencilState.depthTestEnable = VK_FALSE;
+    m_depthStencilState.depthWriteEnable = VK_FALSE;
+    m_depthStencilState.stencilTestEnable = VK_FALSE;
+    m_depthStencilState.depthBoundsTestEnable = VK_FALSE;
+
+    // Default Color blending state create info
+    m_colorBlendState.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+    m_colorBlendState.pNext = nullptr;
+    m_colorBlendState.flags = 0;
+    m_colorBlendState.attachmentCount = numColors;
+    VkPipelineColorBlendAttachmentState state{};
+    state.blendEnable = VK_FALSE;
+    state.colorWriteMask = 0xf;
+    m_blendStates.resize(m_colorBlendState.attachmentCount, state);
+    m_colorBlendState.pAttachments = m_blendStates.data();
+    m_colorBlendState.logicOpEnable = VK_FALSE;
+
+    m_viewportState.sType =
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+    m_viewportState.pNext = nullptr;
+    m_viewportState.flags = 0;
+    m_viewportState.viewportCount = m_viewportState.scissorCount = 1;
+
+    m_dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    m_dynamicState.pNext = nullptr;
+    m_dynamicState.dynamicStateCount = 0;
+    m_dynamicState.pDynamicStates = nullptr;
+    m_dynamicState.flags = 0;
+  }
+
+  RenderPass const *m_renderPass = nullptr;
   StrongReference<PipelineLayout const> m_layout;
 
   // Shader Stages
@@ -866,6 +937,8 @@ private:
   // TODO: support configure for viewport state
   VkPipelineViewportStateCreateInfo m_viewportState{};
 
+  // dynamic rendering
+  std::optional<RenderingFormatInfo> m_renderingFormatinfo;
   // dynamic states
 
   mutable VkPipelineDynamicStateCreateInfo m_dynamicState{};
@@ -928,16 +1001,13 @@ private:
 
 class Pipeline : public ReferenceGuard {
 public:
-  PipelineLayout const &layout() const noexcept { return m_pipelineLayout; }
-
   operator VkPipeline() const noexcept { return m_pipeline.get(); }
 
 protected:
   Pipeline(
       Device &device,
       GraphicsPipelineCreateInfo const &createInfo) noexcept(ExceptionsDisabled)
-      : m_pipelineLayout(createInfo.layout()),
-        m_pipeline(
+      : m_pipeline(
             [&]() {
               VkPipeline pipeline = nullptr;
               VkGraphicsPipelineCreateInfo CI = createInfo;
@@ -950,8 +1020,7 @@ protected:
   Pipeline(
       Device &device,
       ComputePipelineCreateInfo const &createInfo) noexcept(ExceptionsDisabled)
-      : m_pipelineLayout(createInfo.layout()),
-        m_pipeline(
+      : m_pipeline(
             [&]() {
               VkPipeline pipeline = nullptr;
               VkComputePipelineCreateInfo CI = createInfo;
@@ -964,8 +1033,7 @@ protected:
 
   Pipeline(Device &device, GraphicsPipelineCreateInfo const &createInfo,
            PipelineCache const &cache) noexcept(ExceptionsDisabled)
-      : m_pipelineLayout(createInfo.layout()),
-        m_pipeline(
+      : m_pipeline(
             [&]() {
               VkPipeline pipeline = nullptr;
               VkGraphicsPipelineCreateInfo CI = createInfo;
@@ -976,8 +1044,7 @@ protected:
             PipelineDestroyer{device}) {}
   Pipeline(Device &device, ComputePipelineCreateInfo const &createInfo,
            PipelineCache const &cache) noexcept(ExceptionsDisabled)
-      : m_pipelineLayout(createInfo.layout()),
-        m_pipeline(
+      : m_pipeline(
             [&]() {
               VkPipeline pipeline = nullptr;
               VkComputePipelineCreateInfo CI = createInfo;
@@ -988,7 +1055,6 @@ protected:
             PipelineDestroyer{device}) {}
 
 private:
-  StrongReference<PipelineLayout const> m_pipelineLayout;
   struct PipelineDestroyer {
     void operator()(VkPipeline pipeline) {
       if (!pipeline)
